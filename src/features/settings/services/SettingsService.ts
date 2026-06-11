@@ -42,6 +42,9 @@ export const SettingsService = {
       imageRounding: ImageRounding
       showSearch: boolean
       bgGradient: TenantBgGradient
+      detailsCardStyle: 'glass' | 'solid'
+      detailsCardOptionStyle: 'list' | 'pills'
+      detailsCardShowImage: boolean
       announcement: TenantAnnouncement
       socials: TenantSocials
       infoFooter: TenantInfoFooter
@@ -70,6 +73,9 @@ export const SettingsService = {
       'branding.imageRounding': branding.imageRounding,
       'branding.showSearch': branding.showSearch,
       'branding.bgGradient': branding.bgGradient,
+      'branding.detailsCardStyle': branding.detailsCardStyle,
+      'branding.detailsCardOptionStyle': branding.detailsCardOptionStyle,
+      'branding.detailsCardShowImage': branding.detailsCardShowImage,
       'branding.announcement': branding.announcement,
       'branding.socials': branding.socials,
       'branding.infoFooter': branding.infoFooter,

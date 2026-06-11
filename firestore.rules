@@ -90,6 +90,14 @@ service cloud.firestore {
         allow write: if isTenantOwner(tenantId);
       }
 
+      // ── Appearance Preview (Live Sync) ──────────────────────────────────────
+      match /appearancePreview/{docId} {
+        allow read: if true;
+        allow create, delete: if isTenantMember(tenantId);
+        allow update: if isTenantMember(tenantId)
+                      || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['phoneActive']));
+      }
+
       // ── Editor namespace — drafts + published document (Núcleo v2) ───────────
       // Covers:
       //   PATHS.editor.published  → tenants/{id}/editor/published  (singleton)

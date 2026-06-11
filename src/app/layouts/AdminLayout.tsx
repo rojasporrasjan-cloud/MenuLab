@@ -18,6 +18,7 @@ const PAGE_TITLES: Record<string, string> = {
 
 export function AdminLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const location    = useLocation()
   const isDishEditor = useMatch(ROUTES.admin.dishes.editor)
 
@@ -29,21 +30,32 @@ export function AdminLayout() {
       ? 'Editar plato'
       : PAGE_TITLES[location.pathname] ?? 'Admin'
 
+  const handleMenuToggle = () => {
+    if (window.innerWidth >= 1024) {
+      setIsSidebarCollapsed((prev) => !prev)
+    } else {
+      setIsSidebarOpen((prev) => !prev)
+    }
+  }
+
+  const isAppearancePage = location.pathname === ROUTES.admin.appearance
+
   return (
-    <div className="flex min-h-svh" style={{ background: '#faf9f7' }}>
+    <div className="flex h-svh overflow-hidden" style={{ background: '#faf9f7' }}>
       <Sidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        isCollapsed={isSidebarCollapsed}
       />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Topbar
           title={pageTitle}
-          onMenuToggle={() => setIsSidebarOpen((o) => !o)}
+          onMenuToggle={handleMenuToggle}
         />
 
-        <main className="flex-1 overflow-y-auto p-5 lg:p-7">
-          <div className="mx-auto max-w-6xl">
+        <main className={`flex-1 min-h-0 ${isAppearancePage ? 'p-0 flex flex-col' : 'overflow-y-auto p-5 lg:p-7'}`}>
+          <div className={isAppearancePage ? 'w-full h-full flex flex-col min-h-0' : 'mx-auto max-w-6xl'}>
             <Outlet />
           </div>
         </main>

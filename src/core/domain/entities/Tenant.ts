@@ -85,6 +85,9 @@ export interface TenantBranding {
   imageRounding: ImageRounding
   showSearch: boolean
   bgGradient: TenantBgGradient
+  detailsCardStyle?: 'glass' | 'solid'
+  detailsCardOptionStyle?: 'list' | 'pills'
+  detailsCardShowImage?: boolean
   // Page sections
   announcement: TenantAnnouncement
   socials: TenantSocials

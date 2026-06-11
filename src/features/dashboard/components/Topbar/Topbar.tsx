@@ -26,11 +26,11 @@ export function Topbar({ onMenuToggle, title, className }: TopbarProps) {
         borderColor:  '#efede9',
       }}
     >
-      {/* Mobile hamburger */}
+      {/* Sidebar toggle button (hamburger) */}
       <button
         onClick={onMenuToggle}
-        aria-label="Abrir navegación"
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg lg:hidden"
+        aria-label="Toggle navegación"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
         style={{ color: '#908c85' }}
       >
         <Menu size={17} />

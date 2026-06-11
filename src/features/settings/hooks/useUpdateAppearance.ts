@@ -27,6 +27,9 @@ export interface AppearanceValues {
   imageRounding: ImageRounding
   showSearch: boolean
   bgGradient: TenantBgGradient
+  detailsCardStyle: 'glass' | 'solid'
+  detailsCardOptionStyle: 'list' | 'pills'
+  detailsCardShowImage: boolean
   restaurantName: string
   announcement: TenantAnnouncement
   socials: TenantSocials
@@ -89,6 +92,9 @@ export function useUpdateAppearance(tenantId: string) {
         imageRounding: values.imageRounding,
         showSearch: values.showSearch,
         bgGradient: values.bgGradient,
+        detailsCardStyle: values.detailsCardStyle,
+        detailsCardOptionStyle: values.detailsCardOptionStyle,
+        detailsCardShowImage: values.detailsCardShowImage,
         announcement: values.announcement,
         socials: values.socials,
         infoFooter: values.infoFooter,
@@ -99,8 +105,10 @@ export function useUpdateAppearance(tenantId: string) {
       })
 
       await queryClient.invalidateQueries({ queryKey: ['tenant', tenantId] })
+      await queryClient.invalidateQueries({ queryKey: ['tenant-context'] })
       setSuccess(true)
-    } catch {
+    } catch (err) {
+      console.error("Error updating appearance config in Firestore:", err)
       setError('No se pudo guardar la apariencia. Intenta de nuevo.')
     } finally {
       setIsLoading(false)

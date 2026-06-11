@@ -1,7 +1,11 @@
-import { Suspense, useEffect, useMemo, memo } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { Suspense, useEffect, useMemo, memo, useState } from 'react'
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { useTenantContext } from '@app/providers/TenantProvider'
-import { useTableMenu, useActiveDishes, MenuSkeleton } from '@features/menu'
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore'
+import { db } from '@infrastructure/firebase/firestore'
+import { cn } from '@shared/utils/cn'
+import { useTableMenu, useActiveDishes, MenuSkeleton, DishSelectionModal } from '@features/menu'
+import { useAdminMenus } from '@features/menus'
 import { getTemplateComponent } from '@features/templates'
 import { usePublishedEditorDocument } from '@features/editor'
 import { DataLayerRenderer } from '@features/editor/components/DataLayerRenderer'
@@ -9,6 +13,7 @@ import type { DataLayerContext, ResolvedDish, ResolvedCategory } from '@features
 import type { DishesGroupedByCategory } from '@core/use-cases/menu/GetActiveDishesUseCase'
 import type { Menu } from '@core/domain/entities/Menu'
 import type { Table } from '@core/domain/entities/Table'
+import type { Tenant } from '@core/domain/entities/Tenant'
 
 // ─── Head meta tag helpers ────────────────────────────────────────────────────
 
@@ -175,16 +180,82 @@ function MenuNotFound() {
   )
 }
 
+// ─── Live preview connection indicator ────────────────────────────────────────
+
+const LivePreviewIndicator = memo(function LivePreviewIndicator({ connected }: { connected: boolean }) {
+  return (
+    <div
+      className="fixed top-4 left-4 z-[9999] flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold shadow-md transition-all select-none"
+      style={{
+        background: connected ? 'rgba(20, 83, 45, 0.9)' : 'rgba(153, 27, 27, 0.9)',
+        border: connected ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
+        color: '#ffffff',
+      }}
+    >
+      <span className={cn("h-1.5 w-1.5 rounded-full", connected ? "bg-green-400 animate-pulse" : "bg-red-400")} />
+      {connected ? 'En vivo' : 'Desconectado'}
+    </div>
+  )
+})
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function MenuPage() {
-  const { tenantId, menuId } = useParams<{ tenantId: string; menuId?: string }>()
+  const { tenantId, menuId, dishId } = useParams<{ tenantId: string; menuId?: string; dishId?: string }>()
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const tableId = searchParams.get('table') ?? undefined
+  const isPreview = searchParams.get('preview') === 'true'
 
-  const { tenant } = useTenantContext()
+  const { tenant: baseTenant } = useTenantContext()
+  const [previewTenant, setPreviewTenant] = useState<Tenant | null>(null)
+  const [isLiveConnected, setIsLiveConnected] = useState(false)
+
+  useEffect(() => {
+    if (!tenantId || !isPreview) return
+    const unsub = onSnapshot(
+      doc(db, 'tenants', tenantId, 'appearancePreview', 'current'),
+      (snap) => {
+        if (snap.exists()) {
+          setPreviewTenant(snap.data() as Tenant)
+          setIsLiveConnected(true)
+        } else {
+          setIsLiveConnected(false)
+        }
+      },
+      (error) => {
+        console.error("Error listening to live preview:", error)
+        setIsLiveConnected(false)
+      }
+    )
+    return () => unsub()
+  }, [tenantId, isPreview])
+
+  // Notify the PC editor that a phone has successfully connected/scanned
+  useEffect(() => {
+    if (!tenantId || !isPreview) return
+    // Only notify if we are NOT inside an iframe (meaning a real device/tab opened it)
+    if (window.self !== window.top) return
+
+    void updateDoc(doc(db, 'tenants', tenantId, 'appearancePreview', 'current'), { phoneActive: true })
+      .catch((err) => console.error("Error notifying PC of scan:", err))
+  }, [tenantId, isPreview])
+
+  const tenant = (isPreview && previewTenant && baseTenant)
+    ? {
+        ...baseTenant,
+        name: previewTenant.name,
+        templateId: previewTenant.templateId,
+        branding: {
+          ...baseTenant.branding,
+          ...previewTenant.branding,
+        },
+      }
+    : (previewTenant || baseTenant)
   const { data: tableMenu } = useTableMenu(tenantId ?? '', tableId ?? '')
-  const resolvedMenuId = tableMenu?.menu?.id ?? menuId ?? ''
+  const { data: menus } = useAdminMenus(tenantId ?? '')
+  const firstMenuId = menus?.[0]?.id ?? ''
+  const resolvedMenuId = tableMenu?.menu?.id ?? menuId ?? firstMenuId ?? ''
 
   const { groups = [], isLoading } = useActiveDishes(tenantId ?? '', resolvedMenuId, [])
   const { document: editorDoc } = usePublishedEditorDocument(tenantId ?? '')
@@ -219,11 +290,17 @@ export default function MenuPage() {
     [tenant?.templateId],
   )
 
+  const selectedDish = useMemo(() => {
+    if (!dishId) return null
+    return groups.flatMap((g) => g.dishes).find((d) => d.id === dishId) ?? null
+  }, [dishId, groups])
+
   if (!tenantId) return <MenuNotFound />
   if (!tenant) return isLoading ? <MenuSkeleton /> : <MenuNotFound />
 
   return (
     <Suspense fallback={<MenuSkeleton />}>
+      {isPreview && <LivePreviewIndicator connected={isLiveConnected} />}
       {editorDoc ? (
         <DataLayerRenderer canvaTemplate={editorDoc.canvaTemplate} layers={editorDoc.dataLayers} context={dataLayerCtx} />
       ) : (
@@ -233,6 +310,21 @@ export default function MenuPage() {
           table={tableMenu?.table ?? walkInTable(tenantId, resolvedMenuId)}
           groups={groups}
           tenantId={tenantId}
+        />
+      )}
+      {selectedDish && (
+        <DishSelectionModal
+          isOpen={!!selectedDish}
+          onClose={() => {
+            const hasHistory = window.history.length > 1 && window.history.state && window.history.state.idx > 0
+            if (hasHistory) {
+              navigate(-1)
+            } else {
+              navigate(`/${tenantId}/menu${window.location.search}`, { replace: true })
+            }
+          }}
+          dish={selectedDish}
+          branding={tenant.branding}
         />
       )}
       {tenantId && <PoweredByBadge tenantId={tenantId} />}

@@ -54,7 +54,7 @@ export function AppRouter() {
             {/* ── Public routes (customer QR scan) ── */}
             <Route element={<PublicLayout />}>
               <Route path={ROUTES.public.menu} element={<MenuPage />} />
-              <Route path={ROUTES.public.dish} element={<DishDetailPage />} />
+              <Route path={ROUTES.public.dish} element={<MenuPage />} />
             </Route>
 
             {/* ── Auth routes ── */}
@@ -63,10 +63,13 @@ export function AppRouter() {
 
             {/* ── Protected admin routes ── */}
             <Route element={<AuthGuard />}>
+
+              {/* Editor is full-screen standalone — has its own topbar/left-rail, no admin shell */}
+              <Route path={ROUTES.admin.editor} element={<EditorPage />} />
+
               <Route element={<AdminLayout />}>
                 <Route path={ROUTES.admin.root} element={<Navigate to={ROUTES.admin.dashboard} replace />} />
                 <Route path={ROUTES.admin.dashboard} element={<DashboardPage />} />
-                <Route path={ROUTES.admin.editor} element={<EditorPage />} />
                 <Route path={ROUTES.admin.menu.list} element={<MenuManagerPage />} />
                 <Route path={ROUTES.admin.dishes.list} element={<DishListPage />} />
                 <Route path={ROUTES.admin.dishes.new} element={<DishEditorPage />} />

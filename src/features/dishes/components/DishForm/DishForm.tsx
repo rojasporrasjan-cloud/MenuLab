@@ -65,6 +65,63 @@ export function DishForm({
   const [showNutrition, setShowNutrition] = useState(() => Boolean(initialDish?.nutrition.calories))
   const [showVariants, setShowVariants] = useState(() => (initialDish?.variantGroups ?? []).length > 0)
 
+  const addPresetGroup = (type: 'extras' | 'sides' | 'protein' | 'drinks') => {
+    let name = ''
+    let required = false
+    let multiSelect = false
+    let options: DishVariantOption[] = []
+
+    if (type === 'extras') {
+      name = 'Extras y Adicionales'
+      required = false
+      multiSelect = true
+      options = [
+        { id: nanoid(), name: 'Queso Extra', priceDelta: 500, available: true },
+        { id: nanoid(), name: 'Tocineta', priceDelta: 800, available: true },
+        { id: nanoid(), name: 'Salsa Especial', priceDelta: 300, available: true },
+      ]
+    } else if (type === 'sides') {
+      name = 'Elige tu Acompañamiento'
+      required = true
+      multiSelect = false
+      options = [
+        { id: nanoid(), name: 'Papas Fritas', priceDelta: 0, available: true },
+        { id: nanoid(), name: 'Ensalada Verde', priceDelta: 0, available: true },
+        { id: nanoid(), name: 'Puré de papa', priceDelta: 0, available: true },
+      ]
+    } else if (type === 'protein') {
+      name = 'Tipo de Proteína'
+      required = true
+      multiSelect = false
+      options = [
+        { id: nanoid(), name: 'Carne de Res', priceDelta: 0, available: true },
+        { id: nanoid(), name: 'Pollo a la plancha', priceDelta: 0, available: true },
+        { id: nanoid(), name: 'Torta Vegana', priceDelta: 500, available: true },
+      ]
+    } else if (type === 'drinks') {
+      name = 'Selecciona tu Bebida'
+      required = false
+      multiSelect = false
+      options = [
+        { id: nanoid(), name: 'Refresco Natural', priceDelta: 800, available: true },
+        { id: nanoid(), name: 'Gaseosa', priceDelta: 1000, available: true },
+        { id: nanoid(), name: 'Agua embotellada', priceDelta: 600, available: true },
+      ]
+    }
+
+    setVariantGroups((prev) => [
+      ...prev,
+      {
+        id: nanoid(),
+        name,
+        required,
+        multiSelect,
+        options,
+      },
+    ])
+    setShowVariants(true)
+  }
+
   const set = <K extends keyof DishFormSchemaValues>(key: K, value: DishFormSchemaValues[K]) => {
     setValues((prev) => ({ ...prev, [key]: value }))
     if (fieldErrors[key]) setFieldErrors((prev) => ({ ...prev, [key]: undefined }))
@@ -253,25 +310,63 @@ export function DishForm({
               />
             ))}
 
-            <button
-              type="button"
-              onClick={() =>
-                setVariantGroups((prev) => [
-                  ...prev,
-                  {
-                    id:          nanoid(),
-                    name:        '',
-                    required:    false,
-                    multiSelect: false,
-                    options:     [],
-                  },
-                ])
-              }
-              className="flex items-center gap-2 rounded-xl border-2 border-dashed border-surface-200 px-4 py-2.5 text-xs font-semibold text-surface-500 transition-colors hover:border-brand-300 hover:text-brand-600"
-            >
-              <Plus size={13} />
-              Agregar grupo de variantes
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+              <button
+                type="button"
+                onClick={() =>
+                  setVariantGroups((prev) => [
+                    ...prev,
+                    {
+                      id:          nanoid(),
+                      name:        '',
+                      required:    false,
+                      multiSelect: false,
+                      options:     [],
+                    },
+                  ])
+                }
+                className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-surface-200 px-4 py-2.5 text-xs font-semibold text-surface-500 transition-colors hover:border-brand-300 hover:text-brand-600 grow"
+              >
+                <Plus size={13} />
+                Agregar personalizado
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-2 bg-surface-50 border border-surface-150 rounded-xl p-3">
+              <span className="text-[10px] font-bold text-surface-400 uppercase tracking-wider">
+                Plantillas rápidas predefinidas:
+              </span>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => addPresetGroup('extras')}
+                  className="inline-flex items-center gap-1 rounded-lg bg-white border border-surface-200 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-600 text-[11px] font-semibold text-surface-600 px-2.5 py-1.5 transition-all cursor-pointer"
+                >
+                  ✨ + Extras / Adicionales
+                </button>
+                <button
+                  type="button"
+                  onClick={() => addPresetGroup('sides')}
+                  className="inline-flex items-center gap-1 rounded-lg bg-white border border-surface-200 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-600 text-[11px] font-semibold text-surface-600 px-2.5 py-1.5 transition-all cursor-pointer"
+                >
+                  ✨ + Acompañamientos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => addPresetGroup('protein')}
+                  className="inline-flex items-center gap-1 rounded-lg bg-white border border-surface-200 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-600 text-[11px] font-semibold text-surface-600 px-2.5 py-1.5 transition-all cursor-pointer"
+                >
+                  ✨ + Carnes / Proteínas
+                </button>
+                <button
+                  type="button"
+                  onClick={() => addPresetGroup('drinks')}
+                  className="inline-flex items-center gap-1 rounded-lg bg-white border border-surface-200 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-600 text-[11px] font-semibold text-surface-600 px-2.5 py-1.5 transition-all cursor-pointer"
+                >
+                  ✨ + Bebidas
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </section>

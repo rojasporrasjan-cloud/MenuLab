@@ -83,6 +83,7 @@ export function OnboardingWizard() {
           {step === 'complete' && (
             <CompleteStep
               tenantId={tenantId}
+              tenantName={tenant.name}
               isLoading={isLoading}
               error={error}
               onFinish={handleFinish}

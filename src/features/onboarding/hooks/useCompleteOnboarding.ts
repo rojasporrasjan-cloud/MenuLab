@@ -18,8 +18,7 @@ export function useCompleteOnboarding(tenantId: string): UseCompleteOnboardingRe
     setError(null)
     try {
       await OnboardingService.completeOnboarding(tenantId)
-      // Refresh the cached tenant — Wizard will auto-close once tenant.onboardingCompletedAt is set
-      await queryClient.invalidateQueries({ queryKey: ['tenant', tenantId] })
+      await queryClient.invalidateQueries({ queryKey: ['tenant-context'] })
     } catch {
       setError('No se pudo completar la configuración. Intenta de nuevo.')
     } finally {

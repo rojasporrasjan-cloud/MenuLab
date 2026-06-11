@@ -1,15 +1,18 @@
-import { useState, useEffect, useMemo, Suspense, type ReactNode } from 'react'
+import { useState, useEffect, useMemo, Suspense, useRef, type ReactNode } from 'react'
 import {
   CheckCircle2, ExternalLink, Smartphone, Monitor,
   ChevronDown, Palette, Type, LayoutGrid, Upload, X,
-  GripHorizontal, Sparkles, Search,
+  GripHorizontal, Sparkles, Search, QrCode, Eye, EyeOff,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import * as Dialog from '@radix-ui/react-dialog'
 import { cn } from '@shared/utils/cn'
 import { useTenantContext } from '@app/providers/TenantProvider'
 import { Button } from '@shared/ui/components/Button'
 import { Spinner } from '@shared/ui/components/Spinner'
 import { ROUTES } from '@shared/constants/routes'
+import { doc, setDoc, onSnapshot, updateDoc } from 'firebase/firestore'
+import { db } from '@infrastructure/firebase/firestore'
 import { TEMPLATE_DEFINITIONS, TEMPLATE_DEFAULT_BRANDING, getTemplateComponent } from '@features/templates'
 import { useUpdateAppearance } from '@features/settings/hooks/useUpdateAppearance'
 import { isValidHex } from '@shared/utils/colorScale'
@@ -96,6 +99,9 @@ interface EditingState {
   showSearch: boolean
   imageRounding: ImageRounding
   bgGradient: TenantBgGradient
+  detailsCardStyle: 'glass' | 'solid'
+  detailsCardOptionStyle: 'list' | 'pills'
+  detailsCardShowImage: boolean
   // Page sections
   announcement: TenantAnnouncement
   socials: TenantSocials
@@ -104,6 +110,27 @@ interface EditingState {
   reservation: TenantReservation
   promo: TenantPromo
   featuredSection: TenantFeatured
+}
+
+// ── Firestore serializer ────────────────────────────────────────────────────────
+// Strips `undefined` values recursively before writing to Firestore (which rejects them).
+
+type FirestoreScalar = string | number | boolean | null
+type FirestoreValue  = FirestoreScalar | FirestoreValue[] | { [key: string]: FirestoreValue }
+
+function stripUndefined(value: unknown): FirestoreValue {
+  if (value === undefined || value === null) return null
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value
+  if (value instanceof Date) return value as unknown as string
+  if (Array.isArray(value)) return (value as unknown[]).map(stripUndefined)
+  if (typeof value === 'object') {
+    const result: { [key: string]: FirestoreValue } = {}
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if (v !== undefined) result[k] = stripUndefined(v)
+    }
+    return result
+  }
+  return null
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
@@ -138,6 +165,9 @@ export default function AppearancePage() {
     showSearch: tenant?.branding.showSearch ?? false,
     imageRounding: tenant?.branding.imageRounding ?? 'lg',
     bgGradient: tenant?.branding.bgGradient ?? { enabled: false, from: tenant?.branding.backgroundColor ?? '#0B0B0C', to: '#1a1a2e', direction: '180deg' as const },
+    detailsCardStyle: tenant?.branding.detailsCardStyle ?? 'glass',
+    detailsCardOptionStyle: tenant?.branding.detailsCardOptionStyle ?? 'list',
+    detailsCardShowImage: tenant?.branding.detailsCardShowImage ?? true,
     announcement: tenant?.branding.announcement ?? { enabled: false, text: '¡Bienvenidos! Descubre nuestro menú', emoji: '🎉', bgColor: null },
     socials: tenant?.branding.socials ?? { enabled: false, instagram: '', facebook: '', tiktok: '', whatsapp: '' },
     infoFooter: tenant?.branding.infoFooter ?? { enabled: false, hours: '', address: '', phone: '' },
@@ -148,6 +178,8 @@ export default function AppearancePage() {
   })
 
   const [editing, setEditing] = useState<EditingState>(defaultEditing)
+  const [isQrDialogOpen, setIsQrDialogOpen] = useState(false)
+  const [isPreviewCollapsed, setIsPreviewCollapsed] = useState(false)
 
   // Re-inicializa la edición cuando llega (o cambia) el tenant.
   // Patrón React "adjust state during render": se compara contra el último
@@ -176,6 +208,9 @@ export default function AppearancePage() {
       showSearch: tenant.branding.showSearch,
       imageRounding: tenant.branding.imageRounding,
       bgGradient: tenant.branding.bgGradient,
+      detailsCardStyle: tenant.branding.detailsCardStyle ?? 'glass',
+      detailsCardOptionStyle: tenant.branding.detailsCardOptionStyle ?? 'list',
+      detailsCardShowImage: tenant.branding.detailsCardShowImage ?? true,
       announcement: tenant.branding.announcement,
       socials: tenant.branding.socials,
       infoFooter: tenant.branding.infoFooter,
@@ -232,6 +267,9 @@ export default function AppearancePage() {
           showSearch: editing.showSearch,
           imageRounding: editing.imageRounding,
           bgGradient: editing.bgGradient,
+          detailsCardStyle: editing.detailsCardStyle,
+          detailsCardOptionStyle: editing.detailsCardOptionStyle,
+          detailsCardShowImage: editing.detailsCardShowImage,
           announcement: editing.announcement,
           socials: editing.socials,
           infoFooter: editing.infoFooter,
@@ -263,6 +301,54 @@ export default function AppearancePage() {
   const [activeTab, setActiveTab] = useState<'sections' | 'theme'>('sections')
   const [openSection, setOpenSection] = useState<string | null>('hero')
 
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+
+  // Reset scroll position when tab changes to avoid sections being hidden out of view
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0
+    }
+  }, [activeTab])
+
+  // Real-time sync for phone preview
+  useEffect(() => {
+    if (!tenantId || !previewTenant) return
+    const timeout = setTimeout(() => {
+      const cleanData = {
+        name:       previewTenant.name,
+        templateId: previewTenant.templateId,
+        branding:   stripUndefined(previewTenant.branding),
+      }
+
+      void setDoc(doc(db, 'tenants', tenantId, 'appearancePreview', 'current'), cleanData)
+        .catch((err) => {
+          console.error("Error updating live preview document:", err)
+        })
+    }, 75) // 75ms debounce for instant updates
+    return () => clearTimeout(timeout)
+  }, [tenantId, previewTenant])
+
+  // Listen for phone connection trigger to auto-close QR modal and collapse preview
+  useEffect(() => {
+    if (!tenantId) return
+    const unsub = onSnapshot(
+      doc(db, 'tenants', tenantId, 'appearancePreview', 'current'),
+      (snap) => {
+        if (snap.exists()) {
+          const data = snap.data()
+          if (data.phoneActive === true) {
+            setIsQrDialogOpen(false)
+            setIsPreviewCollapsed(true)
+            // Reset to false immediately in Firestore
+            void updateDoc(doc(db, 'tenants', tenantId, 'appearancePreview', 'current'), { phoneActive: false })
+              .catch((err) => console.error("Error resetting phoneActive:", err))
+          }
+        }
+      }
+    )
+    return () => unsub()
+  }, [tenantId])
+
   const toggleSection = (id: string) =>
     setOpenSection((prev) => (prev === id ? null : id))
 
@@ -286,6 +372,9 @@ export default function AppearancePage() {
     editing.showDietaryBadges !== tenant.branding.showDietaryBadges ||
     editing.showSearch !== tenant.branding.showSearch ||
     editing.imageRounding !== tenant.branding.imageRounding ||
+    editing.detailsCardStyle !== (tenant.branding.detailsCardStyle ?? 'glass') ||
+    editing.detailsCardOptionStyle !== (tenant.branding.detailsCardOptionStyle ?? 'list') ||
+    editing.detailsCardShowImage !== (tenant.branding.detailsCardShowImage ?? true) ||
     JSON.stringify(editing.bgGradient) !== JSON.stringify(tenant.branding.bgGradient) ||
     JSON.stringify(editing.announcement) !== JSON.stringify(tenant.branding.announcement) ||
     JSON.stringify(editing.socials) !== JSON.stringify(tenant.branding.socials) ||
@@ -296,16 +385,25 @@ export default function AppearancePage() {
     JSON.stringify(editing.featuredSection) !== JSON.stringify(tenant.branding.featuredSection)
   ) : false
 
+  // Prompts confirmation dialog if user tries to reload/navigate away with unsaved edits
+  useEffect(() => {
+    if (!hasChanges) return
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ''
+      return ''
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [hasChanges])
+
   return (
-    <div className="flex flex-col gap-0 h-full">
+    <div className="flex flex-col gap-0 h-full w-full min-h-0">
 
       {/* ── Top bar ─────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-zinc-200 bg-white shrink-0 shadow-sm">
+      <div className="flex items-center justify-between px-4 py-1.5 border-b border-zinc-200 bg-white shrink-0 shadow-sm">
         <div>
-          <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-zinc-400">
-            Personalización
-          </p>
-          <h1 className="text-base font-bold text-zinc-900 tracking-tight mt-0.5">Editor de apariencia</h1>
+          <h1 className="text-sm font-bold text-zinc-900 tracking-tight">Apariencia</h1>
         </div>
         <div className="flex items-center gap-2">
           {success && (
@@ -333,20 +431,58 @@ export default function AppearancePage() {
               <Smartphone size={12} />Móvil
             </button>
           </div>
-          {/* AI Digitize CTA */}
-          <Link
-            to={`${ROUTES.admin.editor}?openDigitalize=1`}
-            className="flex items-center gap-1.5 rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-violet-500"
-          >
-            <Sparkles size={12} />
-            Digitalizar menú con IA
-          </Link>
 
-          <Button variant="secondary" size="sm" asChild className="rounded-xl shadow-sm">
+          <Button variant="secondary" size="sm" asChild className="rounded-xl shadow-sm hidden sm:inline-flex">
             <Link to={menuPreviewUrl} target="_blank" rel="noopener noreferrer">
               <ExternalLink size={12} className="mr-1.5" />Ver menú
             </Link>
           </Button>
+
+          <Dialog.Root open={isQrDialogOpen} onOpenChange={setIsQrDialogOpen}>
+            <Dialog.Trigger asChild>
+              <Button variant="secondary" size="sm" className="rounded-xl shadow-sm">
+                <QrCode size={13} className="mr-1.5" />
+                Ver en celular
+              </Button>
+            </Dialog.Trigger>
+            <Dialog.Portal>
+              <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" />
+              <Dialog.Content className="fixed left-[50%] top-[50%] z-50 w-full max-w-[340px] translate-x-[-50%] translate-y-[-50%] rounded-3xl bg-white p-6 shadow-xl text-center flex flex-col items-center">
+                <Dialog.Title className="text-lg font-bold text-zinc-900 mb-2">
+                  Ver menú en tu celular
+                </Dialog.Title>
+                <Dialog.Description className="text-sm text-zinc-500 mb-6">
+                  Escanea este código QR con la cámara de tu teléfono para ver los cambios en tiempo real.
+                </Dialog.Description>
+                { (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && (
+                  <div className="mb-4 text-xs text-amber-700 bg-amber-50 p-3 rounded-xl border border-amber-200 text-left">
+                    <strong>Nota de desarrollo:</strong> El QR está apuntando a la IP de tu red (192.168.100.130) para que tu celular pueda conectarse a tu computadora. Debes estar conectado al mismo Wi-Fi.
+                  </div>
+                )}
+                <div className="flex justify-center mb-6 bg-zinc-50 p-4 rounded-2xl border border-zinc-100 w-full">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://192.168.100.130:4001' : window.location.origin) + menuPreviewUrl + '?preview=true')}`}
+                    alt="QR Code del menú"
+                    className="w-[200px] h-[200px] rounded-lg mx-auto"
+                  />
+                </div>
+                <Dialog.Close asChild>
+                  <Button className="w-full rounded-xl">Cerrar</Button>
+                </Dialog.Close>
+              </Dialog.Content>
+            </Dialog.Portal>
+          </Dialog.Root>
+
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setIsPreviewCollapsed((c) => !c)}
+            className="rounded-xl shadow-sm hidden md:inline-flex"
+          >
+            {isPreviewCollapsed ? <Eye size={13} className="mr-1.5" /> : <EyeOff size={13} className="mr-1.5" />}
+            {isPreviewCollapsed ? 'Mostrar preview' : 'Ocultar preview'}
+          </Button>
+
           <Button size="sm" isLoading={isLoading} onClick={() => void handleSave()} className={cn('rounded-xl shadow-sm', !hasChanges && 'opacity-60')}>
             Guardar
           </Button>
@@ -356,10 +492,13 @@ export default function AppearancePage() {
       {error && <div className="px-6 py-2.5 bg-red-50 border-b border-red-100 text-sm text-red-700 shrink-0">{error}</div>}
 
       {/* ── Main layout ──────────────────────────────────────────────── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 items-stretch min-h-0">
 
         {/* ── Left panel ── */}
-        <div className="w-[300px] shrink-0 flex flex-col border-r border-surface-100 bg-surface-0">
+        <div className={cn(
+          "flex flex-col border-r border-surface-100 bg-surface-0 h-full min-h-0 transition-all duration-300 ease-in-out",
+          isPreviewCollapsed ? "flex-1 w-full" : "w-full md:w-[380px] lg:w-[420px] shrink-0"
+        )}>
 
           {/* Tab nav — Shopify-style */}
           <div className="flex shrink-0 border-b border-surface-100">
@@ -405,11 +544,23 @@ export default function AppearancePage() {
           </div>
 
           {/* Panel content */}
-          <div className="flex-1 overflow-y-auto">
+          <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
             {activeTab === 'sections' ? (
-              <SectionsPanel editing={editing} set={set} openSection={openSection} toggleSection={toggleSection} previewGroups={previewGroups} />
+              <SectionsPanel
+                editing={editing}
+                set={set}
+                openSection={openSection}
+                toggleSection={toggleSection}
+                previewGroups={previewGroups}
+                isPreviewCollapsed={isPreviewCollapsed}
+              />
             ) : (
-              <ThemePanel editing={editing} set={set} handleTemplateSelect={handleTemplateSelect} />
+              <ThemePanel
+                editing={editing}
+                set={set}
+                handleTemplateSelect={handleTemplateSelect}
+                isPreviewCollapsed={isPreviewCollapsed}
+              />
             )}
           </div>
 
@@ -433,7 +584,10 @@ export default function AppearancePage() {
 
         {/* ── Right panel: live preview ── */}
         {previewMode === 'full' ? (
-          <div className="flex-1 overflow-y-auto flex flex-col" style={{ backgroundColor: editing.backgroundColor }}>
+          <div className={cn(
+            "overflow-y-auto flex flex-col h-full rounded-r-xl border-l-0 border border-surface-200 shadow-sm transition-all duration-300 ease-in-out",
+            isPreviewCollapsed ? "w-0 opacity-0 overflow-hidden border-0 shrink-0" : "flex-1"
+          )} style={{ backgroundColor: editing.backgroundColor }}>
             {realGroups.length === 0 && (
               <div className="flex shrink-0 items-center justify-center gap-1.5 py-2 text-xs bg-amber-50 border-b border-amber-100">
                 <span className="text-amber-600">Vista de ejemplo —</span>
@@ -451,27 +605,36 @@ export default function AppearancePage() {
             </div>
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto bg-surface-100 flex flex-col items-center justify-start py-8 px-6 gap-3">
-            <div className="flex items-center gap-1.5 text-xs text-surface-400">
-              <Smartphone size={12} />Vista móvil
+          <div className={cn(
+            "bg-surface-100 flex flex-col items-center justify-center py-2 px-4 gap-2 h-full rounded-r-xl border-l-0 border border-surface-200 shadow-sm overflow-hidden transition-all duration-300 ease-in-out",
+            isPreviewCollapsed ? "w-0 opacity-0 overflow-hidden border-0 shrink-0" : "flex-1"
+          )}>
+            <div className="flex items-center gap-1 text-[11px] text-surface-400">
+              <Smartphone size={11} />Vista móvil
             </div>
             <div
               className="relative overflow-hidden shadow-2xl shrink-0"
-              style={{ width: 293, height: 620, borderRadius: '2.75rem', border: '7px solid #1f2937', background: '#0f172a' }}
+              style={{ width: 190, height: 420, borderRadius: '1.75rem', border: '5px solid #1f2937', background: '#0f172a' }}
             >
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 z-50 w-20 h-5 rounded-b-xl" style={{ backgroundColor: '#1f2937' }} />
-              {previewTenant ? (
-                <div className="phone-preview-scroll" style={{ width: 390, height: 863, transform: 'scale(0.718)', transformOrigin: 'top left', overflowY: 'auto', position: 'absolute', top: 0, left: 0 }}>
-                  <Suspense fallback={<div className="flex items-center justify-center h-full" style={{ backgroundColor: editing.backgroundColor }}><Spinner size="sm" /></div>}>
-                    <TemplatePreview tenant={previewTenant} menu={previewMenu} table={PREVIEW_TABLE} groups={previewGroups} tenantId={tenantId} />
-                  </Suspense>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-full"><Spinner size="sm" /></div>
-              )}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 z-50 w-12 h-3.5 rounded-b-lg" style={{ backgroundColor: '#1f2937' }} />
+              <iframe
+                src={`${menuPreviewUrl}?preview=true`}
+                title="Vista previa móvil"
+                className="border-0 phone-preview-scroll"
+                style={{
+                  width: 390,
+                  height: 863,
+                  transform: 'scale(0.487)',
+                  transformOrigin: 'top left',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  background: editing.backgroundColor,
+                }}
+              />
             </div>
             {realGroups.length === 0 && (
-              <p className="text-xs text-surface-400 text-center max-w-[200px]">
+              <p className="text-[10px] text-surface-400 text-center max-w-[180px]">
                 Ejemplo. Agrega tu menú en{' '}
                 <Link to={ROUTES.admin.menu.list} className="text-brand-600 hover:underline">Menús</Link>.
               </p>
@@ -486,18 +649,22 @@ export default function AppearancePage() {
 // ── Sections Tab ───────────────────────────────────────────────────────────────
 
 function SectionsPanel({
-  editing, set, openSection, toggleSection, previewGroups,
+  editing, set, openSection, toggleSection, previewGroups, isPreviewCollapsed,
 }: {
   editing: EditingState
   set: <K extends keyof EditingState>(k: K, v: EditingState[K]) => void
   openSection: string | null
   toggleSection: (id: string) => void
   previewGroups: import('@core/use-cases/menu/GetActiveDishesUseCase').DishesGroupedByCategory[]
+  isPreviewCollapsed: boolean
 }) {
   const socialCount = [editing.socials.instagram, editing.socials.facebook, editing.socials.tiktok, editing.socials.whatsapp].filter(Boolean).length
 
   return (
-    <div className="flex flex-col gap-4 p-3 pb-6">
+    <div className={cn(
+      "grid gap-6 p-4 pb-12 items-start",
+      isPreviewCollapsed ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4" : "grid-cols-1"
+    )}>
 
       {/* ── IDENTIDAD ─────────────────────────────────────────────────── */}
       <SectionGroup label="Identidad">
@@ -690,6 +857,59 @@ function SectionsPanel({
                 { value: 'xl',   label: 'Máximo',  preview: <div className="h-5 w-full bg-surface-200" style={{ borderRadius: '24px' }} /> },
               ]}
             />
+          </div>
+
+          <div className="border-t border-surface-100 pt-2.5 flex flex-col gap-3.5">
+            <label className="text-[10px] font-bold text-surface-400 uppercase tracking-wider">Tarjeta de Selección (Variantes)</label>
+            <ToggleRow label="Mostrar imágenes" description="Ver foto del plato al elegir opciones" checked={editing.detailsCardShowImage} onChange={(v) => set('detailsCardShowImage', v)} />
+            
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] font-medium text-surface-600">Fondo de tarjeta</label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {[
+                  { value: 'glass', label: 'Efecto Cristal' },
+                  { value: 'solid', label: 'Color Sólido' },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => set('detailsCardStyle', opt.value as 'glass' | 'solid')}
+                    className={cn(
+                      'rounded-xl border p-2 text-center text-[10px] font-semibold transition-all',
+                      editing.detailsCardStyle === opt.value
+                        ? 'border-brand-400 bg-brand-50 text-brand-650 font-bold'
+                        : 'border-surface-150 hover:border-surface-300 text-surface-400 bg-surface-0'
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] font-medium text-surface-600">Estilo de opciones</label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {[
+                  { value: 'list', label: 'Lista Clásica' },
+                  { value: 'pills', label: 'Botones/Pills' },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => set('detailsCardOptionStyle', opt.value as 'list' | 'pills')}
+                    className={cn(
+                      'rounded-xl border p-2 text-center text-[10px] font-semibold transition-all',
+                      editing.detailsCardOptionStyle === opt.value
+                        ? 'border-brand-400 bg-brand-50 text-brand-650 font-bold'
+                        : 'border-surface-150 hover:border-surface-300 text-surface-400 bg-surface-0'
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </SectionCard>
 
@@ -949,14 +1169,18 @@ function AppearanceTemplateModal({
 // ── Theme Tab ──────────────────────────────────────────────────────────────────
 
 function ThemePanel({
-  editing, set, handleTemplateSelect,
+  editing, set, handleTemplateSelect, isPreviewCollapsed,
 }: {
   editing: EditingState
   set: <K extends keyof EditingState>(k: K, v: EditingState[K]) => void
   handleTemplateSelect: (id: TemplateId) => void
+  isPreviewCollapsed: boolean
 }) {
   return (
-    <div className="flex flex-col gap-6 p-4">
+    <div className={cn(
+      "grid gap-6 p-4 pb-12 items-start",
+      isPreviewCollapsed ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"
+    )}>
 
       {/* Template */}
       <section className="flex flex-col gap-3">

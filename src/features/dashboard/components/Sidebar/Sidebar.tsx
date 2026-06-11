@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, useLocation, Link } from 'react-router-dom'
 import {
   LayoutDashboard,
   BookOpen,
@@ -55,11 +55,12 @@ const NAV_GROUPS: readonly NavGroup[] = [
 interface SidebarProps {
   isOpen:  boolean
   onClose: () => void
+  isCollapsed?: boolean
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function Sidebar({ isOpen, onClose }: SidebarProps) {
+export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) {
   const { tenant }                          = useTenantContext()
   const { user, signOut } = useAuth()
 
@@ -88,11 +89,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         aria-label="Navegación principal"
         className={cn(
           'fixed inset-y-0 left-0 z-40 flex w-[220px] flex-col',
-          'transition-transform duration-200 ease-in-out',
-          'lg:static lg:translate-x-0 lg:z-auto',
+          'transition-all duration-200 ease-in-out',
+          'lg:static lg:z-auto',
           isOpen ? 'translate-x-0' : '-translate-x-full',
+          isCollapsed ? 'lg:-translate-x-full lg:w-0 lg:opacity-0 overflow-hidden' : 'lg:translate-x-0 lg:w-[220px] lg:opacity-100',
         )}
-        style={{ background: '#111110', borderRight: '1px solid rgba(255,255,255,0.06)' }}
+        style={{
+          background: '#111110',
+          borderRight: isCollapsed ? 'none' : '1px solid rgba(255,255,255,0.06)',
+        }}
       >
 
         {/* ── Brand header ──────────────────────────────────────────────────── */}
@@ -158,8 +163,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* ── AI assistant card ─────────────────────────────────────────────── */}
         <div className="mx-3 mb-3">
-          <div
-            className="relative overflow-hidden rounded-xl p-3"
+          <Link
+            to={`${ROUTES.admin.editor}?openDigitalize=1`}
+            onClick={onClose}
+            className="relative block overflow-hidden rounded-xl p-3 transition-all duration-150 hover:brightness-125 active:scale-[0.97]"
             style={{
               background: 'linear-gradient(135deg, rgba(124,58,237,0.18) 0%, rgba(139,92,246,0.08) 100%)',
               border: '1px solid rgba(139,92,246,0.22)',
@@ -184,7 +191,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <p className="text-[10px] leading-relaxed" style={{ color: 'rgba(196,181,253,0.6)' }}>
               Digitaliza tu menú físico con una foto.
             </p>
-          </div>
+            <div className="mt-1.5 flex items-center gap-1">
+              <span className="text-[9.5px] font-semibold" style={{ color: 'rgba(196,181,253,0.75)' }}>
+                Abrir digitalizador
+              </span>
+              <ChevronRight size={9} style={{ color: 'rgba(196,181,253,0.5)' }} />
+            </div>
+          </Link>
         </div>
 
         {/* ── User footer ───────────────────────────────────────────────────── */}

@@ -1,19 +1,22 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CheckCircle2, Palette, LayoutDashboard, AlertCircle, Copy, Check, ExternalLink } from 'lucide-react'
+import { CheckCircle2, Palette, LayoutDashboard, AlertCircle, Copy, Check, ExternalLink, Sparkles } from 'lucide-react'
 import { Button } from '@shared/ui/components/Button'
 import { ROUTES } from '@shared/constants/routes'
+import { MenuDigitizerModal } from '../MenuDigitizerModal/MenuDigitizerModal'
 
 interface CompleteStepProps {
   readonly tenantId: string
+  readonly tenantName: string
   readonly isLoading: boolean
   readonly error: string | null
   readonly onFinish: () => void
   readonly onBack: () => void
 }
 
-export function CompleteStep({ tenantId, isLoading, error, onFinish, onBack }: CompleteStepProps) {
+export function CompleteStep({ tenantId, tenantName, isLoading, error, onFinish, onBack }: CompleteStepProps) {
   const [copied, setCopied] = useState(false)
+  const [isDigitizerOpen, setIsDigitizerOpen] = useState(false)
   const menuUrl = `${window.location.origin}/${tenantId}/menu`
 
   const handleCopy = () => {
@@ -74,6 +77,26 @@ export function CompleteStep({ tenantId, isLoading, error, onFinish, onBack }: C
         </div>
       </div>
 
+      {/* AI Scanner Banner */}
+      <div className="rounded-2xl border border-amber-200 bg-amber-50/45 p-4 flex flex-col sm:flex-row items-center gap-4 hover:bg-amber-50 hover:border-amber-300 transition-all">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+          <Sparkles size={22} className="animate-pulse" />
+        </div>
+        <div className="flex-1 text-center sm:text-left">
+          <h4 className="text-sm font-bold text-surface-900">¿Tienes un menú físico en papel?</h4>
+          <p className="text-[11.5px] text-surface-500 mt-0.5 leading-relaxed">
+            Sube una foto de tu menú y nuestra Inteligencia Artificial cargará tus platos, descripciones y precios al instante.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsDigitizerOpen(true)}
+          className="w-full sm:w-auto shrink-0 rounded-xl bg-amber-600 hover:bg-amber-700 px-4 py-2.5 text-xs font-black text-white shadow-md transition-all active:scale-95 cursor-pointer"
+        >
+          Escanear Menú Físico ⚡
+        </button>
+      </div>
+
       {/* Quick actions — primary action goes to Templates (visual decision first) */}
       <div className="grid gap-3 sm:grid-cols-2">
         <Link
@@ -121,6 +144,13 @@ export function CompleteStep({ tenantId, isLoading, error, onFinish, onBack }: C
           Comenzar
         </Button>
       </div>
+
+      <MenuDigitizerModal
+        isOpen={isDigitizerOpen}
+        onClose={() => setIsDigitizerOpen(false)}
+        tenantId={tenantId}
+        tenantName={tenantName}
+      />
     </div>
   )
 }

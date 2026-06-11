@@ -149,10 +149,17 @@ interface TemplateMiniPickerProps {
 }
 
 function TemplateMiniPicker({ selected, onSelect }: TemplateMiniPickerProps) {
+  const [failedImages, setFailedImages] = useState<ReadonlySet<string>>(new Set())
+
+  function handleImageError(id: string): void {
+    setFailedImages((prev) => new Set([...prev, id]))
+  }
+
   return (
     <div className="grid grid-cols-2 gap-2 overflow-y-auto">
       {TEMPLATE_LIST.map((def) => {
-        const isActive = selected === def.id
+        const isActive    = selected === def.id
+        const imgFailed   = failedImages.has(def.id)
         return (
           <button
             key={def.id}
@@ -166,23 +173,19 @@ function TemplateMiniPicker({ selected, onSelect }: TemplateMiniPickerProps) {
           >
             {/* Thumbnail */}
             <div className="relative aspect-[3/4] w-full bg-zinc-900 overflow-hidden">
-              <img
-                src={def.canvaTemplate.exportUrl}
-                alt={def.name}
-                className="h-full w-full object-cover"
-                loading="lazy"
-                onError={(e) => {
-                  const el = e.currentTarget
-                  el.style.display = 'none'
-                  const parent = el.parentElement
-                  if (parent && !parent.querySelector('.fallback-label')) {
-                    const fb = document.createElement('div')
-                    fb.className = 'fallback-label absolute inset-0 flex items-center justify-center p-2 text-center'
-                    fb.innerHTML = `<span style="font-size:10px;color:#52525b">${def.name}</span>`
-                    parent.appendChild(fb)
-                  }
-                }}
-              />
+              {imgFailed ? (
+                <div className="absolute inset-0 flex items-center justify-center p-2 text-center">
+                  <span className="text-[10px] text-zinc-500">{def.name}</span>
+                </div>
+              ) : (
+                <img
+                  src={def.canvaTemplate.exportUrl}
+                  alt={def.name}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                  onError={() => handleImageError(def.id)}
+                />
+              )}
               {isActive && (
                 <div className="absolute inset-0 flex items-center justify-center bg-brand-500/20">
                   <CheckCircle2 size={22} className="text-brand-400 drop-shadow" />
