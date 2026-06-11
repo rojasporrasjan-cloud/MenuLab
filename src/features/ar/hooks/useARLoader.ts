@@ -38,8 +38,8 @@ export function useARLoader() {
       }
     }
 
-    setState('loading')
-
+    // No hay setState síncrono aquí: para los consumidores 'idle' y 'loading'
+    // son equivalentes (solo exponen isReady/isError); el estado avanza en onload/onerror.
     const script = document.createElement('script')
     script.type = 'module'
     script.src = MODEL_VIEWER_CDN

@@ -13,6 +13,56 @@ interface UseActivityFeedReturn {
   error: string | null
 }
 
+/** Datos demo para entorno sin Firebase configurado (solo dev). */
+function buildMockEvents(tenantId: string): AnalyticsEvent[] {
+  return [
+    {
+      id: '1',
+      tenantId: tenantId,
+      type: 'qr_scan',
+      menuId: 'menu-principal',
+      dishId: null,
+      tableId: 'mesa-1',
+      sessionId: 'sess-1',
+      deviceType: 'mobile',
+      timestamp: new Date(Date.now() - 1000 * 60 * 5),
+    },
+    {
+      id: '2',
+      tenantId: tenantId,
+      type: 'menu_view',
+      menuId: 'menu-principal',
+      dishId: null,
+      tableId: 'mesa-1',
+      sessionId: 'sess-1',
+      deviceType: 'mobile',
+      timestamp: new Date(Date.now() - 1000 * 60 * 6),
+    },
+    {
+      id: '3',
+      tenantId: tenantId,
+      type: 'dish_view',
+      menuId: 'menu-principal',
+      dishId: 'pizza-la-rustica',
+      tableId: 'mesa-1',
+      sessionId: 'sess-1',
+      deviceType: 'mobile',
+      timestamp: new Date(Date.now() - 1000 * 60 * 10),
+    },
+    {
+      id: '4',
+      tenantId: tenantId,
+      type: 'ar_launch',
+      menuId: 'menu-principal',
+      dishId: 'pizza-margherita',
+      tableId: 'mesa-1',
+      sessionId: 'sess-2',
+      deviceType: 'mobile',
+      timestamp: new Date(Date.now() - 1000 * 60 * 25),
+    },
+  ]
+}
+
 /**
  * Real-time activity feed via onSnapshot.
  * TanStack Query is intentionally not used here — live listeners
@@ -26,66 +76,18 @@ export function useActivityFeed(
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!tenantId) {
-      setIsLoading(false)
-      return
-    }
-
+  // Reset render-phase cuando cambia la suscripción (tenant o límite) —
+  // patrón React "adjust state during render", sin setState síncrono en efecto.
+  const subscriptionKey = `${tenantId ?? ''}|${eventLimit}`
+  const [syncedKey, setSyncedKey] = useState(subscriptionKey)
+  if (subscriptionKey !== syncedKey) {
+    setSyncedKey(subscriptionKey)
     setIsLoading(true)
     setError(null)
+  }
 
-    if (!isFirebaseConfigured) {
-      const mockEvents: AnalyticsEvent[] = [
-        {
-          id: '1',
-          tenantId: tenantId,
-          type: 'qr_scan',
-          menuId: 'menu-principal',
-          dishId: null,
-          tableId: 'mesa-1',
-          sessionId: 'sess-1',
-          deviceType: 'mobile',
-          timestamp: new Date(Date.now() - 1000 * 60 * 5),
-        },
-        {
-          id: '2',
-          tenantId: tenantId,
-          type: 'menu_view',
-          menuId: 'menu-principal',
-          dishId: null,
-          tableId: 'mesa-1',
-          sessionId: 'sess-1',
-          deviceType: 'mobile',
-          timestamp: new Date(Date.now() - 1000 * 60 * 6),
-        },
-        {
-          id: '3',
-          tenantId: tenantId,
-          type: 'dish_view',
-          menuId: 'menu-principal',
-          dishId: 'pizza-la-rustica',
-          tableId: 'mesa-1',
-          sessionId: 'sess-1',
-          deviceType: 'mobile',
-          timestamp: new Date(Date.now() - 1000 * 60 * 10),
-        },
-        {
-          id: '4',
-          tenantId: tenantId,
-          type: 'ar_launch',
-          menuId: 'menu-principal',
-          dishId: 'pizza-margherita',
-          tableId: 'mesa-1',
-          sessionId: 'sess-2',
-          deviceType: 'mobile',
-          timestamp: new Date(Date.now() - 1000 * 60 * 25),
-        },
-      ]
-      setEvents(mockEvents)
-      setIsLoading(false)
-      return
-    }
+  useEffect(() => {
+    if (!tenantId || !isFirebaseConfigured) return
 
     const q = query(
       collection(db, firestorePaths.analyticsEvents(tenantId)),
@@ -109,6 +111,10 @@ export function useActivityFeed(
 
     return unsubscribe
   }, [tenantId, eventLimit])
+
+  // Estados derivados — sin tenant o sin Firebase no hay nada que cargar.
+  if (!tenantId) return { events: [], isLoading: false, error: null }
+  if (!isFirebaseConfigured) return { events: buildMockEvents(tenantId), isLoading: false, error: null }
 
   return { events, isLoading, error }
 }

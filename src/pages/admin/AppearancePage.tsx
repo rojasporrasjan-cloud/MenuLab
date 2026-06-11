@@ -1,4 +1,4 @@
-import { useState, useEffect, Suspense, type ReactNode } from 'react'
+import { useState, useEffect, useMemo, Suspense, type ReactNode } from 'react'
 import {
   CheckCircle2, ExternalLink, Smartphone, Monitor,
   ChevronDown, Palette, Type, LayoutGrid, Upload, X,
@@ -149,8 +149,12 @@ export default function AppearancePage() {
 
   const [editing, setEditing] = useState<EditingState>(defaultEditing)
 
-  useEffect(() => {
-    if (!tenant) return
+  // Re-inicializa la edición cuando llega (o cambia) el tenant.
+  // Patrón React "adjust state during render": se compara contra el último
+  // tenant sincronizado; ediciones locales sobreviven a refetches del mismo tenant.
+  const [syncedTenantId, setSyncedTenantId] = useState<string | null>(null)
+  if (tenant && tenant.id !== syncedTenantId) {
+    setSyncedTenantId(tenant.id)
     setEditing({
       templateId: tenant.templateId,
       primaryColor: tenant.branding.primaryColor,
@@ -180,7 +184,7 @@ export default function AppearancePage() {
       promo: tenant.branding.promo,
       featuredSection: tenant.branding.featuredSection,
     })
-  }, [tenant?.id])
+  }
 
   const set = <K extends keyof EditingState>(key: K, value: EditingState[K]) =>
     setEditing((prev) => ({ ...prev, [key]: value }))
@@ -250,7 +254,9 @@ export default function AppearancePage() {
     createdAt:     new Date(),
     updatedAt:     new Date(),
   }
-  const TemplatePreview = getTemplateComponent(editing.templateId)
+  // Memoizado: el registry devuelve referencias lazy estables; useMemo garantiza
+  // identidad constante entre renders para no remontar el preview.
+  const TemplatePreview = useMemo(() => getTemplateComponent(editing.templateId), [editing.templateId])
   const menuPreviewUrl = `/${tenantId}/menu`
 
   const [previewMode, setPreviewMode] = useState<'full' | 'mobile'>('full')

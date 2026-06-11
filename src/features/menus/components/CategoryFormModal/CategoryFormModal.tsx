@@ -27,12 +27,6 @@ export function CategoryFormModal({
   )
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof CategoryFormValues, string>>>({})
 
-  useEffect(() => {
-    if (initialCategory) {
-      setValues({ name: initialCategory.name, description: initialCategory.description ?? '' })
-    }
-  }, [initialCategory])
-
   const set = <K extends keyof CategoryFormValues>(key: K, value: CategoryFormValues[K]) => {
     setValues((prev) => ({ ...prev, [key]: value }))
     if (fieldErrors[key]) setFieldErrors((prev) => ({ ...prev, [key]: undefined }))

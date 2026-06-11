@@ -44,13 +44,14 @@ export const setCors = onRequest(async (req, res) => {
           ]
         }
       ])
-    } catch (e) {
-      // ignore
+    } catch {
+      // El bucket default puede no existir en plan Spark — no es un error fatal.
     }
 
     res.send({ success: true, message: 'CORS configured successfully on ' + bucketName })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error setting CORS:', error)
-    res.status(500).send({ success: false, error: error.message })
+    const message = error instanceof Error ? error.message : String(error)
+    res.status(500).send({ success: false, error: message })
   }
 })

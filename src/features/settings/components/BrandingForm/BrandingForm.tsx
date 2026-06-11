@@ -36,14 +36,16 @@ export function BrandingForm({
   const [coverFile, setCoverFile] = useState<File | null>(null)
   const [coverPreview, setCoverPreview] = useState<string | null>(tenant.branding.coverImageUrl)
 
-  // Sync when tenant reloads (e.g. after save)
-  useEffect(() => {
+  // Sincroniza cuando el tenant se recarga (p. ej. después de guardar).
+  // Patrón React "adjust state during render": solo resetea previews si no hay
+  // archivo local pendiente (preserva la selección sin guardar).
+  const [syncedTenant, setSyncedTenant] = useState(tenant)
+  if (tenant !== syncedTenant) {
+    setSyncedTenant(tenant)
     setPrimaryColor(tenant.branding.primaryColor)
-    // Only reset previews if no local file is pending (preserve unsaved selection)
     if (!logoFile) setLogoPreview(tenant.branding.logoUrl)
     if (!coverFile) setCoverPreview(tenant.branding.coverImageUrl)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tenant])
+  }
 
   // ── Logo handlers ────────────────────────────────────────────────────────────
   const handleLogoSelect = (file: File) => {

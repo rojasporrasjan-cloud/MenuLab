@@ -100,7 +100,7 @@ export class ExportPDFService {
       })
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al capturar el lienzo'
-      throw new Error(`Captura fallida: ${msg}`)
+      throw new Error(`Captura fallida: ${msg}`, { cause: err })
     }
 
     try {
@@ -119,7 +119,7 @@ export class ExportPDFService {
       pdf.save(safeFilename(document.tenantId))
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al generar el PDF'
-      throw new Error(`Exportación fallida: ${msg}`)
+      throw new Error(`Exportación fallida: ${msg}`, { cause: err })
     }
   }
 }

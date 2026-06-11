@@ -262,6 +262,7 @@ export default function MenuManagerPage() {
       {/* ── Menu modal ── */}
       {menuModal && (
         <MenuFormModal
+          key={menuModal.type === 'edit' ? menuModal.menu.id : 'new'}
           initialMenu={menuModal.type === 'edit' ? menuModal.menu : null}
           isLoading={menuModal.type === 'edit' ? isUpdatingMenu : isCreatingMenu}
           error={menuModal.type === 'edit' ? updateMenuError : createMenuError}
@@ -273,6 +274,7 @@ export default function MenuManagerPage() {
       {/* ── Category modal ── */}
       {categoryModal && (
         <CategoryFormModal
+          key={categoryModal.type === 'edit' ? categoryModal.category.id : 'new'}
           initialCategory={categoryModal.type === 'edit' ? categoryModal.category : null}
           isLoading={categoryModal.type === 'edit' ? isUpdatingCat : isCreatingCat}
           error={categoryModal.type === 'edit' ? updateCatError : createCatError}

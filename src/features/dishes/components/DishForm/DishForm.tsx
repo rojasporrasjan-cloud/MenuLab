@@ -62,17 +62,8 @@ export function DishForm({
     () => initialDish?.variantGroups ?? [],
   )
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof DishFormSchemaValues, string>>>({})
-  const [showNutrition, setShowNutrition] = useState(false)
-  const [showVariants, setShowVariants] = useState(false)
-
-  useEffect(() => {
-    if (initialDish) {
-      setValues(dishToSchemaValues(initialDish))
-      setVariantGroups(initialDish.variantGroups ?? [])
-      setShowNutrition(!!initialDish.nutrition.calories)
-      setShowVariants((initialDish.variantGroups ?? []).length > 0)
-    }
-  }, [initialDish])
+  const [showNutrition, setShowNutrition] = useState(() => Boolean(initialDish?.nutrition.calories))
+  const [showVariants, setShowVariants] = useState(() => (initialDish?.variantGroups ?? []).length > 0)
 
   const set = <K extends keyof DishFormSchemaValues>(key: K, value: DishFormSchemaValues[K]) => {
     setValues((prev) => ({ ...prev, [key]: value }))

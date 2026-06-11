@@ -323,7 +323,7 @@ function ResizeHandle({ dir, layer, containerRef, onResize }: ResizeHandleProps)
     const rawDx = ((e.clientX - s.startCX) / s.cW) * 100
     const rawDy = ((e.clientY - s.startCY) / s.cH) * 100
 
-    let patch: LayerPositionPatch = {}
+    let patch: LayerPositionPatch
 
     if (dir === 'nw') {
       patch = {
@@ -407,6 +407,10 @@ interface LayerNodeProps {
 }
 
 function LayerNode({ layer, context, isSelected, interactive, containerRef, onSelect, onMove, onResize }: LayerNodeProps) {
+  // ── Drag refs — los hooks van SIEMPRE antes de cualquier early return ──
+  const hasMoved    = useRef(false)
+  const dragRef     = useRef<DragRefState>({ startCX: 0, startCY: 0, startLX: 0, startLY: 0, startLW: 0, startLH: 0, cW: 0, cH: 0 })
+
   if (!layer.visible) return null
 
   const { content, isImage } = resolveBinding(layer.binding, context)
@@ -415,10 +419,6 @@ function LayerNode({ layer, context, isSelected, interactive, containerRef, onSe
     layer.binding.type === 'dish-field' && layer.binding.field === 'name'
       ? (context.dishes[layer.binding.dishId]?.tags ?? null)
       : null
-
-  // ── Drag refs ──
-  const hasMoved    = useRef(false)
-  const dragRef     = useRef<DragRefState>({ startCX: 0, startCY: 0, startLX: 0, startLY: 0, startLW: 0, startLH: 0, cW: 0, cH: 0 })
 
   function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (!interactive) return

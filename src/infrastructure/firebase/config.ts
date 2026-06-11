@@ -15,5 +15,5 @@ const firebaseConfig = {
 
 // Singleton — prevents re-initialization on hot reload
 export const app: FirebaseApp | null = isFirebaseConfigured
-  ? (getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]!)
+  ? (getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0])
   : null

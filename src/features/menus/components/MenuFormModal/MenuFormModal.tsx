@@ -50,12 +50,6 @@ export function MenuFormModal({
   )
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof MenuFormValues, string>>>({})
 
-  useEffect(() => {
-    if (initialMenu) {
-      setValues(menuToFormValues(initialMenu))
-    }
-  }, [initialMenu])
-
   function set<K extends keyof MenuFormValues>(key: K, value: MenuFormValues[K]): void {
     setValues((prev) => ({ ...prev, [key]: value }))
     if (fieldErrors[key]) setFieldErrors((prev) => ({ ...prev, [key]: undefined }))

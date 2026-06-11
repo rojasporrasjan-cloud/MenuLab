@@ -29,8 +29,9 @@ function toY(value: number, maxVal: number): number {
 }
 
 function buildPath(points: [number, number][]): string {
-  if (points.length === 0) return ''
-  if (points.length === 1) return `M ${points[0]![0]} ${points[0]![1]}`
+  const [first] = points
+  if (!first) return ''
+  if (points.length === 1) return `M ${first[0]} ${first[1]}`
   return points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'} ${x} ${y}`).join(' ')
 }
 
@@ -53,7 +54,11 @@ export function EventLineChart({ summaries, isLoading }: EventLineChartProps) {
   const toggleSeries = (key: string) => {
     setHiddenKeys((prev) => {
       const next = new Set(prev)
-      next.has(key) ? next.delete(key) : next.add(key)
+      if (next.has(key)) {
+        next.delete(key)
+      } else {
+        next.add(key)
+      }
       return next
     })
   }

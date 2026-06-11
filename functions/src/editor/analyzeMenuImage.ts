@@ -1,5 +1,5 @@
 import * as functions from 'firebase-functions'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { GoogleGenerativeAI, SchemaType, type ResponseSchema } from '@google/generative-ai'
 
 // Initialize the Gemini API client
 const getApiKey = (): string => {
@@ -21,21 +21,21 @@ function escapeHtml(str: string): string {
     .replace(/'/g, '&#039;')
 }
 
-function sanitizeStringFields(obj: any): any {
-  if (typeof obj === 'string') {
-    return escapeHtml(obj)
+function sanitizeStringFields(value: unknown): unknown {
+  if (typeof value === 'string') {
+    return escapeHtml(value)
   }
-  if (Array.isArray(obj)) {
-    return obj.map(sanitizeStringFields)
+  if (Array.isArray(value)) {
+    return value.map(sanitizeStringFields)
   }
-  if (typeof obj === 'object' && obj !== null) {
-    const newObj: any = {}
-    for (const key in obj) {
-      newObj[key] = sanitizeStringFields(obj[key])
+  if (typeof value === 'object' && value !== null) {
+    const sanitized: Record<string, unknown> = {}
+    for (const [key, child] of Object.entries(value)) {
+      sanitized[key] = sanitizeStringFields(child)
     }
-    return newObj
+    return sanitized
   }
-  return obj
+  return value
 }
 
 // ─── Cybersecurity: Magic Bytes binary validation ───────────────────────────
@@ -65,47 +65,47 @@ function isValidImageBinary(base64Data: string, mimeType: string): boolean {
 }
 
 // ─── Expanded Gemini Schema (Heuristics + Coordinated coordinate system) ─────
-const responseSchema: any = {
-  type: 'object',
+const responseSchema: ResponseSchema = {
+  type: SchemaType.OBJECT,
   properties: {
     sourceImageWidthPx: {
-      type: 'integer',
+      type: SchemaType.INTEGER,
       description: 'Ancho total de la imagen original en píxeles.',
     },
     sourceImageHeightPx: {
-      type: 'integer',
+      type: SchemaType.INTEGER,
       description: 'Alto total de la imagen original en píxeles.',
     },
     suggestedTemplateId: {
-      type: 'string',
+      type: SchemaType.STRING,
       description: 'ID de la plantilla visual sugerida en base a la estética (ej: "elegant", "rustic", "modern", "playful").',
     },
     detectedLocale: {
-      type: 'string',
+      type: SchemaType.STRING,
       description: 'Locale regional auto-detectado (ej. "es-CR", "en-US", "es-MX") para formatear divisas en el cliente.',
     },
     categories: {
-      type: 'array',
+      type: SchemaType.ARRAY,
       description: 'Lista de categorías de alimentos encontradas en el menú.',
       items: {
-        type: 'object',
+        type: SchemaType.OBJECT,
         properties: {
           id: {
-            type: 'string',
+            type: SchemaType.STRING,
             description: 'Un identificador único corto y semántico en minúsculas (ej: "cat_entradas", "cat_carnes", "cat_bebidas").',
           },
           name: {
-            type: 'string',
+            type: SchemaType.STRING,
             description: 'Nombre de la categoría de alimentos tal como aparece en el menú.',
           },
           bounds: {
-            type: 'object',
+            type: SchemaType.OBJECT,
             description: 'Caja delimitadora del título de la categoría en píxeles absolutos.',
             properties: {
-              xPx: { type: 'integer' },
-              yPx: { type: 'integer' },
-              widthPx: { type: 'integer' },
-              heightPx: { type: 'integer' },
+              xPx: { type: SchemaType.INTEGER },
+              yPx: { type: SchemaType.INTEGER },
+              widthPx: { type: SchemaType.INTEGER },
+              heightPx: { type: SchemaType.INTEGER },
             },
             required: ['xPx', 'yPx', 'widthPx', 'heightPx'],
           },
@@ -114,50 +114,50 @@ const responseSchema: any = {
       },
     },
     dishes: {
-      type: 'array',
+      type: SchemaType.ARRAY,
       description: 'Lista plana de platillos pertenecientes a las categorías extraídas.',
       items: {
-        type: 'object',
+        type: SchemaType.OBJECT,
         properties: {
           id: {
-            type: 'string',
+            type: SchemaType.STRING,
             description: 'Un identificador único corto y semántico en minúsculas (ej: "dish_casado", "dish_hamburguesa").',
           },
           name: {
-            type: 'string',
+            type: SchemaType.STRING,
             description: 'Nombre del platillo.',
           },
           price: {
-            type: 'string',
+            type: SchemaType.STRING,
             nullable: true,
             description: 'Precio bruto en texto tal como aparece (ej: "₡4.500", "$10.00"), o null si no se encuentra.',
           },
           numericPrice: {
-            type: 'number',
+            type: SchemaType.NUMBER,
             nullable: true,
             description: 'Precio numérico limpio sin símbolos de moneda ni separadores de miles para analíticas (ej. 4500 o 10.0), o null si no es parseable.',
           },
           description: {
-            type: 'string',
+            type: SchemaType.STRING,
             description: 'Ingredientes o descripción del plato.',
           },
           categoryId: {
-            type: 'string',
+            type: SchemaType.STRING,
             description: 'ID de la categoría a la que pertenece este plato (debe coincidir con el campo "id" de las categorías).',
           },
           tags: {
-            type: 'array',
-            items: { type: 'string' },
+            type: SchemaType.ARRAY,
+            items: { type: SchemaType.STRING },
             description: 'Etiquetas heurísticas deducidas del plato: alérgenos (nuts, gluten, dairy) o características (vegan, vegetarian, spicy). Enviar siempre un array (puede estar vacío []).',
           },
           bounds: {
-            type: 'object',
+            type: SchemaType.OBJECT,
             description: 'Caja delimitadora del nombre del platillo en la imagen original, expresada en píxeles absolutos.',
             properties: {
-              xPx: { type: 'integer' },
-              yPx: { type: 'integer' },
-              widthPx: { type: 'integer' },
-              heightPx: { type: 'integer' },
+              xPx: { type: SchemaType.INTEGER },
+              yPx: { type: SchemaType.INTEGER },
+              widthPx: { type: SchemaType.INTEGER },
+              heightPx: { type: SchemaType.INTEGER },
             },
             required: ['xPx', 'yPx', 'widthPx', 'heightPx'],
           },
@@ -166,24 +166,24 @@ const responseSchema: any = {
       },
     },
     tenantFields: {
-      type: 'array',
+      type: SchemaType.ARRAY,
       description: 'Metadatos del restaurante identificados en el menú (ej: nombre, teléfono, dirección).',
       items: {
-        type: 'object',
+        type: SchemaType.OBJECT,
         properties: {
           field: {
-            type: 'string',
+            type: SchemaType.STRING,
             enum: ['name', 'logoUrl', 'tagline', 'phone', 'address'],
             description: 'El tipo de campo de metadato del restaurante identificado.',
           },
           bounds: {
-            type: 'object',
+            type: SchemaType.OBJECT,
             description: 'Caja delimitadora del metadato en píxeles absolutos.',
             properties: {
-              xPx: { type: 'integer' },
-              yPx: { type: 'integer' },
-              widthPx: { type: 'integer' },
-              heightPx: { type: 'integer' },
+              xPx: { type: SchemaType.INTEGER },
+              yPx: { type: SchemaType.INTEGER },
+              widthPx: { type: SchemaType.INTEGER },
+              heightPx: { type: SchemaType.INTEGER },
             },
             required: ['xPx', 'yPx', 'widthPx', 'heightPx'],
           },

@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Cuboid, Utensils, Search } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
@@ -11,13 +11,11 @@ const fmt = (n: number, c: string) =>
   new Intl.NumberFormat('es-CR', { style: 'currency', currency: c, minimumFractionDigits: 0 }).format(n)
 
 export default function DarkModernTemplate({ tenant, menu, table, groups, tenantId }: MenuTemplateProps) {
-  const [activeCategory, setActiveCategory] = useState<string | null>(groups[0]?.category.id ?? null)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const tc = getThemeColors(tenant.branding)
 
-  useEffect(() => {
-    if (groups.length > 0 && !activeCategory) setActiveCategory(groups[0]!.category.id)
-  }, [groups, activeCategory])
-
+  // Derivado: si el usuario no ha elegido categoría, cae a la primera disponible.
+  const activeCategory = selectedCategory ?? groups[0]?.category.id ?? null
   const activeGroup = groups.find((g) => g.category.id === activeCategory) ?? groups[0]
   const heroH = { compact: 160, normal: 240, tall: 320 }[tenant.branding.heroHeight] ?? 240
   const allDishes = groups.flatMap((g) => g.dishes)
@@ -144,7 +142,7 @@ export default function DarkModernTemplate({ tenant, menu, table, groups, tenant
           return (
             <button
               key={g.category.id}
-              onClick={() => setActiveCategory(g.category.id)}
+              onClick={() => setSelectedCategory(g.category.id)}
               className="flex min-w-[76px] shrink-0 flex-1 flex-col items-center justify-center gap-0.5 px-3 py-3 transition-all duration-200"
               style={{ borderTop: `2px solid ${isActive ? tc.primary : 'transparent'}` }}
             >

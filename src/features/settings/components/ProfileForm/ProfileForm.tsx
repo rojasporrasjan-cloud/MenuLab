@@ -40,10 +40,13 @@ export function ProfileForm({
     Partial<Record<keyof ProfileFormValues, string>>
   >({})
 
-  // Keep form in sync when tenant is reloaded (e.g. after another tab saves)
-  useEffect(() => {
+  // Sincroniza el formulario cuando el tenant se recarga (patrón React
+  // "adjust state during render" — sin useEffect, sin render extra visible).
+  const [syncedTenant, setSyncedTenant] = useState(tenant)
+  if (tenant !== syncedTenant) {
+    setSyncedTenant(tenant)
     setValues({ name: tenant.name, timezone: tenant.timezone, locale: tenant.locale })
-  }, [tenant])
+  }
 
   const set = <K extends keyof ProfileFormValues>(key: K, value: ProfileFormValues[K]) => {
     setValues((prev) => ({ ...prev, [key]: value }))

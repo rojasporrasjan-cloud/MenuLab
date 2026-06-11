@@ -19,21 +19,21 @@ export interface HeroBlockData {
   readonly logoUrl: string | null
   readonly heroHeight: 'compact' | 'normal' | 'tall'
 }
-export interface HeroBlock extends BlockBase<'hero', HeroBlockData> {}
+export type HeroBlock = BlockBase<'hero', HeroBlockData>
 
 export interface AnnouncementBlockData {
   readonly message: string
   readonly linkLabel: string | null
   readonly linkUrl: string | null
 }
-export interface AnnouncementBlock extends BlockBase<'announcement', AnnouncementBlockData> {}
+export type AnnouncementBlock = BlockBase<'announcement', AnnouncementBlockData>
 
 export interface FeaturedBlockData {
   readonly title: string
   readonly dishIds: readonly string[]
   readonly maxItems: number
 }
-export interface FeaturedBlock extends BlockBase<'featured', FeaturedBlockData> {}
+export type FeaturedBlock = BlockBase<'featured', FeaturedBlockData>
 
 export interface MenuSectionBlockData {
   readonly categoryId: string
@@ -41,7 +41,7 @@ export interface MenuSectionBlockData {
   readonly showDescription: boolean
   readonly showImages: boolean
 }
-export interface MenuSectionBlock extends BlockBase<'menu-section', MenuSectionBlockData> {}
+export type MenuSectionBlock = BlockBase<'menu-section', MenuSectionBlockData>
 
 export interface PromoBlockData {
   readonly headline: string
@@ -51,7 +51,7 @@ export interface PromoBlockData {
   readonly ctaUrl: string | null
   readonly variant: 'banner' | 'card' | 'strip'
 }
-export interface PromoBlock extends BlockBase<'promo', PromoBlockData> {}
+export type PromoBlock = BlockBase<'promo', PromoBlockData>
 
 export interface ReservationBlockData {
   readonly title: string
@@ -60,7 +60,7 @@ export interface ReservationBlockData {
   readonly whatsapp: string | null
   readonly reservationUrl: string | null
 }
-export interface ReservationBlock extends BlockBase<'reservation', ReservationBlockData> {}
+export type ReservationBlock = BlockBase<'reservation', ReservationBlockData>
 
 export interface Testimonial {
   readonly id: string
@@ -73,7 +73,7 @@ export interface TestimonialBlockData {
   readonly title: string
   readonly items: readonly Testimonial[]
 }
-export interface TestimonialBlock extends BlockBase<'testimonial', TestimonialBlockData> {}
+export type TestimonialBlock = BlockBase<'testimonial', TestimonialBlockData>
 
 export interface SocialsBlockData {
   readonly instagram: string | null
@@ -83,7 +83,7 @@ export interface SocialsBlockData {
   readonly website: string | null
   readonly showIcons: boolean
 }
-export interface SocialsBlock extends BlockBase<'socials', SocialsBlockData> {}
+export type SocialsBlock = BlockBase<'socials', SocialsBlockData>
 
 export interface FooterBlockData {
   readonly restaurantName: string
@@ -92,7 +92,7 @@ export interface FooterBlockData {
   readonly hours: string | null
   readonly showPoweredBy: boolean
 }
-export interface FooterBlock extends BlockBase<'footer', FooterBlockData> {}
+export type FooterBlock = BlockBase<'footer', FooterBlockData>
 
 export type Block =
   | HeroBlock | AnnouncementBlock | FeaturedBlock | MenuSectionBlock

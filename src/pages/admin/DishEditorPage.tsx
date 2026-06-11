@@ -126,6 +126,7 @@ export default function DishEditorPage() {
 
         {!catLoading && (
           <DishForm
+            key={isEditing ? dish?.id ?? 'loading' : 'new'}
             initialDish={isEditing ? dish ?? null : null}
             categories={categories}
             isLoading={isLoading}

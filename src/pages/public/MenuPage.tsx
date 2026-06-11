@@ -212,10 +212,15 @@ export default function MenuPage() {
     setLink('canonical', window.location.href)
   }, [tenant])
 
+  // Memoizado: el registry devuelve referencias lazy estables; useMemo garantiza
+  // identidad constante entre renders para no remontar el template.
+  const TemplateComponent = useMemo(
+    () => getTemplateComponent(tenant?.templateId ?? ''),
+    [tenant?.templateId],
+  )
+
   if (!tenantId) return <MenuNotFound />
   if (!tenant) return isLoading ? <MenuSkeleton /> : <MenuNotFound />
-
-  const TemplateComponent = getTemplateComponent(tenant.templateId)
 
   return (
     <Suspense fallback={<MenuSkeleton />}>
