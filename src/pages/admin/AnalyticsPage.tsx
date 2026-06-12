@@ -7,13 +7,22 @@ import {
   EventLineChart,
   TopDishesTable,
   DeviceBreakdown,
+  ConversionFunnel,
+  MenuEngineeringMatrix,
+  HourlyHeatmap,
+  WeekComparisonChart,
   useAnalyticsSummaries,
   useDishNameMap,
+  useConversionFunnel,
+  useMenuEngineering,
+  useHourlyHeatmap,
+  useWeekComparison,
 } from '@features/analytics'
+import { UpgradeGate } from '@features/billing'
 import { Button } from '@shared/ui/components/Button'
 import { useQueryClient } from '@tanstack/react-query'
 import { analyticsQueryKeys } from '@features/analytics/types/analytics.types'
-import type { DateRange } from '@features/analytics'
+import type { DailySummary, DateRange } from '@features/analytics'
 
 export default function AnalyticsPage() {
   const { tenantId, tenant } = useTenantContext()
@@ -121,6 +130,58 @@ export default function AnalyticsPage() {
         </div>
         <DeviceBreakdown summaries={summaries} isLoading={isLoading} />
       </div>
+
+      {/* ── Analytics Pro ── */}
+      <div className="mt-2 flex flex-col gap-1">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
+          Analytics Pro
+        </p>
+        <h2 className="text-[18px] font-bold tracking-[-0.01em] text-zinc-900">
+          Inteligencia del negocio
+        </h2>
+      </div>
+
+      <UpgradeGate feature="analytics_pro">
+        <ProSection tenantId={tenantId} days={days} summaries={summaries} isLoading={isLoading} />
+      </UpgradeGate>
+    </div>
+  )
+}
+
+// ─── Sección Pro (solo se monta si el plan incluye analytics_pro) ─────────────
+
+interface ProSectionProps {
+  readonly tenantId: string
+  readonly days: DateRange
+  readonly summaries: DailySummary[]
+  readonly isLoading: boolean
+}
+
+function ProSection({ tenantId, days, summaries, isLoading }: ProSectionProps) {
+  const funnelStages = useConversionFunnel(summaries)
+  const engineering = useMenuEngineering(tenantId, days)
+  const heatmap = useHourlyHeatmap(tenantId, days)
+  const weekComparison = useWeekComparison(tenantId)
+
+  return (
+    <div className="flex flex-col gap-4">
+      <ConversionFunnel stages={funnelStages} isLoading={isLoading} />
+      <MenuEngineeringMatrix
+        points={engineering.points}
+        popularityCut={engineering.popularityCut}
+        profitabilityCut={engineering.profitabilityCut}
+        isLoading={engineering.isLoading}
+      />
+      <HourlyHeatmap
+        matrix={heatmap.matrix}
+        maxCount={heatmap.maxCount}
+        isLoading={heatmap.isLoading}
+      />
+      <WeekComparisonChart
+        thisWeek={weekComparison.thisWeek}
+        lastWeek={weekComparison.lastWeek}
+        isLoading={weekComparison.isLoading}
+      />
     </div>
   )
 }

@@ -1,15 +1,36 @@
 import { useState, memo } from 'react'
-import { QrCode, BarChart3, UtensilsCrossed, Copy, Check, ExternalLink, MailWarning } from 'lucide-react'
+import {
+  QrCode,
+  BarChart3,
+  UtensilsCrossed,
+  Copy,
+  Check,
+  ExternalLink,
+  MailWarning,
+  ShoppingBag,
+  Wallet,
+  Receipt,
+  CalendarCheck,
+} from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useTenantContext } from '@app/providers/TenantProvider'
 import { useAuth }          from '@features/auth'
 import {
   MetricCard,
   QuickActions,
   ActivityFeed,
+  FreePlanUpgradeBanner,
   useDashboardMetrics,
   useActivityFeed,
+  useTodayMetrics,
 } from '@features/dashboard'
+import { useLowStockAlerts, LowStockAlert } from '@features/inventory'
+import { formatCurrency } from '@shared/utils/formatCurrency'
 import { greeting } from '@shared/utils/datetime'
+import { TenantProvisioningService } from '@infrastructure/services/TenantProvisioningService'
+import { TEMPLATE_DEFAULT_BRANDING, DEFAULT_TEMPLATE_ID, TEMPLATE_DEFINITIONS } from '@features/templates'
+import { Spinner } from '@shared/ui/components/Spinner'
+import { Button } from '@shared/ui/components/Button'
 import type { MetricCardData } from '@features/dashboard'
 
 // ─── Menu link banner ─────────────────────────────────────────────────────────
@@ -135,14 +156,177 @@ const EmailVerificationBanner = memo(function EmailVerificationBanner() {
   )
 })
 
+// ─── Provisioning Wizard ──────────────────────────────────────────────────────
+
+function ProvisioningWizard() {
+  const queryClient = useQueryClient()
+  const [restaurantName, setRestaurantName] = useState('')
+  const [templateId, setTemplateId] = useState(DEFAULT_TEMPLATE_ID)
+  const [isCreating, setIsCreating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!restaurantName.trim()) return
+
+    setIsCreating(true)
+    setError(null)
+    try {
+      const branding = TEMPLATE_DEFAULT_BRANDING[templateId as keyof typeof TEMPLATE_DEFAULT_BRANDING]
+      const brandingSeed = {
+        templateId,
+        primaryColor: branding.primaryColor,
+        backgroundColor: branding.backgroundColor,
+        fontFamily: branding.fontFamily,
+      }
+      await TenantProvisioningService.provision({
+        restaurantName: restaurantName.trim(),
+        branding: brandingSeed,
+      })
+      await queryClient.invalidateQueries({ queryKey: ['tenant-context'] })
+    } catch (err: unknown) {
+      console.error(err)
+      const message = err instanceof Error ? err.message : 'No se pudo crear el restaurante. Intenta de nuevo.'
+      setError(message)
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center p-6 min-h-[70vh]">
+      <div className="w-full max-w-md bg-white border border-zinc-100 rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col gap-6">
+        <div className="flex flex-col gap-2 text-center items-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500 shadow-md">
+            <UtensilsCrossed size={24} className="text-white" />
+          </div>
+          <h2 className="text-xl font-bold tracking-tight text-zinc-900 mt-2">
+            Configura tu restaurante
+          </h2>
+          <p className="text-sm text-zinc-500">
+            Crea tu espacio de trabajo para empezar a diseñar tu menú digital.
+          </p>
+        </div>
+
+        {error && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs text-red-800">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="restaurantName" className="text-xs font-semibold text-zinc-700">
+              Nombre de tu Restaurante / Soda
+            </label>
+            <input
+              id="restaurantName"
+              type="text"
+              placeholder="Ej. Soda La Rústica"
+              value={restaurantName}
+              onChange={(e) => setRestaurantName(e.target.value)}
+              required
+              disabled={isCreating}
+              className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm focus:border-amber-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 transition-all"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-zinc-700">
+              Elige una plantilla inicial
+            </label>
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+              {Object.entries(TEMPLATE_DEFINITIONS).map(([id, def]) => {
+                const isSelected = templateId === id
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setTemplateId(id as any)}
+                    disabled={isCreating}
+                    className={`flex flex-col gap-1.5 p-3 rounded-2xl border text-left transition-all ${
+                      isSelected
+                        ? 'border-amber-500 bg-amber-50/40 text-amber-900 shadow-sm ring-2 ring-amber-500/10'
+                        : 'border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700'
+                    }`}
+                  >
+                    <span className="text-sm font-semibold">{def.name}</span>
+                    <span className="text-[11px] text-zinc-500 line-clamp-2 leading-relaxed">
+                      {def.description}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <Button
+            type="submit"
+            className="w-full bg-amber-500 hover:bg-amber-600 active:scale-95 transition-all text-white font-semibold py-3 rounded-2xl shadow-lg mt-2"
+            isLoading={isCreating}
+          >
+            Crear y configurar ⚡
+          </Button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main ──────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
-  const { tenantId, tenant } = useTenantContext()
+  const { tenantId, tenant, isLoading: tenantLoading } = useTenantContext()
   const { user } = useAuth()
 
   const { data: metrics, isLoading: metricsLoading } = useDashboardMetrics(tenantId)
   const { events: activityItems, isLoading: activityLoading } = useActivityFeed(tenantId)
+  const today = useTodayMetrics(tenantId ?? '')
+  const { alerts: lowStockAlerts } = useLowStockAlerts(tenantId ?? '')
+
+  if (tenantLoading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Spinner size="lg" />
+      </div>
+    )
+  }
+
+  if (!tenantId || !tenant) {
+    return <ProvisioningWizard />
+  }
+
+  // Métricas del día (arriba) — pedidos hoy con flecha vs ayer.
+  const todayCards: MetricCardData[] = [
+    {
+      label: 'Pedidos hoy',
+      value: today.ordersToday,
+      icon: ShoppingBag,
+      color: 'brand',
+      trend: {
+        value: Math.round(today.ordersTrendPercent),
+        isPositive: today.ordersTrendPositive,
+      },
+    },
+    {
+      label: 'Ingresos hoy',
+      value: formatCurrency(today.revenueToday, today.currency),
+      icon: Wallet,
+      color: 'green',
+    },
+    {
+      label: 'Ticket promedio',
+      value: formatCurrency(today.averageTicket, today.currency),
+      icon: Receipt,
+      color: 'blue',
+    },
+    {
+      label: 'Reservas pendientes',
+      value: today.pendingReservations,
+      icon: CalendarCheck,
+      color: 'purple',
+    },
+  ]
 
   const metricCards: MetricCardData[] = [
     {
@@ -169,6 +353,8 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-6">
       {user && !user.emailVerified && <EmailVerificationBanner />}
       {tenantId && <MenuLinkBanner tenantId={tenantId} />}
+      {tenantId && <FreePlanUpgradeBanner tenantId={tenantId} />}
+      {lowStockAlerts.length > 0 && <LowStockAlert alerts={lowStockAlerts} />}
 
       <div className="flex flex-col gap-1">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
@@ -177,6 +363,13 @@ export default function DashboardPage() {
         <h1 className="text-[26px] font-bold tracking-[-0.02em] text-zinc-900">
           {tenant?.name ?? 'Dashboard'}
         </h1>
+      </div>
+
+      {/* Métricas del día */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {todayCards.map((card) => (
+          <MetricCard key={card.label} data={card} isLoading={today.isLoading} />
+        ))}
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

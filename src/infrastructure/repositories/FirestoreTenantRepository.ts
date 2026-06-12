@@ -3,6 +3,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  orderBy,
   query,
   where,
   limit,
@@ -31,5 +32,14 @@ export class FirestoreTenantRepository implements ITenantRepository {
     const first = snap.docs[0]
     if (snap.empty || !first) throw new NotFoundError('Tenant', slug)
     return TenantMapper.toDomain(first)
+  }
+
+  async getAll(): Promise<Tenant[]> {
+    const q = query(
+      collection(db, firestorePaths.tenants()),
+      orderBy('createdAt', 'desc'),
+    )
+    const snap = await getDocs(q)
+    return snap.docs.map((d) => TenantMapper.toDomain(d))
   }
 }

@@ -96,3 +96,44 @@ body {
 .phone-preview-scroll::-webkit-scrollbar {
   display: none;
 }
+
+/* ─── Public menu: hidden filter scrollbars ──────────────────────────────────
+   Category / filter strips scroll horizontally. The global gray track (above)
+   clashes visually with the active-tab accent underline, so hide it across all
+   browsers. Used by every menu template (.scrollbar-hide / .scrollbar-none). */
+.scrollbar-hide,
+.scrollbar-none {
+  scrollbar-width: none;            /* Firefox */
+  -ms-overflow-style: none;         /* legacy Edge / IE */
+}
+.scrollbar-hide::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none;                    /* WebKit / Blink */
+}
+
+/* ─── Modal & bottom-sheet entrance animations ───────────────────────────────
+   Defined once here (no Tailwind plugin). `animate-slide-up` is used only by the
+   centered bottom-sheet modals (dish detail, checkout), which center via the
+   Tailwind v4 `translate` property — so we animate `translate` directly to keep
+   the -50% X offset intact while easing the sheet up. Gentle easeOutQuint, no
+   harsh spring. `animate-fade-in` drives the backdrop. */
+@keyframes menu-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes menu-sheet-up {
+  from { opacity: 0; translate: -50% 22px; }
+  to   { opacity: 1; translate: -50% 0; }
+}
+.animate-fade-in {
+  animation: menu-fade-in 220ms ease both;
+}
+.animate-slide-up {
+  animation: menu-sheet-up 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-slide-up {
+    animation-duration: 1ms;
+  }
+}

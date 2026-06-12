@@ -26,6 +26,7 @@ import type { GeminiMenuPayload }   from '@features/editor/services/AIParserServ
 
 interface DigitalizarModalProps {
   readonly tenantId:  string
+  readonly menuId:    string | null
   readonly onClose:   () => void
 }
 
@@ -206,7 +207,7 @@ function TemplateMiniPicker({ selected, onSelect }: TemplateMiniPickerProps) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function DigitalizarModal({ tenantId, onClose }: DigitalizarModalProps) {
+export function DigitalizarModal({ tenantId, menuId, onClose }: DigitalizarModalProps) {
   const inputRef                     = useRef<HTMLInputElement>(null)
   const [isDragOver, setIsDragOver]  = useState(false)
   const [fileError, setFileError]    = useState<string | null>(null)
@@ -214,7 +215,7 @@ export function DigitalizarModal({ tenantId, onClose }: DigitalizarModalProps) {
     TEMPLATE_LIST[0] ?? null,
   )
 
-  const { status, extract, apply, reset } = useDigitalizeMenu(tenantId)
+  const { status, extract, apply, reset } = useDigitalizeMenu(tenantId, menuId)
 
   const isProcessing = status.phase === 'extracting' || status.phase === 'applying'
 
@@ -249,7 +250,7 @@ export function DigitalizarModal({ tenantId, onClose }: DigitalizarModalProps) {
 
   function handleApply(): void {
     if (!selectedTemplate) return
-    apply(selectedTemplate.id, selectedTemplate.canvaTemplate)
+    void apply(selectedTemplate.id, selectedTemplate.canvaTemplate)
   }
 
   // ── Step computation ─────────────────────────────────────────────────────────
@@ -273,7 +274,7 @@ export function DigitalizarModal({ tenantId, onClose }: DigitalizarModalProps) {
             </div>
             <div>
               <h2 className="text-[14px] font-bold text-zinc-100">Digitalizar Menú con IA</h2>
-              <p className="text-[11px] text-zinc-500">Gemini 1.5 Flash · Extracción automática de platos y precios</p>
+              <p className="text-[11px] text-zinc-500">Gemini · Extracción automática de platos y precios</p>
             </div>
           </div>
 
@@ -413,12 +414,12 @@ export function DigitalizarModal({ tenantId, onClose }: DigitalizarModalProps) {
 
               <div>
                 <p className="text-lg font-semibold text-zinc-100">
-                  {status.phase === 'extracting' ? 'Analizando imagen…' : 'Mapeando coordenadas…'}
+                  {status.phase === 'extracting' ? 'Analizando imagen…' : 'Guardando menú…'}
                 </p>
                 <p className="mt-1.5 text-sm text-zinc-500">
                   {status.phase === 'extracting'
                     ? 'Gemini está leyendo tu menú físico. Puede tardar unos segundos.'
-                    : 'Calculando la posición de cada platillo y precio en el lienzo.'}
+                    : 'Guardando platos y categorías en tu menú digital.'}
                 </p>
               </div>
 

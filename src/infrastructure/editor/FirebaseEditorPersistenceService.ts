@@ -124,7 +124,9 @@ function toError(
 }
 
 function isPermissionDenied(err: unknown): boolean {
-  return (err as { code?: string }).code === 'permission-denied'
+  if (typeof err !== 'object' || err === null || !('code' in err)) return false
+  // safe: Firebase FirebaseError exposes a `code` string property; narrowed above
+  return (err as { code: string }).code === 'permission-denied'
 }
 
 function assertTenantMatch(pathTenantId: string, documentTenantId: string): void {

@@ -31,6 +31,7 @@ export const dishFormSchema = z.object({
   tags:           z.string(),
   allergens:      z.string(),
   calories:       z.string().optional(),
+  featured:       z.boolean(),
 })
 
 export type DishFormSchemaValues = z.infer<typeof dishFormSchema>
@@ -55,6 +56,7 @@ export const defaultDishFormValues: DishFormValues = {
   tags:          '',
   allergens:     '',
   calories:      '',
+  featured:      false,
   variantGroups: [],
 }
 

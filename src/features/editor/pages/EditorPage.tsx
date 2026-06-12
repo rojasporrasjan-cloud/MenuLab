@@ -382,6 +382,7 @@ export default function EditorPage() {
         description: d.description ?? null,
         imageUrl:    d.assets?.imageUrl ?? null,
         tags:        d.tags ?? [],
+        categoryId:  d.categoryId,
       }
     })
     categories?.forEach((c) => {
@@ -1261,6 +1262,7 @@ export default function EditorPage() {
         <Suspense fallback={null}>
           <DigitalizarModal
             tenantId={tenantId}
+            menuId={resolvedMenuId}
             onClose={() => setShowDigitalizar(false)}
           />
         </Suspense>

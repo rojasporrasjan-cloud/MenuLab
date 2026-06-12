@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { ChevronDown, ChevronUp, Plus, Trash2, GripVertical } from 'lucide-react'
 import { Button } from '@shared/ui/components/Button'
+import { LIMITS } from '@shared/constants/limits'
 import { DishImageUpload } from '../DishImageUpload'
 import { dishFormSchema, defaultDishFormValues } from '../../types/dish.types'
 import type { DishFormValues, DishFormSchemaValues } from '../../types/dish.types'
@@ -33,6 +34,8 @@ interface DishFormProps {
   onFileSelect: (file: File) => void
   onFileClear: () => void
   onSubmit: (values: DishFormValues) => void
+  /** Ya hay 6+ destacados en el menú (aviso al marcar otro). */
+  featuredLimitReached?: boolean
 }
 
 const STATUS_OPTIONS = [
@@ -40,6 +43,8 @@ const STATUS_OPTIONS = [
   { value: 'unavailable', label: 'No disponible'  },
   { value: 'seasonal',    label: 'De temporada'   },
 ] as const
+
+const MAX_FEATURED = LIMITS.featured.maxFeaturedDishes
 
 // ── Main form ─────────────────────────────────────────────────────────────────
 
@@ -54,6 +59,7 @@ export function DishForm({
   onFileSelect,
   onFileClear,
   onSubmit,
+  featuredLimitReached = false,
 }: DishFormProps) {
   const [values, setValues] = useState<DishFormSchemaValues>(() =>
     initialDish ? dishToSchemaValues(initialDish) : defaultDishFormValues,
@@ -245,6 +251,20 @@ export function DishForm({
           <CheckboxField label="Vegetariano" checked={values.isVegetarian} onChange={(v) => set('isVegetarian', v)} />
           <CheckboxField label="Vegano"      checked={values.isVegan}      onChange={(v) => { set('isVegan', v); if (v) set('isVegetarian', true) }} />
           <CheckboxField label="Sin gluten"  checked={values.isGlutenFree} onChange={(v) => set('isGlutenFree', v)} />
+        </div>
+
+        {/* ── Destacado en el carrusel ─────────────────────────────────────── */}
+        <div className="flex flex-col gap-1.5">
+          <CheckboxField
+            label="Destacar ⭐"
+            checked={values.featured}
+            onChange={(v) => set('featured', v)}
+          />
+          {values.featured && featuredLimitReached && (
+            <p className="text-xs font-semibold text-amber-600">
+              Ya tienes {MAX_FEATURED} platos destacados — el carrusel muestra máximo {MAX_FEATURED}.
+            </p>
+          )}
         </div>
 
         <Field label="Etiquetas" hint="Separadas por coma">
@@ -606,5 +626,6 @@ function dishToSchemaValues(dish: Dish): DishFormSchemaValues {
     tags:          dish.tags.join(', '),
     allergens:     dish.nutrition.allergens.join(', '),
     calories:      dish.nutrition.calories != null ? String(dish.nutrition.calories) : '',
+    featured:      dish.featured,
   }
 }

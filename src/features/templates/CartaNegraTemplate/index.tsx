@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Search, Cuboid, X } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { getThemeColors } from '@shared/utils/colorScale'
+import { matchesQuery } from '@shared/utils/menuSearch'
 import { AnnouncementBar, SocialsBar, InfoFooter, OrderButton, ReservationSection, PromoSection, FeaturedSection } from '../sections'
 import type { MenuTemplateProps } from '../types'
 import type { Dish } from '@core/domain/entities/Dish'
@@ -10,7 +11,7 @@ import type { TenantBranding } from '@core/domain/entities/Tenant'
 
 // Carta Negra — fine dining on black, engraved Cinzel caps, muted gold restraint.
 const DISPLAY = '"Cinzel", serif'
-const BODY = '"EB Garamond", serif'
+const BODY = 'var(--tenant-font, "EB Garamond"), serif'
 
 const INKBG = '#0e0c0a'
 const CARD = 'rgba(255,255,255,0.035)'
@@ -39,7 +40,7 @@ const GoldRule = ({ color }: { color: string }): ReactNode => (
   </span>
 )
 
-export default function CartaNegraTemplate({ tenant, menu, table, groups, tenantId }: MenuTemplateProps): ReactNode {
+export default function CartaNegraTemplate({ tenant, menu, table, groups, tenantId, featured }: MenuTemplateProps): ReactNode {
   useEffect(loadFonts, [])
   const tc = getThemeColors(tenant.branding)
   const accent = tc.primary
@@ -66,7 +67,7 @@ export default function CartaNegraTemplate({ tenant, menu, table, groups, tenant
 
   const scrollTo = (id: string): void => sectionRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   const filtered = query.trim()
-    ? allDishes.filter((d) => d.name.toLowerCase().includes(query.toLowerCase()) || (d.description ?? '').toLowerCase().includes(query.toLowerCase()))
+    ? allDishes.filter((d) => matchesQuery([d.name, d.description], query))
     : null
 
   return (
@@ -90,8 +91,19 @@ export default function CartaNegraTemplate({ tenant, menu, table, groups, tenant
         </div>
       </header>
 
-      <nav className="sticky top-0 z-30" style={{ background: 'rgba(14,12,10,0.88)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${HAIR}` }}>
-        <div className="flex overflow-x-auto scrollbar-hide" style={{ padding: '0 14px' }}>
+      {/* ── Sticky search & category nav ── */}
+      <div className="sticky top-0 z-30 flex flex-col" style={{ background: 'rgba(14,12,10,0.88)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${HAIR}` }}>
+        {tenant.branding.showSearch && (
+          <div style={{ padding: '11px 16px 3px' }}>
+            <div className="flex items-center gap-2.5" style={{ background: CARD, border: `1px solid ${HAIR}`, borderRadius: 6, padding: '12px 16px' }}>
+            <Search size={15} style={{ color: accent, flexShrink: 0 }} />
+            <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar…" className="flex-1 bg-transparent focus:outline-none placeholder:opacity-45" style={{ color: TEXT, fontSize: '0.92rem', fontFamily: BODY }} />
+            {query ? <button onClick={() => setQuery('')}><X size={14} style={{ color: MUTED }} /></button> : null}
+          </div>
+          </div>
+        )}
+        <nav style={{ background: 'rgba(14, 12, 10, 0.88)', backdropFilter: 'blur(12px)' }}>
+          <div className="flex overflow-x-auto scrollbar-hide" style={{ padding: '0 14px' }}>
           {groups.map((g) => {
             const isActive = active === g.category.id
             return (
@@ -101,18 +113,10 @@ export default function CartaNegraTemplate({ tenant, menu, table, groups, tenant
             )
           })}
         </div>
-      </nav>
+        </nav>
+      </div>
 
-      {tenant.branding.showSearch ? (
-        <div style={{ padding: '18px 16px 2px' }}>
-          <div className="flex items-center gap-2.5" style={{ background: CARD, border: `1px solid ${HAIR}`, borderRadius: 6, padding: '12px 16px' }}>
-            <Search size={15} style={{ color: accent, flexShrink: 0 }} />
-            <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar…" className="flex-1 bg-transparent focus:outline-none placeholder:opacity-45" style={{ color: TEXT, fontSize: '0.92rem', fontFamily: BODY }} />
-            {query ? <button onClick={() => setQuery('')}><X size={14} style={{ color: MUTED }} /></button> : null}
-          </div>
-        </div>
-      ) : null}
-
+      {featured}
       <FeaturedSection branding={tenant.branding} tc={tc} dishes={allDishes} tenantId={tenantId} menuId={menu.id} />
       <ReservationSection branding={tenant.branding} tc={tc} />
       <PromoSection branding={tenant.branding} tc={tc} />

@@ -60,15 +60,15 @@ const MOCK_GROUPS: DishesGroupedByCategory[] = [
   {
     category: { id: 'c1', menuId: 'preview', tenantId: 'preview', name: 'Entradas', description: null, imageUrl: null, sortOrder: 0 },
     dishes: [
-      { id: 'd1', tenantId: 'preview', menuId: 'preview', categoryId: 'c1', name: 'Ceviche de Corvina', description: 'Fresco y delicioso', price: { amount: 8500, currency: 'CRC' }, status: 'available', assets: { imageUrl: null, thumbnailUrl: null, modelGlbUrl: null, modelUsdzUrl: null, hasAR: false }, nutrition: { calories: null, allergens: [], isVegetarian: false, isVegan: false, isGlutenFree: false }, tags: [], variantGroups: [], sortOrder: 0, createdAt: new Date(), updatedAt: new Date() },
-      { id: 'd2', tenantId: 'preview', menuId: 'preview', categoryId: 'c1', name: 'Patacones con Guacamole', description: 'Crujientes y sabrosos', price: { amount: 4500, currency: 'CRC' }, status: 'available', assets: { imageUrl: null, thumbnailUrl: null, modelGlbUrl: null, modelUsdzUrl: null, hasAR: false }, nutrition: { calories: null, allergens: [], isVegetarian: true, isVegan: true, isGlutenFree: true }, tags: [], variantGroups: [], sortOrder: 1, createdAt: new Date(), updatedAt: new Date() },
+      { id: 'd1', tenantId: 'preview', menuId: 'preview', categoryId: 'c1', name: 'Ceviche de Corvina', description: 'Fresco y delicioso', price: { amount: 8500, currency: 'CRC' }, status: 'available', assets: { imageUrl: null, thumbnailUrl: null, modelGlbUrl: null, modelUsdzUrl: null, hasAR: false }, nutrition: { calories: null, allergens: [], isVegetarian: false, isVegan: false, isGlutenFree: false }, tags: [], variantGroups: [], featured: false, featuredRank: null, sortOrder: 0, createdAt: new Date(), updatedAt: new Date() },
+      { id: 'd2', tenantId: 'preview', menuId: 'preview', categoryId: 'c1', name: 'Patacones con Guacamole', description: 'Crujientes y sabrosos', price: { amount: 4500, currency: 'CRC' }, status: 'available', assets: { imageUrl: null, thumbnailUrl: null, modelGlbUrl: null, modelUsdzUrl: null, hasAR: false }, nutrition: { calories: null, allergens: [], isVegetarian: true, isVegan: true, isGlutenFree: true }, tags: [], variantGroups: [], featured: false, featuredRank: null, sortOrder: 1, createdAt: new Date(), updatedAt: new Date() },
     ],
   },
   {
     category: { id: 'c2', menuId: 'preview', tenantId: 'preview', name: 'Platos Fuertes', description: null, imageUrl: null, sortOrder: 1 },
     dishes: [
-      { id: 'd3', tenantId: 'preview', menuId: 'preview', categoryId: 'c2', name: 'Casado de Pollo', description: 'Con arroz, frijoles y ensalada', price: { amount: 6500, currency: 'CRC' }, status: 'available', assets: { imageUrl: null, thumbnailUrl: null, modelGlbUrl: null, modelUsdzUrl: null, hasAR: false }, nutrition: { calories: null, allergens: [], isVegetarian: false, isVegan: false, isGlutenFree: false }, tags: [], variantGroups: [], sortOrder: 0, createdAt: new Date(), updatedAt: new Date() },
-      { id: 'd4', tenantId: 'preview', menuId: 'preview', categoryId: 'c2', name: 'Filete de Pescado', description: 'Con vegetales al vapor', price: { amount: 9500, currency: 'CRC' }, status: 'available', assets: { imageUrl: null, thumbnailUrl: null, modelGlbUrl: null, modelUsdzUrl: null, hasAR: false }, nutrition: { calories: null, allergens: ['pescado'], isVegetarian: false, isVegan: false, isGlutenFree: true }, tags: [], variantGroups: [], sortOrder: 1, createdAt: new Date(), updatedAt: new Date() },
+      { id: 'd3', tenantId: 'preview', menuId: 'preview', categoryId: 'c2', name: 'Casado de Pollo', description: 'Con arroz, frijoles y ensalada', price: { amount: 6500, currency: 'CRC' }, status: 'available', assets: { imageUrl: null, thumbnailUrl: null, modelGlbUrl: null, modelUsdzUrl: null, hasAR: false }, nutrition: { calories: null, allergens: [], isVegetarian: false, isVegan: false, isGlutenFree: false }, tags: [], variantGroups: [], featured: false, featuredRank: null, sortOrder: 0, createdAt: new Date(), updatedAt: new Date() },
+      { id: 'd4', tenantId: 'preview', menuId: 'preview', categoryId: 'c2', name: 'Filete de Pescado', description: 'Con vegetales al vapor', price: { amount: 9500, currency: 'CRC' }, status: 'available', assets: { imageUrl: null, thumbnailUrl: null, modelGlbUrl: null, modelUsdzUrl: null, hasAR: false }, nutrition: { calories: null, allergens: ['pescado'], isVegetarian: false, isVegan: false, isGlutenFree: true }, tags: [], variantGroups: [], featured: false, featuredRank: null, sortOrder: 1, createdAt: new Date(), updatedAt: new Date() },
     ],
   },
 ]
@@ -107,6 +107,8 @@ interface EditingState {
   socials: TenantSocials
   infoFooter: TenantInfoFooter
   orderButton: TenantOrderButton
+  /** Feature flag: carrito + checkout + pedidos en línea (features.orderingEnabled). */
+  orderingEnabled: boolean
   reservation: TenantReservation
   promo: TenantPromo
   featuredSection: TenantFeatured
@@ -172,6 +174,7 @@ export default function AppearancePage() {
     socials: tenant?.branding.socials ?? { enabled: false, instagram: '', facebook: '', tiktok: '', whatsapp: '' },
     infoFooter: tenant?.branding.infoFooter ?? { enabled: false, hours: '', address: '', phone: '' },
     orderButton: tenant?.branding.orderButton ?? { enabled: false, whatsapp: '', label: 'Ordenar ahora' },
+    orderingEnabled: tenant?.features.orderingEnabled ?? false,
     reservation: tenant?.branding.reservation ?? { enabled: false, title: 'Reserva tu mesa', phone: '', bookingUrl: '', buttonLabel: 'Reservar ahora' },
     promo: tenant?.branding.promo ?? { enabled: false, title: '', description: '', imageUrl: null, ctaLabel: 'Ver más', ctaLink: '' },
     featuredSection: tenant?.branding.featuredSection ?? { enabled: false, title: 'Nuestros favoritos', dishIds: [] },
@@ -215,6 +218,7 @@ export default function AppearancePage() {
       socials: tenant.branding.socials,
       infoFooter: tenant.branding.infoFooter,
       orderButton: tenant.branding.orderButton,
+      orderingEnabled: tenant.features.orderingEnabled,
       reservation: tenant.branding.reservation,
       promo: tenant.branding.promo,
       featuredSection: tenant.branding.featuredSection,
@@ -278,6 +282,7 @@ export default function AppearancePage() {
           promo: editing.promo,
           featuredSection: editing.featuredSection,
         },
+        features: { ...tenant.features, orderingEnabled: editing.orderingEnabled },
       }
     : null
 
@@ -303,12 +308,42 @@ export default function AppearancePage() {
 
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
+  // Vista móvil: el "teléfono" del preview se escala al alto disponible del
+  // panel (antes era fijo y muy pequeño). El iframe se renderiza a tamaño
+  // lógico de teléfono (390×863) y se reduce con transform para ser fiel.
+  const phoneAreaRef = useRef<HTMLDivElement>(null)
+  const [phoneScale, setPhoneScale] = useState(0.6)
+
+  useEffect(() => {
+    if (previewMode !== 'mobile') return
+    const el = phoneAreaRef.current
+    if (!el) return
+    const compute = (): void => {
+      const fromHeight = (el.clientHeight - 72) / 863
+      const fromWidth = (el.clientWidth - 24) / 390
+      setPhoneScale(Math.max(0.5, Math.min(0.95, Math.min(fromHeight, fromWidth))))
+    }
+    compute()
+    const observer = new ResizeObserver(compute)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [previewMode])
+
   // Reset scroll position when tab changes to avoid sections being hidden out of view
   useEffect(() => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = 0
     }
   }, [activeTab])
+
+  // Tipografía en vivo: publica la fuente seleccionada como CSS var para que el
+  // preview embebido (PC) actualice la fuente de cuerpo al cambiarla en config.
+  useEffect(() => {
+    const font = previewTenant?.branding.fontFamily
+    const root = document.documentElement
+    if (font) root.style.setProperty('--tenant-font', `"${font}"`)
+    return () => { root.style.removeProperty('--tenant-font') }
+  }, [previewTenant?.branding.fontFamily])
 
   // Real-time sync for phone preview
   useEffect(() => {
@@ -318,6 +353,7 @@ export default function AppearancePage() {
         name:       previewTenant.name,
         templateId: previewTenant.templateId,
         branding:   stripUndefined(previewTenant.branding),
+        features:   previewTenant.features,
       }
 
       void setDoc(doc(db, 'tenants', tenantId, 'appearancePreview', 'current'), cleanData)
@@ -380,6 +416,7 @@ export default function AppearancePage() {
     JSON.stringify(editing.socials) !== JSON.stringify(tenant.branding.socials) ||
     JSON.stringify(editing.infoFooter) !== JSON.stringify(tenant.branding.infoFooter) ||
     JSON.stringify(editing.orderButton) !== JSON.stringify(tenant.branding.orderButton) ||
+    editing.orderingEnabled !== tenant.features.orderingEnabled ||
     JSON.stringify(editing.reservation) !== JSON.stringify(tenant.branding.reservation) ||
     JSON.stringify(editing.promo) !== JSON.stringify(tenant.branding.promo) ||
     JSON.stringify(editing.featuredSection) !== JSON.stringify(tenant.branding.featuredSection)
@@ -605,7 +642,7 @@ export default function AppearancePage() {
             </div>
           </div>
         ) : (
-          <div className={cn(
+          <div ref={phoneAreaRef} className={cn(
             "bg-surface-100 flex flex-col items-center justify-center py-2 px-4 gap-2 h-full rounded-r-xl border-l-0 border border-surface-200 shadow-sm overflow-hidden transition-all duration-300 ease-in-out",
             isPreviewCollapsed ? "w-0 opacity-0 overflow-hidden border-0 shrink-0" : "flex-1"
           )}>
@@ -614,9 +651,9 @@ export default function AppearancePage() {
             </div>
             <div
               className="relative overflow-hidden shadow-2xl shrink-0"
-              style={{ width: 190, height: 420, borderRadius: '1.75rem', border: '5px solid #1f2937', background: '#0f172a' }}
+              style={{ width: Math.round(390 * phoneScale), height: Math.round(863 * phoneScale), borderRadius: 36 * phoneScale, border: `${Math.max(4, Math.round(7 * phoneScale))}px solid #1f2937`, background: '#0f172a' }}
             >
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 z-50 w-12 h-3.5 rounded-b-lg" style={{ backgroundColor: '#1f2937' }} />
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 z-50 rounded-b-lg" style={{ width: Math.round(64 * phoneScale), height: Math.round(18 * phoneScale), backgroundColor: '#1f2937' }} />
               <iframe
                 src={`${menuPreviewUrl}?preview=true`}
                 title="Vista previa móvil"
@@ -624,7 +661,7 @@ export default function AppearancePage() {
                 style={{
                   width: 390,
                   height: 863,
-                  transform: 'scale(0.487)',
+                  transform: `scale(${phoneScale})`,
                   transformOrigin: 'top left',
                   position: 'absolute',
                   top: 0,
@@ -764,13 +801,50 @@ function SectionsPanel({
           enabled={editing.orderButton.enabled}
           onEnable={(v) => set('orderButton', { ...editing.orderButton, enabled: v })}
         >
-          <p className="text-[10px] text-surface-400 leading-relaxed">Botón flotante que abre WhatsApp con un mensaje de pedido predefinido.</p>
+          <ToggleRow
+            label="Pedidos en línea (carrito)"
+            description="Activa el carrito, el checkout con modo de entrega y los pedidos por WhatsApp"
+            checked={editing.orderingEnabled}
+            onChange={(v) => set('orderingEnabled', v)}
+          />
+          <p className="text-[10px] text-surface-400 leading-relaxed">El botón flotante de abajo abre WhatsApp con un mensaje de pedido predefinido (independiente del carrito).</p>
           <TextInput label="Texto del botón" value={editing.orderButton.label}
             onChange={(v) => set('orderButton', { ...editing.orderButton, label: v })}
             placeholder="Ordenar ahora" maxLength={30} />
           <TextInput label="Número de WhatsApp" value={editing.orderButton.whatsapp}
             onChange={(v) => set('orderButton', { ...editing.orderButton, whatsapp: v })}
             placeholder="+506 8888 8888" />
+
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] font-medium text-surface-600">Disposición</label>
+            <div className="grid grid-cols-2 gap-1.5">
+              {([
+                { value: 'floating', label: 'Flotante' },
+                { value: 'bar', label: 'Barra fija' },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => set('orderButton', { ...editing.orderButton, variant: opt.value })}
+                  className={cn(
+                    'rounded-xl border p-2 text-center text-[10px] font-semibold transition-all',
+                    (editing.orderButton.variant ?? 'floating') === opt.value
+                      ? 'border-brand-400 bg-brand-50 text-brand-650 font-bold'
+                      : 'border-surface-150 hover:border-surface-300 text-surface-400 bg-surface-0'
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <ToggleRow
+            label="Solo ícono"
+            description="Mostrar únicamente el ícono de WhatsApp, sin texto"
+            checked={editing.orderButton.iconOnly ?? false}
+            onChange={(v) => set('orderButton', { ...editing.orderButton, iconOnly: v })}
+          />
         </SectionCard>
 
         <SectionCard

@@ -11,6 +11,8 @@ import type { Tenant } from '@core/domain/entities/Tenant'
 interface TenantContextValue {
   tenant: Tenant | null
   tenantId: string
+  /** Rol del usuario autenticado en este tenant: 'owner' | 'staff' | null (público). */
+  role: string | null
   isLoading: boolean
   error: Error | null
 }
@@ -20,6 +22,7 @@ const TenantContext = createContext<TenantContextValue | null>(null)
 interface ResolvedTenant {
   tenant: Tenant
   tenantId: string
+  role: string | null
 }
 
 /**
@@ -27,9 +30,13 @@ interface ResolvedTenant {
  * Resolvemos el tenant desde el primer segmento para que el menú del cliente
  * muestre el branding correcto sin depender del usuario autenticado.
  */
+/** Segundos segmentos de rutas públicas con tenant en el primer segmento. */
+const PUBLIC_TENANT_SEGMENTS = ['menu', 'reservar', 'sellos', 'staff'] as const
+
 function resolveTenantIdFromPath(): string | null {
   const segments = window.location.pathname.split('/').filter(Boolean)
-  if (segments.length >= 2 && segments[1] === 'menu') {
+  const second = segments[1]
+  if (segments.length >= 2 && second && (PUBLIC_TENANT_SEGMENTS as readonly string[]).includes(second)) {
     return segments[0] ?? null
   }
   return null
@@ -74,10 +81,17 @@ function mockTenant(tenantId: string): Tenant {
       multiLanguageEnabled: false,
       loyaltyEnabled: false,
       qrGeneratorEnabled: true,
+      orderingEnabled: true,
+      reservationsEnabled: true,
     },
     timezone: 'America/Costa_Rica',
     locale: 'es-CR',
     employeePinHash: null,
+    loyaltyConfig: {
+      stampsForReward: 10,
+      rewardDescription: 'Café gratis',
+      stampLabel: '☕',
+    },
     onboardingCompletedAt: new Date(),
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -103,7 +117,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     queryFn: async (): Promise<ResolvedTenant | null> => {
       // 1. Ruta pública de menú → tenant del param de URL.
       if (pathTenantId) {
-        return { tenant: await loadTenant(pathTenantId), tenantId: pathTenantId }
+        return { tenant: await loadTenant(pathTenantId), tenantId: pathTenantId, role: null }
       }
 
       // 2. Usuario autenticado → su propio restaurante (mapping users/{uid}).
@@ -115,7 +129,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       if (firebaseUser) {
         const account = await UserAccountService.getForUser(firebaseUser.uid)
         if (account?.tenantId) {
-          return { tenant: await loadTenant(account.tenantId), tenantId: account.tenantId }
+          return { tenant: await loadTenant(account.tenantId), tenantId: account.tenantId, role: account.role }
         }
         return null
       }
@@ -130,6 +144,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       value={{
         tenant: data?.tenant ?? null,
         tenantId: data?.tenantId ?? '',
+        role: data?.role ?? null,
         isLoading: authLoading || isLoading,
         error: error as Error | null,
       }}

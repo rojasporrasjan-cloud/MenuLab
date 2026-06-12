@@ -115,6 +115,19 @@ export const DishService = {
     })
   },
 
+  /** Actualiza solo el monto del precio (uso operativo: panel staff). */
+  async updateDishPrice(
+    tenantId: string,
+    menuId: string,
+    dishId: string,
+    amount: number,
+  ): Promise<void> {
+    await updateDoc(doc(db, firestorePaths.dish(tenantId, menuId, dishId)), {
+      'price.amount': amount,
+      updatedAt: serverTimestamp(),
+    })
+  },
+
   async swapDishOrder(
     tenantId: string,
     menuId: string,
@@ -173,5 +186,8 @@ function buildFirestorePayload(
     },
     tags,
     variantGroups: values.variantGroups ?? [],
+    featured: values.featured,
+    // El rank define el orden del carrusel: al (re)destacar, va al final.
+    featuredRank: values.featured ? Date.now() : null,
   }
 }

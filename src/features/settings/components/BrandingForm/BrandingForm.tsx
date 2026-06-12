@@ -47,6 +47,17 @@ export function BrandingForm({
     if (!coverFile) setCoverPreview(tenant.branding.coverImageUrl)
   }
 
+  // Revoke blob URLs when they change or when the component unmounts.
+  useEffect(() => {
+    if (!logoPreview?.startsWith('blob:')) return
+    return () => URL.revokeObjectURL(logoPreview)
+  }, [logoPreview])
+
+  useEffect(() => {
+    if (!coverPreview?.startsWith('blob:')) return
+    return () => URL.revokeObjectURL(coverPreview)
+  }, [coverPreview])
+
   // ── Logo handlers ────────────────────────────────────────────────────────────
   const handleLogoSelect = (file: File) => {
     setLogoFile(file)

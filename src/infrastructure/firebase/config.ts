@@ -3,7 +3,7 @@ import { ENV } from '@shared/constants/env'
 
 export const isFirebaseConfigured = Boolean(ENV.firebase.apiKey)
 
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: ENV.firebase.apiKey,
   authDomain: ENV.firebase.authDomain,
   projectId: ENV.firebase.projectId,

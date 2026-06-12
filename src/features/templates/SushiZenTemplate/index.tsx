@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Search, Cuboid, X } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { getThemeColors } from '@shared/utils/colorScale'
+import { matchesQuery } from '@shared/utils/menuSearch'
 import { AnnouncementBar, SocialsBar, InfoFooter, OrderButton, ReservationSection, PromoSection, FeaturedSection } from '../sections'
 import type { MenuTemplateProps } from '../types'
 import type { Dish } from '@core/domain/entities/Dish'
@@ -10,7 +11,7 @@ import type { TenantBranding } from '@core/domain/entities/Tenant'
 
 // Sushi Zen — silence and negative space, Mincho serif, single vermilion seal.
 const DISPLAY = '"Shippori Mincho", serif'
-const BODY = '"Zen Kaku Gothic New", sans-serif'
+const BODY = 'var(--tenant-font, "Zen Kaku Gothic New"), sans-serif'
 
 const PAPER = '#fbfaf7'
 const CARD = '#ffffff'
@@ -31,7 +32,7 @@ function loadFonts(): void {
 const fmt = (n: number, c: string): string =>
   new Intl.NumberFormat('es-CR', { style: 'currency', currency: c, minimumFractionDigits: 0 }).format(n)
 
-export default function SushiZenTemplate({ tenant, menu, table, groups, tenantId }: MenuTemplateProps): ReactNode {
+export default function SushiZenTemplate({ tenant, menu, table, groups, tenantId, featured }: MenuTemplateProps): ReactNode {
   useEffect(loadFonts, [])
   const tc = getThemeColors(tenant.branding)
   const accent = tc.primary
@@ -59,7 +60,7 @@ export default function SushiZenTemplate({ tenant, menu, table, groups, tenantId
 
   const scrollTo = (id: string): void => sectionRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   const filtered = query.trim()
-    ? allDishes.filter((d) => d.name.toLowerCase().includes(query.toLowerCase()) || (d.description ?? '').toLowerCase().includes(query.toLowerCase()))
+    ? allDishes.filter((d) => matchesQuery([d.name, d.description], query))
     : null
 
   return (
@@ -84,8 +85,19 @@ export default function SushiZenTemplate({ tenant, menu, table, groups, tenantId
         </div>
       </header>
 
-      <nav className="sticky top-0 z-30" style={{ background: 'rgba(251,250,247,0.92)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${HAIR}` }}>
-        <div className="flex overflow-x-auto scrollbar-hide" style={{ padding: '0 16px' }}>
+      {/* ── Sticky search & category nav ── */}
+      <div className="sticky top-0 z-30 flex flex-col" style={{ background: 'rgba(251,250,247,0.92)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${HAIR}` }}>
+        {tenant.branding.showSearch && (
+          <div style={{ padding: '11px 16px 3px' }}>
+            <div className="flex items-center gap-2.5" style={{ background: CARD, border: `1px solid ${HAIR}`, borderRadius: 4, padding: '12px 16px' }}>
+            <Search size={15} style={{ color: accent, flexShrink: 0 }} />
+            <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="探す…" className="flex-1 bg-transparent focus:outline-none placeholder:opacity-40" style={{ color: INK, fontSize: '0.88rem', fontFamily: BODY }} />
+            {query ? <button onClick={() => setQuery('')}><X size={14} style={{ color: MUTED }} /></button> : null}
+          </div>
+          </div>
+        )}
+        <nav style={{ background: 'rgba(251, 250, 247, 0.92)', backdropFilter: 'blur(12px)' }}>
+          <div className="flex overflow-x-auto scrollbar-hide" style={{ padding: '0 16px' }}>
           {groups.map((g) => {
             const isActive = active === g.category.id
             return (
@@ -96,18 +108,10 @@ export default function SushiZenTemplate({ tenant, menu, table, groups, tenantId
             )
           })}
         </div>
-      </nav>
+        </nav>
+      </div>
 
-      {tenant.branding.showSearch ? (
-        <div style={{ padding: '20px 18px 2px' }}>
-          <div className="flex items-center gap-2.5" style={{ background: CARD, border: `1px solid ${HAIR}`, borderRadius: 4, padding: '12px 16px' }}>
-            <Search size={15} style={{ color: accent, flexShrink: 0 }} />
-            <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="探す…" className="flex-1 bg-transparent focus:outline-none placeholder:opacity-40" style={{ color: INK, fontSize: '0.88rem', fontFamily: BODY }} />
-            {query ? <button onClick={() => setQuery('')}><X size={14} style={{ color: MUTED }} /></button> : null}
-          </div>
-        </div>
-      ) : null}
-
+      {featured}
       <FeaturedSection branding={tenant.branding} tc={tc} dishes={allDishes} tenantId={tenantId} menuId={menu.id} />
       <ReservationSection branding={tenant.branding} tc={tc} />
       <PromoSection branding={tenant.branding} tc={tc} />

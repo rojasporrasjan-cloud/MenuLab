@@ -21,14 +21,20 @@ export function useDishImageUpload(initialUrl?: string | null): UseDishImageUplo
   const [isUploading, setIsUploading] = useState(false)
 
   const selectFile = useCallback((file: File) => {
+    setPreviewUrl((prev) => {
+      if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev)
+      return URL.createObjectURL(file)
+    })
     setSelectedFile(file)
-    setPreviewUrl(URL.createObjectURL(file))
     setUploadProgress(0)
   }, [])
 
   const clearFile = useCallback(() => {
+    setPreviewUrl((prev) => {
+      if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev)
+      return initialUrl ?? null
+    })
     setSelectedFile(null)
-    setPreviewUrl(initialUrl ?? null)
     setUploadProgress(0)
   }, [initialUrl])
 

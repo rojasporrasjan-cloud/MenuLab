@@ -3,12 +3,13 @@ import { Link } from 'react-router-dom'
 import { Search, Cuboid, X, Coffee } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { getThemeColors } from '@shared/utils/colorScale'
+import { matchesQuery } from '@shared/utils/menuSearch'
 import { AnnouncementBar, SocialsBar, InfoFooter, OrderButton, ReservationSection, PromoSection, FeaturedSection } from '../sections'
 import type { MenuTemplateProps } from '../types'
 import type { Dish } from '@core/domain/entities/Dish'
 
 const DISPLAY = '"Pacifico", cursive'
-const BODY    = '"Nunito", sans-serif'
+const BODY    = 'var(--tenant-font, "Nunito"), sans-serif'
 
 // Premium warm-paper palette — restraint over saturation.
 const PAPER = '#faf8f4'
@@ -29,7 +30,7 @@ function loadFonts() {
 const fmt = (n: number, c: string) =>
   new Intl.NumberFormat('es-CR', { style: 'currency', currency: c, minimumFractionDigits: 0 }).format(n)
 
-export default function SodaTicaTemplate({ tenant, menu, table, groups, tenantId }: MenuTemplateProps) {
+export default function SodaTicaTemplate({ tenant, menu, table, groups, tenantId, featured }: MenuTemplateProps) {
   useEffect(loadFonts, [])
   const tc      = getThemeColors(tenant.branding)
   const accent  = tc.primary
@@ -54,7 +55,7 @@ export default function SodaTicaTemplate({ tenant, menu, table, groups, tenantId
 
   const scrollTo = (id: string) => sectionRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   const filtered = query.trim()
-    ? allDishes.filter(d => d.name.toLowerCase().includes(query.toLowerCase()) || (d.description ?? '').toLowerCase().includes(query.toLowerCase()))
+    ? allDishes.filter((d) => matchesQuery([d.name, d.description], query))
     : null
 
   return (
@@ -91,8 +92,19 @@ export default function SodaTicaTemplate({ tenant, menu, table, groups, tenantId
       </header>
 
       {/* ── Sticky category nav ── */}
-      <nav className="sticky top-0 z-30" style={{ background: 'rgba(250,248,244,0.92)', backdropFilter: 'blur(10px)', borderBottom: `1px solid ${HAIR}` }}>
-        <div className="flex overflow-x-auto scrollbar-hide" style={{ padding: '0 10px' }}>
+      {/* ── Sticky search & category nav ── */}
+      <div className="sticky top-0 z-30 flex flex-col" style={{ background: 'rgba(250,248,244,0.92)', backdropFilter: 'blur(10px)', borderBottom: `1px solid ${HAIR}` }}>
+        {tenant.branding.showSearch && (
+          <div style={{ padding: '11px 16px 3px' }}>
+            <div className="flex items-center gap-2.5" style={{ background: CARD, border: `1px solid ${HAIR}`, borderRadius: 14, padding: '10px 14px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+            <Search size={15} style={{ color: accent, flexShrink: 0 }} />
+            <input type="text" value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar platillo…" className="flex-1 bg-transparent focus:outline-none placeholder:opacity-45" style={{ color: INK, fontSize: '0.88rem', fontFamily: BODY }} />
+            {query && <button onClick={() => setQuery('')}><X size={14} style={{ color: MUTED }} /></button>}
+          </div>
+          </div>
+        )}
+        <nav style={{ background: 'rgba(250, 248, 244, 0.92)', backdropFilter: 'blur(10px)' }}>
+          <div className="flex overflow-x-auto scrollbar-hide" style={{ padding: '0 10px' }}>
           {groups.map(g => {
             const isActive = active === g.category.id
             return (
@@ -102,19 +114,10 @@ export default function SodaTicaTemplate({ tenant, menu, table, groups, tenantId
             )
           })}
         </div>
-      </nav>
+        </nav>
+      </div>
 
-      {/* ── Search ── */}
-      {tenant.branding.showSearch && (
-        <div style={{ padding: '14px 16px 2px' }}>
-          <div className="flex items-center gap-2.5" style={{ background: CARD, border: `1px solid ${HAIR}`, borderRadius: 14, padding: '10px 14px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-            <Search size={15} style={{ color: accent, flexShrink: 0 }} />
-            <input type="text" value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar platillo…" className="flex-1 bg-transparent focus:outline-none placeholder:opacity-45" style={{ color: INK, fontSize: '0.88rem', fontFamily: BODY }} />
-            {query && <button onClick={() => setQuery('')}><X size={14} style={{ color: MUTED }} /></button>}
-          </div>
-        </div>
-      )}
-
+      {featured}
       <FeaturedSection branding={tenant.branding} tc={tc} dishes={allDishes} tenantId={tenantId} menuId={menu.id} />
       <ReservationSection branding={tenant.branding} tc={tc} />
       <PromoSection branding={tenant.branding} tc={tc} />

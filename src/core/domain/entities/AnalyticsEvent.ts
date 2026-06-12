@@ -4,6 +4,10 @@ export type AnalyticsEventType =
   | 'dish_view'
   | 'ar_launch'
   | 'ar_error'
+  | 'cart_add'
+  | 'order_created'
+  | 'featured_view'
+  | 'featured_click'
 
 export type DeviceType = 'mobile' | 'tablet' | 'desktop'
 

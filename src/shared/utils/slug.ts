@@ -16,9 +16,11 @@ export function slugify(input: string): string {
 /**
  * Genera un slug único añadiendo un sufijo aleatorio corto.
  * Evita colisiones cuando dos restaurantes comparten nombre.
+ * Usa crypto.randomUUID() (CSPRNG) en lugar de Math.random() para
+ * evitar IDs predecibles (CWE-327).
  */
 export function uniqueSlug(input: string): string {
   const base = slugify(input) || 'restaurante'
-  const suffix = Math.random().toString(36).slice(2, 7)
+  const suffix = crypto.randomUUID().replace(/-/g, '').slice(0, 7)
   return `${base}-${suffix}`
 }

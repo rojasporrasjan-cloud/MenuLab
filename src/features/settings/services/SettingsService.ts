@@ -49,6 +49,7 @@ export const SettingsService = {
       socials: TenantSocials
       infoFooter: TenantInfoFooter
       orderButton: TenantOrderButton
+      orderingEnabled: boolean
       reservation: TenantReservation
       promo: TenantPromo
       featuredSection: TenantFeatured
@@ -80,9 +81,23 @@ export const SettingsService = {
       'branding.socials': branding.socials,
       'branding.infoFooter': branding.infoFooter,
       'branding.orderButton': branding.orderButton,
+      'features.orderingEnabled': branding.orderingEnabled,
       'branding.reservation': branding.reservation,
       'branding.promo': branding.promo,
       'branding.featuredSection': branding.featuredSection,
+      updatedAt: serverTimestamp(),
+    })
+  },
+
+  /** Actualiza solo promo + infoFooter (operativo: lo puede hacer el staff). */
+  async updatePromoAndHours(
+    tenantId: string,
+    promo: TenantPromo,
+    infoFooter: TenantInfoFooter,
+  ): Promise<void> {
+    await updateDoc(doc(db, firestorePaths.tenant(tenantId)), {
+      'branding.promo': promo,
+      'branding.infoFooter': infoFooter,
       updatedAt: serverTimestamp(),
     })
   },

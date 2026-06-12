@@ -8,7 +8,9 @@ import {
   useDishImageUpload,
   useCreateDish,
   useUpdateDish,
+  useFeaturedDishes,
 } from '@features/dishes'
+import { LIMITS } from '@shared/constants/limits'
 import { Spinner } from '@shared/ui/components/Spinner'
 import { ROUTES } from '@shared/constants/routes'
 import type { DishFormValues } from '@features/dishes'
@@ -37,6 +39,11 @@ export default function DishEditorPage() {
   const { updateDish, isLoading: isUpdating, error: updateError } = useUpdateDish(tenantId)
 
   const imageUpload = useDishImageUpload(isEditing ? dish?.assets.imageUrl : null)
+
+  const { featuredCount } = useFeaturedDishes(tenantId, menuId || null)
+  // Al editar un plato ya destacado no cuenta dos veces para el aviso.
+  const otherFeaturedCount = featuredCount - (dish?.featured ? 1 : 0)
+  const featuredLimitReached = otherFeaturedCount >= LIMITS.featured.maxFeaturedDishes
 
   const isLoading = isCreating || isUpdating
 
@@ -137,6 +144,7 @@ export default function DishEditorPage() {
             onFileSelect={imageUpload.selectFile}
             onFileClear={imageUpload.clearFile}
             onSubmit={handleSubmit}
+            featuredLimitReached={featuredLimitReached}
           />
         )}
       </div>

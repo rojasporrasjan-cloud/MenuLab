@@ -3,10 +3,13 @@ import type { GeminiMenuPayload } from '@features/editor/services/AIParserServic
 
 // ─── Gemini REST API ──────────────────────────────────────────────────────────
 //
-// Calls Gemini 1.5 Flash directly from the browser using the REST API.
+// Calls Gemini directly from the browser using the REST API.
 // This replaces the Firebase Cloud Function approach for local development.
+//
+// NOTA: requiere una API key de Google AI Studio (empieza con "AIza…"),
+// creada en https://aistudio.google.com/apikey. Un token OAuth NO sirve aquí.
 
-const GEMINI_MODEL  = 'gemini-1.5-flash'
+const GEMINI_MODEL  = 'gemini-2.5-flash'
 const GEMINI_BASE   = 'https://generativelanguage.googleapis.com/v1beta/models'
 const EXTRACT_PROMPT = `
 Eres un experto en digitalización de menús de restaurantes.
@@ -121,7 +124,23 @@ export class GeminiApiService {
 
     if (!response.ok) {
       const message = data.error?.message ?? `HTTP ${response.status}`
-      throw new Error(`Gemini API error: ${message}`)
+      // Key inválida / no autorizada → mensaje accionable para el dueño.
+      if (
+        response.status === 401 ||
+        response.status === 403 ||
+        /API key not valid|invalid authentication|UNAUTHENTICATED|API_KEY_INVALID/i.test(message)
+      ) {
+        throw new Error(
+          'La API key de Gemini no es válida. Crea una en https://aistudio.google.com/apikey (debe empezar con "AIza…") y ponla en VITE_GEMINI_API_KEY.',
+        )
+      }
+      if (response.status === 404 && /model/i.test(message)) {
+        throw new Error('El modelo de Gemini no está disponible para tu key. Verifica que tu proyecto tenga acceso a la API de Gemini.')
+      }
+      if (response.status === 429) {
+        throw new Error('Se agotó la cuota de Gemini por ahora. Espera unos minutos o revisa tu cuota/plan en Google AI Studio.')
+      }
+      throw new Error(`Error de Gemini: ${message}`)
     }
 
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text

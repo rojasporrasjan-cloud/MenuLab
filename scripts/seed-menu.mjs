@@ -12,6 +12,7 @@ import {
   collection,
   writeBatch,
   Timestamp,
+  getDocs,
 } from 'firebase/firestore'
 import { readFileSync } from 'fs'
 import { resolve, dirname } from 'path'
@@ -46,7 +47,8 @@ const db = getFirestore(app)
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
-const TENANT_ID = 'soda-la-rustica'
+const TENANT_ID = process.argv[2] || 'rustica-de-sarchi'
+const TENANT_NAME = process.argv[3] || 'Soda Rústica de Sarchí'
 const MENU_ID   = 'menu-principal'
 const NOW       = Timestamp.now()
 
@@ -160,7 +162,7 @@ const DISHES = [
   dish(catId['pollo-frito'], 'Papanachos',                    4000, null,  5),
   dish(catId['pollo-frito'], 'Hot Dog',                       1200, null,  6),
   dish(catId['pollo-frito'], 'Hot Dog con papas',             1600, null,  7),
-  dish(catId['pollo-frito'], 'Salchipapas',                   2100, null,  8),
+  dish(catId['pollo-frito'], 'Salchipapas',                   2500, null,  8),
   dish(catId['pollo-frito'], 'Aros de cebolla',               2000, null,  9),
   dish(catId['pollo-frito'], 'Torta casera en tortilla',      2000, null, 10),
   dish(catId['pollo-frito'], 'Torta casera en pan',           2200, null, 11),
@@ -321,19 +323,19 @@ const DISHES = [
 const TENANT_DOC = {
   id:     TENANT_ID,
   slug:   TENANT_ID,
-  name:   'Soda La Rústica',
+  name:   TENANT_NAME,
   plan:   'pro',
   status: 'active',
-  templateId: 'soda-tica',
+  templateId: 'warm-bistro',
   branding: {
-    primaryColor:    '#b45309',
-    backgroundColor: '#fef3c7',
-    fontFamily:      'Inter',
+    primaryColor:    '#7c4a27', // Marrón cálido del logotipo
+    backgroundColor: '#fdf6ec', // Beige cálido del fondo del logotipo
+    fontFamily:      'Outfit',
     logoUrl:         null,
     coverImageUrl:   null,
-    tagline:         'Sabor tico de verdad 🌿',
+    tagline:         'Soda Rústica de Sarchí 🍽️',
     cardStyle:       'rounded',
-    coverOpacity:    0.6,
+    coverOpacity:    0.7,
     textScale:       'md',
     shadowDepth:     'soft',
     heroHeight:      'normal',
@@ -343,15 +345,15 @@ const TENANT_DOC = {
     showSearch:      true,
     bgGradient: {
       enabled:   false,
-      from:      '#b45309',
-      to:        '#fef3c7',
+      from:      '#fdf6ec',
+      to:        '#faf0dd',
       direction: '180deg',
     },
     announcement: {
       enabled: true,
-      text:    'Empaques para llevar: ₡200 adicionales',
+      text:    'Empaques para llevar: ₡200 adicionales por cada producto',
       emoji:   '🛍️',
-      bgColor: null,
+      bgColor: '#7c4a27', // Marrón cálido
     },
     socials: {
       enabled:   false,
@@ -425,26 +427,48 @@ const MENU_DOC = {
 async function seed() {
   console.log('🌱 Iniciando seeding de Soda La Rústica...\n')
 
+  // Query existing menus for this tenant to reuse the ID generated during onboarding/provisioning
+  console.log('🔍 Buscando menús existentes para el tenant...')
+  const menusSnap = await getDocs(collection(db, `tenants/${TENANT_ID}/menus`))
+  let activeMenuId = MENU_ID
+  if (!menusSnap.empty) {
+    activeMenuId = menusSnap.docs[0].id
+    console.log(`   Found existing menu ID: ${activeMenuId}`)
+  } else {
+    console.log(`   No existing menus found, using default: ${activeMenuId}`)
+  }
+
   // 1. Tenant
   console.log('📋 Creando tenant...')
   await setDoc(doc(db, 'tenants', TENANT_ID), TENANT_DOC)
   console.log(`   ✓ tenants/${TENANT_ID}`)
 
   // 2. Menú
-  console.log('\n📗 Creando menú principal...')
-  await setDoc(doc(db, `tenants/${TENANT_ID}/menus`, MENU_ID), MENU_DOC)
-  console.log(`   ✓ menus/${MENU_ID}`)
+  console.log('\n📗 Creando/Actualizando menú principal...')
+  const menuDoc = {
+    id:            activeMenuId,
+    tenantId:      TENANT_ID,
+    name:          'Menú Principal',
+    description:   null,
+    status:        'active',
+    categoryOrder: CATEGORIES.map(c => catId[c.slug]),
+    schedule:      null,
+    createdAt:     NOW,
+    updatedAt:     NOW,
+  }
+  await setDoc(doc(db, `tenants/${TENANT_ID}/menus`, activeMenuId), menuDoc)
+  console.log(`   ✓ menus/${activeMenuId}`)
 
   // 3. Categorías (en batch)
   console.log(`\n🗂️  Creando ${CATEGORIES.length} categorías...`)
   const catBatch = writeBatch(db)
   for (const [i, cat] of CATEGORIES.entries()) {
     const id  = catId[cat.slug]
-    const ref = doc(db, `tenants/${TENANT_ID}/menus/${MENU_ID}/categories`, id)
+    const ref = doc(db, `tenants/${TENANT_ID}/menus/${activeMenuId}/categories`, id)
     catBatch.set(ref, {
       id,
       tenantId:    TENANT_ID,
-      menuId:      MENU_ID,
+      menuId:      activeMenuId,
       name:        cat.name,
       description: null,
       imageUrl:    null,
@@ -462,20 +486,23 @@ async function seed() {
     const chunk = DISHES.slice(i, i + BATCH_SIZE)
     const batch = writeBatch(db)
     for (const d of chunk) {
-      const ref = doc(db, `tenants/${TENANT_ID}/menus/${MENU_ID}/dishes`, d.id)
-      batch.set(ref, d)
+      const ref = doc(db, `tenants/${TENANT_ID}/menus/${activeMenuId}/dishes`, d.id)
+      batch.set(ref, {
+        ...d,
+        menuId: activeMenuId // Override to ensure it matches the menu
+      })
     }
     await batch.commit()
     console.log(`   ✓ Platos ${i + 1}–${Math.min(i + BATCH_SIZE, DISHES.length)} guardados`)
   }
 
   // 5. Mesa por defecto (para QR)
-  console.log('\n🪑 Creando mesa por defecto...')
-  const tableId = newId()
+  console.log('\n🪑 Creando/Actualizando mesa por defecto...')
+  const tableId = 'mesa-1'
   await setDoc(doc(db, `tenants/${TENANT_ID}/tables`, tableId), {
     id:       tableId,
     tenantId: TENANT_ID,
-    menuId:   MENU_ID,
+    menuId:   activeMenuId,
     number:   '1',
     label:    'Mesa 1',
     isActive: true,
@@ -486,7 +513,7 @@ async function seed() {
 
   console.log('\n🎉 ¡Seeding completado exitosamente!')
   console.log(`\n   Tenant:    ${TENANT_ID}`)
-  console.log(`   Menú:      ${MENU_ID}`)
+  console.log(`   Menú:      ${activeMenuId}`)
   console.log(`   Categorías: ${CATEGORIES.length}`)
   console.log(`   Platos:     ${DISHES.length}`)
   console.log(`\n   Abrí: http://localhost:5175/admin\n`)

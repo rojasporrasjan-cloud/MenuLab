@@ -12,11 +12,22 @@ import {
   X,
   Sparkles,
   ChevronRight,
+  ShoppingBag,
+  CookingPot,
+  CalendarCheck,
+  CreditCard,
+  Star,
+  Users,
+  Package,
+  MonitorSmartphone,
 } from 'lucide-react'
 import { cn }               from '@shared/utils/cn'
 import { ROUTES }           from '@shared/constants/routes'
 import { useTenantContext } from '@app/providers/TenantProvider'
 import { useAuth }          from '@features/auth'
+import { usePendingReservations } from '@features/reservations'
+import { useLowStockAlerts } from '@features/inventory'
+import { useActiveOrders } from '@features/cart'
 import type { NavItem }     from '../../types/dashboard.types'
 
 // ─── Nav structure ────────────────────────────────────────────────────────────
@@ -36,6 +47,18 @@ const NAV_GROUPS: readonly NavGroup[] = [
     ],
   },
   {
+    label: 'Operación',
+    items: [
+      { label: 'Pedidos',       path: ROUTES.admin.orders,        icon: ShoppingBag },
+      { label: 'Reservas',      path: ROUTES.admin.reservations,  icon: CalendarCheck },
+      { label: 'Cocina',        path: ROUTES.admin.kds,           icon: CookingPot },
+      { label: 'POS',           path: ROUTES.admin.pos,           icon: MonitorSmartphone },
+      { label: 'Clientes',      path: ROUTES.admin.customers,     icon: Users },
+      { label: 'Lealtad',       path: ROUTES.admin.loyalty,       icon: Star },
+      { label: 'Inventario',    path: ROUTES.admin.inventory,     icon: Package },
+    ],
+  },
+  {
     label: 'Personalización',
     items: [
       { label: 'Apariencia',    path: ROUTES.admin.appearance,  icon: Palette, badge: 'IA', badgeVariant: 'violet' },
@@ -45,6 +68,7 @@ const NAV_GROUPS: readonly NavGroup[] = [
     label: 'Datos',
     items: [
       { label: 'Analíticas',    path: ROUTES.admin.analytics,   icon: BarChart3 },
+      { label: 'Mi Plan',       path: ROUTES.admin.plan,        icon: CreditCard },
       { label: 'Configuración', path: ROUTES.admin.settings,    icon: Settings },
     ],
   },
@@ -61,8 +85,18 @@ interface SidebarProps {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) {
-  const { tenant }                          = useTenantContext()
+  const { tenant, tenantId }                = useTenantContext()
   const { user, signOut } = useAuth()
+  const { count: pendingReservations } = usePendingReservations(tenantId)
+  const { count: lowStockCount } = useLowStockAlerts(tenantId)
+  const { orders: activeOrders } = useActiveOrders(tenantId)
+
+  // Badges dinámicos por ruta (conteos en tiempo real).
+  const dynamicBadges: Record<string, { count: number; variant?: NavItem['badgeVariant'] }> = {
+    [ROUTES.admin.orders]:       { count: activeOrders.length },
+    [ROUTES.admin.reservations]: { count: pendingReservations },
+    [ROUTES.admin.inventory]:    { count: lowStockCount, variant: 'danger' },
+  }
 
   const displayName = user?.displayName ?? ''
   const initials = displayName
@@ -154,9 +188,14 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) 
                   {group.label}
                 </p>
               )}
-              {group.items.map((item) => (
-                <SidebarNavItem key={item.path} item={item} onNavigate={onClose} />
-              ))}
+              {group.items.map((item) => {
+                const dynamicBadge = dynamicBadges[item.path]
+                const resolved =
+                  item.badge === undefined && dynamicBadge !== undefined && dynamicBadge.count > 0
+                    ? { ...item, badge: dynamicBadge.count, badgeVariant: dynamicBadge.variant }
+                    : item
+                return <SidebarNavItem key={item.path} item={resolved} onNavigate={onClose} />
+              })}
             </div>
           ))}
         </nav>
@@ -306,7 +345,9 @@ function SidebarNavItem({ item, onNavigate }: { item: NavItem; onNavigate: () =>
           style={
             item.badgeVariant === 'violet'
               ? { background: 'rgba(139,92,246,0.3)', color: '#c4b5fd' }
-              : { background: 'rgba(233,154,14,0.3)', color: '#f5b520' }
+              : item.badgeVariant === 'danger'
+                ? { background: 'rgba(239,68,68,0.32)', color: '#fca5a5' }
+                : { background: 'rgba(233,154,14,0.3)', color: '#f5b520' }
           }
         >
           {item.badge}

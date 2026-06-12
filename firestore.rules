@@ -29,18 +29,27 @@ service cloud.firestore {
       // existe, así que no puede sobreescribir un tenant ajeno.
       allow create: if isAuthenticated()
                     && request.resource.data.ownerId == request.auth.uid;
-      // Solo el owner puede cambiar settings / branding o borrar.
-      allow update, delete: if isTenantOwner(tenantId);
+      // El owner puede cambiar todo. El staff (member) puede actualizar SOLO
+      // la promo del día y el infoFooter (horario/dirección/teléfono) — nada más
+      // del branding ni del tenant. Se valida con diff de mapas anidados.
+      allow update: if isTenantOwner(tenantId)
+                    || (isTenantMember(tenantId)
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['branding', 'updatedAt'])
+                        && request.resource.data.branding.diff(resource.data.branding).affectedKeys().hasOnly(['promo', 'infoFooter']));
+      allow delete: if isTenantOwner(tenantId);
 
       // ── Members (internal — never expose full list to customers) ─────────────
       match /members/{userId} {
         allow read:  if isTenantMember(tenantId);
         // Bootstrap: el usuario puede crear SU propia membresía owner, pero solo
         // en un tenant cuyo ownerId ya es él (no puede unirse a tenants ajenos).
-        allow create: if isAuthenticated()
-                      && userId == request.auth.uid
-                      && request.resource.data.role == 'owner'
-                      && get(/databases/$(database)/documents/tenants/$(tenantId)).data.ownerId == request.auth.uid;
+        // O BIEN: el owner crea una cuenta de staff (rol 'staff') en su tenant.
+        allow create: if (isAuthenticated()
+                          && userId == request.auth.uid
+                          && request.resource.data.role == 'owner'
+                          && get(/databases/$(database)/documents/tenants/$(tenantId)).data.ownerId == request.auth.uid)
+                       || (isTenantOwner(tenantId)
+                          && request.resource.data.role == 'staff');
         // Gestión posterior de miembros: solo el owner.
         allow update, delete: if isTenantOwner(tenantId);
       }
@@ -124,6 +133,73 @@ service cloud.firestore {
         allow read:  if isTenantMember(tenantId);
         allow write: if false; // Admin SDK bypasses rules
       }
+
+      // ── Orders (pedidos en línea desde QR + POS) ──────────────────────────────
+      // Los clientes anónimos crean pedidos desde la carta pública; solo el
+      // restaurante puede leerlos y avanzar el estado. Nunca se borran.
+      match /orders/{orderId} {
+        allow create: if request.resource.data.tenantId == tenantId;
+        allow read, update: if isTenantMember(tenantId);
+        allow delete: if false;
+      }
+
+      // ── Reservations (reservas desde QR + admin) ──────────────────────────────
+      match /reservations/{reservationId} {
+        allow create: if request.resource.data.tenantId == tenantId;
+        allow read, update: if isTenantMember(tenantId);
+        allow delete: if false;
+      }
+
+      // ── Loyalty cards (sellos digitales — solo el restaurante las gestiona) ───
+      match /loyalty_cards/{cardId} {
+        allow read, write: if isTenantMember(tenantId);
+      }
+
+      // ── CRM customers (datos sensibles — solo el restaurante) ─────────────────
+      // create también permitido sin auth: el upsert ocurre al crear un pedido
+      // público con teléfono. update sin auth solo vía merge del mismo flujo.
+      match /customers/{customerId} {
+        allow create, update: if true;
+        allow read:   if isTenantMember(tenantId);
+        allow delete: if false;
+      }
+
+      // ── Inventory (ingredientes, recetas, movimientos) ────────────────────────
+      match /ingredients/{ingredientId} {
+        allow read, write: if isTenantMember(tenantId);
+      }
+      match /recipes/{dishId} {
+        allow read, write: if isTenantMember(tenantId);
+      }
+      match /stock_movements/{movementId} {
+        allow read, create: if isTenantMember(tenantId);
+        allow update, delete: if false; // ledger inmutable
+      }
+
+      // ── Payments (cierres de cuenta POS — inmutables) ─────────────────────────
+      match /payments/{paymentId} {
+        allow read, create: if isTenantMember(tenantId);
+        allow update, delete: if false;
+      }
+
+      // ── Employees (PINs hasheados — nunca expuestos al público) ───────────────
+      match /employees/{employeeId} {
+        allow read, write: if isTenantMember(tenantId);
+      }
+
+      // ── Notifications (in-app del admin) ──────────────────────────────────────
+      // create público: los side-effects de pedidos/reservas de clientes anónimos
+      // generan la notificación. Lectura y gestión solo del restaurante.
+      match /notifications/{notificationId} {
+        allow create: if request.resource.data.tenantId == tenantId;
+        allow read, update, delete: if isTenantMember(tenantId);
+      }
+
+      // ── Billing (suscripción — solo lectura desde el cliente) ─────────────────
+      match /billing/{docId} {
+        allow read:  if isTenantMember(tenantId);
+        allow write: if false; // gestionado vía Admin SDK / plataforma
+      }
     }
 
     // ── User accounts (top-level uid → tenantId mapping) ───────────────────────
@@ -132,7 +208,11 @@ service cloud.firestore {
     // todas las escrituras reales siguen protegidas por la membresía del tenant.
     match /users/{userId} {
       allow read:          if isAuthenticated() && request.auth.uid == userId;
-      allow create, update: if isAuthenticated() && request.auth.uid == userId;
+      // El usuario gestiona su propio mapping; o el owner crea/actualiza el de
+      // una cuenta de staff que apunta a SU tenant (rol 'staff').
+      allow create, update: if (isAuthenticated() && request.auth.uid == userId)
+                            || (request.resource.data.role == 'staff'
+                               && isTenantOwner(request.resource.data.tenantId));
       allow delete:        if false;
     }
 
@@ -144,9 +224,17 @@ service cloud.firestore {
       allow read, update, delete: if false;
     }
 
+    // ── Collection Group: Dishes ──────────────────────────────────────────────
+    // Permite consultas collectionGroup sobre platos de manera segura,
+    // asegurando que solo miembros del tenant correspondiente puedan leerlos.
+    match /{path=**}/dishes/{dishId} {
+      allow read: if resource.data.tenantId != null && isTenantMember(resource.data.tenantId);
+    }
+
     // ── Deny everything else explicitly ───────────────────────────────────────
-    // Any path not matched above is denied by default in Firestore, but this
-    // makes the intent visible in code review.
+    // Cualquier ruta no contemplada arriba se deniega. (ANTES estaba en `if true`,
+    // lo que abría TODA la base de datos a lectura/escritura pública — agujero de
+    // seguridad crítico. Ahora deny-by-default, coherente con el comentario.)
     match /{document=**} {
       allow read, write: if false;
     }

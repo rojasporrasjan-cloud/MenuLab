@@ -32,10 +32,17 @@ export interface TenantInfoFooter {
   phone: string
 }
 
+/** Disposición visual del botón de pedidos por WhatsApp. */
+export type OrderButtonVariant = 'floating' | 'bar'
+
 export interface TenantOrderButton {
   enabled: boolean
   whatsapp: string
   label: string
+  /** Flotante (píldora/FAB) o barra fija a lo ancho. Default: 'floating'. */
+  variant?: OrderButtonVariant
+  /** Mostrar solo el ícono de WhatsApp, sin texto. Default: false. */
+  iconOnly?: boolean
 }
 
 export interface TenantBgGradient {
@@ -88,6 +95,7 @@ export interface TenantBranding {
   detailsCardStyle?: 'glass' | 'solid'
   detailsCardOptionStyle?: 'list' | 'pills'
   detailsCardShowImage?: boolean
+  defaultLanguage?: MenuLanguage
   // Page sections
   announcement: TenantAnnouncement
   socials: TenantSocials
@@ -114,7 +122,24 @@ export interface TenantFeatureFlags {
   multiLanguageEnabled: boolean
   loyaltyEnabled: boolean
   qrGeneratorEnabled: boolean
+  orderingEnabled: boolean
+  reservationsEnabled: boolean
 }
+
+/** Configuración del programa de lealtad (sellos digitales). */
+export interface LoyaltyConfig {
+  readonly stampsForReward: number
+  readonly rewardDescription: string
+  readonly stampLabel: string
+}
+
+export const DEFAULT_LOYALTY_CONFIG: LoyaltyConfig = {
+  stampsForReward: 10,
+  rewardDescription: 'Recompensa gratis',
+  stampLabel: '⭐',
+}
+
+export type MenuLanguage = 'es' | 'en'
 
 export type TemplateId =
   | 'dark-modern' | 'light-minimal' | 'warm-bistro'
@@ -136,6 +161,7 @@ export interface Tenant {
   timezone: string
   locale: string
   employeePinHash: string | null
+  loyaltyConfig: LoyaltyConfig
   onboardingCompletedAt: Date | null
   createdAt: Date
   updatedAt: Date

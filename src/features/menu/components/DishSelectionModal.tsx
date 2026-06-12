@@ -2,24 +2,41 @@ import { useState, useMemo } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { X, Check } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
+import { COPY } from '@shared/copy/ui.copy'
 import type { Dish, DishVariantGroup } from '@core/domain/entities/Dish'
 import type { TenantBranding } from '@core/domain/entities/Tenant'
 import { getThemeColors } from '@shared/utils/colorScale'
+
+export interface DishCartSelection {
+  readonly dishId: string
+  readonly dishName: string
+  readonly unitPrice: number
+  readonly currency: string
+  readonly variantLabel: string | null
+}
 
 interface DishSelectionModalProps {
   readonly isOpen: boolean
   readonly onClose: () => void
   readonly dish: Dish
   readonly branding: TenantBranding
+  /** Si está presente, el CTA agrega el plato al carrito (pedidos en línea). */
+  readonly onAddToCart?: (selection: DishCartSelection) => void
 }
 
-export function DishSelectionModal({ isOpen, onClose, dish, branding }: DishSelectionModalProps) {
+export function DishSelectionModal({ isOpen, onClose, dish, branding, onAddToCart }: DishSelectionModalProps) {
   const tc = getThemeColors(branding)
-  
+
   // Customizer styling variables
   const cardStyle = branding.detailsCardStyle ?? 'glass'
   const optionStyle = branding.detailsCardOptionStyle ?? 'list'
   const showImage = (branding.detailsCardShowImage ?? true) && Boolean(dish.assets.imageUrl)
+
+  // Theme-derived surfaces — el modal hereda el fondo y los colores de la
+  // plantilla/logo en lugar de un negro fijo. `color-mix` da el efecto vidrio
+  // sin perder el tinte del tema (funciona sobre fondos claros y oscuros).
+  const sheetBg = cardStyle === 'glass' ? `color-mix(in srgb, ${tc.bg} 86%, transparent)` : tc.bg
+  const footerBg = cardStyle === 'glass' ? `color-mix(in srgb, ${tc.bg} 92%, transparent)` : tc.bg
 
   // Selections: Record<groupId, array of optionIds>
   const [selections, setSelections] = useState<Record<string, string[]>>(() => {
@@ -93,39 +110,64 @@ export function DishSelectionModal({ isOpen, onClose, dish, branding }: DishSele
     })
   }, [selections, dish])
 
+  // Human-readable label of the chosen variants (for the cart line)
+  const variantLabel = useMemo(() => {
+    const names: string[] = []
+    dish.variantGroups.forEach((group) => {
+      const selectedIds = selections[group.id] ?? []
+      selectedIds.forEach((optId) => {
+        const option = group.options.find((o) => o.id === optId)
+        if (option) names.push(option.name)
+      })
+    })
+    return names.length > 0 ? names.join(', ') : null
+  }, [selections, dish])
+
+  const handleSubmit = () => {
+    if (onAddToCart) {
+      onAddToCart({
+        dishId: dish.id,
+        dishName: dish.name,
+        unitPrice: totalPrice,
+        currency: dish.price.currency,
+        variantLabel,
+      })
+    }
+    onClose()
+  }
+
   return (
     <Dialog.Root open={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
       <Dialog.Portal>
         {/* Backdrop blur overlay */}
-        <Dialog.Overlay 
-          className="fixed inset-0 z-[999] bg-black/60 backdrop-blur-md transition-opacity duration-300 animate-fade-in" 
+        <Dialog.Overlay
+          className="fixed inset-0 z-[999] bg-black/55 backdrop-blur-md animate-fade-in"
         />
-        
-        {/* Bottom sheet content */}
-        <Dialog.Content 
+
+        {/* Bottom sheet content — hereda el tema de la plantilla */}
+        <Dialog.Content
           className={cn(
             "fixed bottom-0 left-[50%] translate-x-[-50%] z-[1000] w-full max-w-md flex flex-col focus:outline-none",
-            "transition-all duration-300 transform rounded-t-[2.5rem]",
-            "max-h-[88vh] border-t border-white/[0.08] shadow-2xl animate-slide-up",
-            cardStyle === 'glass' 
-              ? "bg-zinc-950/85 backdrop-blur-2xl shadow-brand-500/5 text-neutral-100" 
-              : "bg-zinc-950 text-neutral-100"
+            "rounded-t-[2.5rem] max-h-[88vh] border-t shadow-2xl animate-slide-up",
           )}
-          style={{ 
+          style={{
             fontFamily: tc.font,
-            borderColor: tc.border
+            background: sheetBg,
+            color: tc.text,
+            borderColor: tc.border,
+            backdropFilter: cardStyle === 'glass' ? 'blur(22px)' : undefined,
           }}
         >
           {/* Top pill bar (design indicator for bottom sheet) */}
           <div className="flex justify-center py-3 shrink-0">
-            <div className="w-12 h-1 rounded-full bg-white/15" />
+            <div className="w-12 h-1 rounded-full" style={{ background: tc.border }} />
           </div>
 
           <div className="overflow-y-auto px-6 pb-28 pt-1 flex flex-col gap-5">
             {/* Header row */}
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
-                <Dialog.Title className="text-xl font-black text-white leading-tight tracking-tight">
+                <Dialog.Title className="text-xl font-black leading-tight tracking-tight" style={{ color: tc.text }}>
                   {dish.name}
                 </Dialog.Title>
                 <p className="mt-1 text-xs font-semibold" style={{ color: tc.primary }}>
@@ -136,7 +178,8 @@ export function DishSelectionModal({ isOpen, onClose, dish, branding }: DishSele
                 <button
                   type="button"
                   aria-label="Cerrar modal"
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 border border-white/10 text-neutral-300 hover:text-white hover:bg-white/10 transition-colors"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border transition-colors"
+                  style={{ background: tc.surface, borderColor: tc.border, color: tc.textMuted }}
                 >
                   <X size={15} />
                 </button>
@@ -145,7 +188,7 @@ export function DishSelectionModal({ isOpen, onClose, dish, branding }: DishSele
 
             {/* Product image (optional customizer display) */}
             {showImage && (
-              <div className="relative h-44 w-full overflow-hidden rounded-2xl border border-white/[0.08] bg-neutral-900 shrink-0">
+              <div className="relative h-44 w-full overflow-hidden rounded-2xl border shrink-0" style={{ borderColor: tc.border, background: tc.surface }}>
                 <img
                   src={dish.assets.imageUrl ?? ''}
                   alt={dish.name}
@@ -156,7 +199,7 @@ export function DishSelectionModal({ isOpen, onClose, dish, branding }: DishSele
 
             {/* Description */}
             {dish.description && (
-              <p className="text-xs leading-relaxed text-neutral-300 font-medium bg-white/[0.02] border border-white/[0.04] p-3 rounded-xl">
+              <p className="text-xs leading-relaxed font-medium p-3 rounded-xl border" style={{ color: tc.textMuted, background: tc.surface, borderColor: tc.border }}>
                 {dish.description}
               </p>
             )}
@@ -167,13 +210,13 @@ export function DishSelectionModal({ isOpen, onClose, dish, branding }: DishSele
                 {dish.variantGroups.map((group) => {
                   const selectedIds = selections[group.id] ?? []
                   return (
-                    <div key={group.id} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 flex flex-col gap-3">
+                    <div key={group.id} className="rounded-2xl border p-4 flex flex-col gap-3" style={{ borderColor: tc.border, background: tc.surface }}>
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                        <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: tc.textMuted }}>
                           {group.name}
-                          {group.required && <span className="text-brand-400 ml-1 font-black">*</span>}
+                          {group.required && <span className="ml-1 font-black" style={{ color: tc.primary }}>*</span>}
                         </span>
-                        <span className="rounded-full bg-white/5 px-2.5 py-0.5 text-[8.5px] font-bold text-neutral-400 border border-white/10">
+                        <span className="rounded-full px-2.5 py-0.5 text-[8.5px] font-bold border" style={{ color: tc.textMuted, background: tc.surface, borderColor: tc.border }}>
                           {group.required ? 'Obligatorio' : 'Opcional'}
                         </span>
                       </div>
@@ -188,17 +231,17 @@ export function DishSelectionModal({ isOpen, onClose, dish, branding }: DishSele
                                 key={opt.id}
                                 type="button"
                                 onClick={() => handleToggleOption(group, opt.id)}
-                                className={cn(
-                                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-all border",
+                                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-all border"
+                                style={
                                   isSelected
-                                    ? "bg-white text-zinc-950 font-black shadow-md border-white"
-                                    : "bg-white/[0.03] border-white/[0.08] text-neutral-300 hover:bg-white/[0.06]"
-                                )}
+                                    ? { background: tc.primary, borderColor: tc.primary, color: '#ffffff' }
+                                    : { background: tc.surface, borderColor: tc.border, color: tc.textMuted }
+                                }
                               >
                                 {isSelected && <Check size={11} className="stroke-[3]" />}
                                 {opt.name}
                                 {opt.priceDelta > 0 && (
-                                  <span className={cn("text-[10px] font-extrabold", isSelected ? "text-neutral-500" : "text-brand-400")}>
+                                  <span className="text-[10px] font-extrabold" style={{ color: isSelected ? 'rgba(255,255,255,0.85)' : tc.primary }}>
                                     (+{fmt(opt.priceDelta)})
                                   </span>
                                 )}
@@ -216,12 +259,11 @@ export function DishSelectionModal({ isOpen, onClose, dish, branding }: DishSele
                                 key={opt.id}
                                 type="button"
                                 onClick={() => handleToggleOption(group, opt.id)}
-                                className={cn(
-                                  "flex items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all border",
-                                  isSelected
-                                    ? "bg-white/[0.04] border-white/15 shadow-sm"
-                                    : "bg-white/[0.02] border-white/[0.04] hover:bg-white/[0.04]"
-                                )}
+                                className="flex items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all border"
+                                style={{
+                                  background: tc.surface,
+                                  borderColor: isSelected ? tc.primary : tc.border,
+                                }}
                               >
                                 <div className="flex items-center gap-2.5 min-w-0">
                                   {/* Radio/Checkbox circle indicator */}
@@ -229,25 +271,19 @@ export function DishSelectionModal({ isOpen, onClose, dish, branding }: DishSele
                                     className={cn(
                                       "flex h-4.5 w-4.5 shrink-0 items-center justify-center border transition-all",
                                       group.multiSelect ? "rounded" : "rounded-full",
-                                      isSelected
-                                        ? "bg-brand-500 border-brand-500"
-                                        : "border-white/20 bg-transparent"
                                     )}
                                     style={{
-                                      backgroundColor: isSelected ? tc.primary : undefined,
-                                      borderColor: isSelected ? tc.primary : undefined
+                                      backgroundColor: isSelected ? tc.primary : 'transparent',
+                                      borderColor: isSelected ? tc.primary : tc.border,
                                     }}
                                   >
                                     {isSelected && <Check size={10} className="text-white stroke-[3.5]" />}
                                   </div>
-                                  <span className={cn("text-xs font-semibold truncate", isSelected ? "text-white" : "text-neutral-300")}>
+                                  <span className="text-xs font-semibold truncate" style={{ color: isSelected ? tc.text : tc.textMuted }}>
                                     {opt.name}
                                   </span>
                                 </div>
-                                <span className={cn(
-                                  'text-xs font-bold shrink-0',
-                                  opt.priceDelta === 0 ? 'text-neutral-500' : 'text-brand-450'
-                                )}>
+                                <span className="text-xs font-bold shrink-0" style={{ color: opt.priceDelta === 0 ? tc.textMuted : tc.primary }}>
                                   {opt.priceDelta === 0 ? 'Incluido' : `+${fmt(opt.priceDelta)}`}
                                 </span>
                               </button>
@@ -260,24 +296,25 @@ export function DishSelectionModal({ isOpen, onClose, dish, branding }: DishSele
                 })}
               </div>
             ) : (
-              <p className="text-xs text-neutral-450 text-center py-6">
+              <p className="text-xs text-center py-6" style={{ color: tc.textMuted }}>
                 Este plato no requiere personalización adicional.
               </p>
             )}
           </div>
 
           {/* Sticky checkout/add button panel */}
-          <div 
-            className="absolute bottom-0 left-0 right-0 p-5 border-t border-white/[0.08] flex flex-col shrink-0 rounded-b-[2.5rem]"
-            style={{ 
-              background: cardStyle === 'glass' ? "rgba(9,9,11,0.95)" : "#09090b",
-              backdropFilter: cardStyle === 'glass' ? "blur(20px)" : "none"
+          <div
+            className="absolute bottom-0 left-0 right-0 p-5 border-t flex flex-col shrink-0 rounded-b-[2.5rem]"
+            style={{
+              background: footerBg,
+              borderColor: tc.border,
+              backdropFilter: cardStyle === 'glass' ? 'blur(20px)' : undefined,
             }}
           >
             <button
               type="button"
               disabled={!canSubmit}
-              onClick={onClose}
+              onClick={handleSubmit}
               className={cn(
                 "w-full rounded-2xl py-3.5 text-sm font-black text-white transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2",
                 canSubmit
@@ -285,11 +322,12 @@ export function DishSelectionModal({ isOpen, onClose, dish, branding }: DishSele
                   : "opacity-40 cursor-not-allowed"
               )}
               style={{
-                background: canSubmit ? `linear-gradient(135deg, ${tc.primary} 0%, ${tc.primary}cc 100%)` : 'rgba(255,255,255,0.05)',
+                background: canSubmit ? `linear-gradient(135deg, ${tc.primary} 0%, ${tc.primary}cc 100%)` : tc.surface,
+                color: canSubmit ? '#ffffff' : tc.textMuted,
                 boxShadow: canSubmit ? `0 4px 18px ${tc.primary}33` : 'none'
               }}
             >
-              Listo • {fmt(totalPrice)}
+              {onAddToCart ? `${COPY.cart.addToCart} • ${fmt(totalPrice)}` : `Listo • ${fmt(totalPrice)}`}
             </button>
           </div>
         </Dialog.Content>

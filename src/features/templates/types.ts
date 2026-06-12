@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { Tenant } from '@core/domain/entities/Tenant'
 import type { Menu } from '@core/domain/entities/Menu'
 import type { Table } from '@core/domain/entities/Table'
@@ -9,6 +10,8 @@ export interface MenuTemplateProps {
   table: Table
   groups: DishesGroupedByCategory[]
   tenantId: string
+  /** Carrusel de destacados inyectado por MenuPage; se renderiza debajo del Hero. */
+  featured?: ReactNode
 }
 
 export interface TemplateDefinition {

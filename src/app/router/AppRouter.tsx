@@ -3,17 +3,22 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ROUTES } from '@shared/constants/routes'
 
 import { AuthGuard } from './guards/AuthGuard'
+import { StaffAuthGate } from './guards/StaffAuthGate'
+import { PlatformAdminGuard } from './guards/PlatformAdminGuard'
 import RootLayout from '@app/layouts/RootLayout'
 import { AdminLayout } from '@app/layouts/AdminLayout'
+import { StaffLayout } from '@app/layouts/StaffLayout'
+import { KDSLayout } from '@app/layouts/KDSLayout'
+import { POSLayout } from '@app/layouts/POSLayout'
 import { PublicLayout } from '@app/layouts/PublicLayout'
 import { MarketingLayout } from '@app/layouts/MarketingLayout'
+import { PlatformAdminLayout } from '@app/layouts/PlatformAdminLayout'
 
 import {
   LandingPage,
   TemplatesGalleryPage,
   QuotePage,
   MenuPage,
-  DishDetailPage,
   NotFoundPage,
   DashboardPage,
   EditorPage,
@@ -25,8 +30,20 @@ import {
   AppearancePage,
   AnalyticsPage,
   SettingsPage,
+  OrdersPage,
+  KDSPage,
+  PublicReservationsPage,
+  AdminReservationsPage,
+  PlanPage,
+  LoyaltyPage,
+  CustomersPage,
+  InventoryPage,
+  POSPage,
   LoginPage,
   RegisterPage,
+  TenantsListPage,
+  StaffAvailabilityPage,
+  StaffPromosPage,
 } from './routes'
 
 function PageLoader() {
@@ -55,6 +72,18 @@ export function AppRouter() {
             <Route element={<PublicLayout />}>
               <Route path={ROUTES.public.menu} element={<MenuPage />} />
               <Route path={ROUTES.public.dish} element={<MenuPage />} />
+              <Route path={ROUTES.public.reservations} element={<PublicReservationsPage />} />
+            </Route>
+
+            {/* ── Staff panel por menú (trabajadores entran con PIN) ── */}
+            <Route path={ROUTES.staff.base} element={<StaffAuthGate />}>
+              <Route element={<StaffLayout />}>
+                <Route index element={<Navigate to={ROUTES.staff.segments.orders} replace />} />
+                <Route path={ROUTES.staff.segments.orders} element={<OrdersPage />} />
+                <Route path={ROUTES.staff.segments.availability} element={<StaffAvailabilityPage />} />
+                <Route path={ROUTES.staff.segments.promos} element={<StaffPromosPage />} />
+                <Route path={ROUTES.staff.segments.tables} element={<QRManagerPage />} />
+              </Route>
             </Route>
 
             {/* ── Auth routes ── */}
@@ -66,6 +95,16 @@ export function AppRouter() {
 
               {/* Editor is full-screen standalone — has its own topbar/left-rail, no admin shell */}
               <Route path={ROUTES.admin.editor} element={<EditorPage />} />
+
+              {/* KDS — pantalla fullscreen para tablet de cocina, sin admin shell */}
+              <Route element={<KDSLayout />}>
+                <Route path={ROUTES.admin.kds} element={<KDSPage />} />
+              </Route>
+
+              {/* POS — comandero fullscreen para tablet de salón, sin admin shell */}
+              <Route element={<POSLayout />}>
+                <Route path={ROUTES.admin.pos} element={<POSPage />} />
+              </Route>
 
               <Route element={<AdminLayout />}>
                 <Route path={ROUTES.admin.root} element={<Navigate to={ROUTES.admin.dashboard} replace />} />
@@ -79,6 +118,20 @@ export function AppRouter() {
                 <Route path={ROUTES.admin.appearance} element={<AppearancePage />} />
                 <Route path={ROUTES.admin.analytics} element={<AnalyticsPage />} />
                 <Route path={ROUTES.admin.settings} element={<SettingsPage />} />
+                <Route path={ROUTES.admin.orders} element={<OrdersPage />} />
+                <Route path={ROUTES.admin.reservations} element={<AdminReservationsPage />} />
+                <Route path={ROUTES.admin.plan} element={<PlanPage />} />
+                <Route path={ROUTES.admin.loyalty} element={<LoyaltyPage />} />
+                <Route path={ROUTES.admin.customers} element={<CustomersPage />} />
+                <Route path={ROUTES.admin.inventory} element={<InventoryPage />} />
+              </Route>
+            </Route>
+
+            {/* ── Platform super-admin routes ── */}
+            <Route element={<PlatformAdminGuard />}>
+              <Route element={<PlatformAdminLayout />}>
+                <Route path={ROUTES.platformAdmin.root} element={<Navigate to={ROUTES.platformAdmin.tenants} replace />} />
+                <Route path={ROUTES.platformAdmin.tenants} element={<TenantsListPage />} />
               </Route>
             </Route>
 

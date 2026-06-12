@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import {
   X,
   Sparkles,
-  Upload,
   Camera,
   Trash2,
   Plus,
@@ -16,6 +15,8 @@ import { cn } from '@shared/utils/cn'
 import { OnboardingService } from '../../services/OnboardingService'
 import { useQuery } from '@tanstack/react-query'
 import { MenuService } from '@features/menus/services/MenuService'
+import { GeminiApiService } from '@infrastructure/services/GeminiApiService'
+import type { GeminiMenuPayload } from '@features/editor/services/AIParserService'
 
 interface MenuDigitizerModalProps {
   readonly isOpen: boolean
@@ -39,6 +40,45 @@ interface ScannedCategory {
 }
 
 const generateId = () => Math.random().toString(36).slice(2, 10)
+
+// Convierte un archivo a base64 (sin el prefijo data:) para la API de Gemini.
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = reader.result
+      if (typeof result !== 'string') { reject(new Error('FileReader error')); return }
+      const base64 = result.split(',')[1]
+      if (!base64) { reject(new Error('base64 extraction failed')); return }
+      resolve(base64)
+    }
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
+}
+
+// Mapea lo que extrae Gemini al editor de revisión (categorías → platos).
+function payloadToCategories(payload: GeminiMenuPayload): ScannedCategory[] {
+  const knownCategoryIds = new Set(payload.categories.map((c) => c.id))
+  const cats: ScannedCategory[] = payload.categories.map((cat) => ({
+    id: cat.id,
+    name: cat.name,
+    dishes: payload.dishes
+      .filter((d) => d.categoryId === cat.id)
+      .map((d) => ({ id: d.id, name: d.name, price: d.numericPrice ?? 0, description: d.description ?? '', included: true })),
+  }))
+
+  const orphans = payload.dishes.filter((d) => !knownCategoryIds.has(d.categoryId))
+  if (orphans.length > 0) {
+    cats.push({
+      id: 'otros',
+      name: 'Otros',
+      dishes: orphans.map((d) => ({ id: d.id, name: d.name, price: d.numericPrice ?? 0, description: d.description ?? '', included: true })),
+    })
+  }
+
+  return cats.filter((c) => c.dishes.length > 0)
+}
 
 const SODA_PRESET: ScannedCategory[] = [
   {
@@ -113,7 +153,13 @@ export function MenuDigitizerModal({ isOpen, onClose, tenantId, tenantName }: Me
   const [step, setStep] = useState<'upload' | 'scanning' | 'review' | 'success'>('upload')
   const [selectedPreset, setSelectedPreset] = useState<'soda' | 'pizza' | 'cafe' | null>(null)
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
-  
+
+  // Revoke blob URL when uploadedImage changes or component unmounts.
+  useEffect(() => {
+    if (!uploadedImage?.startsWith('blob:')) return
+    return () => URL.revokeObjectURL(uploadedImage)
+  }, [uploadedImage])
+
   // Scanning log state
   const [progressPercent, setProgressPercent] = useState(0)
   const [progressText, setProgressText] = useState('')
@@ -131,13 +177,32 @@ export function MenuDigitizerModal({ isOpen, onClose, tenantId, tenantName }: Me
   })
   const defaultMenuId = menus[0]?.id ?? ''
 
-  // Drag and drop / file selection trigger
+  // Subida real: la foto se manda a Gemini y se mapea al editor de revisión.
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      const url = URL.createObjectURL(file)
-      setUploadedImage(url)
-      startScanning()
+    if (file) void scanImage(file)
+  }
+
+  const scanImage = async (file: File) => {
+    setUploadedImage(URL.createObjectURL(file))
+    setSelectedPreset(null)
+    setSaveError(null)
+    setStep('scanning')
+    setProgressPercent(0)
+    try {
+      const base64 = await fileToBase64(file)
+      const payload = await GeminiApiService.analyzeMenuImage(base64, file.type)
+      const mapped = payloadToCategories(payload)
+      if (mapped.length === 0) {
+        setSaveError('No pudimos leer platos en la foto. Prueba con una imagen más nítida y de frente.')
+        setStep('upload')
+        return
+      }
+      setCategories(mapped)
+      setStep('review')
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'No se pudo leer el menú. Intenta con otra foto.')
+      setStep('upload')
     }
   }
 
@@ -152,41 +217,8 @@ export function MenuDigitizerModal({ isOpen, onClose, tenantId, tenantName }: Me
     setProgressText('Subiendo imagen del menú...')
   }
 
-  // Scanning loop animation
-  useEffect(() => {
-    if (step !== 'scanning') return
-
-    let current = 0
-    const interval = setInterval(() => {
-      current += 4
-      setProgressPercent(Math.min(current, 100))
-
-      if (current < 20) {
-        setProgressText('Buscando bordes y mejorando contraste...')
-      } else if (current < 45) {
-        setProgressText('OCR: Leyendo bloques de texto y palabras...')
-      } else if (current < 70) {
-        setProgressText('IA: Identificando platos, precios y monedas...')
-      } else if (current < 90) {
-        setProgressText('IA: Agrupando en categorías sugeridas...')
-      } else {
-        setProgressText('Estructurando datos en un formato amigable...')
-      }
-
-      if (current >= 100) {
-        clearInterval(interval)
-        setTimeout(() => {
-          generateMenuData()
-          setStep('review')
-        }, 500)
-      }
-    }, 120)
-
-    return () => clearInterval(interval)
-  }, [step])
-
-  const generateMenuData = () => {
-    let preset = SODA_PRESET
+  function generateMenuData() {
+    let preset: ScannedCategory[]
     const nameLower = tenantName.toLowerCase()
 
     if (selectedPreset === 'soda') {
@@ -221,6 +253,58 @@ export function MenuDigitizerModal({ isOpen, onClose, tenantId, tenantName }: Me
 
     setCategories(cloned)
   }
+
+  // Scanning loop animation — SOLO para los demos con preset (no imagen real).
+  useEffect(() => {
+    if (step !== 'scanning' || selectedPreset === null) return
+
+    let current = 0
+    const interval = setInterval(() => {
+      current += 4
+      setProgressPercent(Math.min(current, 100))
+
+      if (current < 20) {
+        setProgressText('Buscando bordes y mejorando contraste...')
+      } else if (current < 45) {
+        setProgressText('OCR: Leyendo bloques de texto y palabras...')
+      } else if (current < 70) {
+        setProgressText('IA: Identificando platos, precios y monedas...')
+      } else if (current < 90) {
+        setProgressText('IA: Agrupando en categorías sugeridas...')
+      } else {
+        setProgressText('Estructurando datos en un formato amigable...')
+      }
+
+      if (current >= 100) {
+        clearInterval(interval)
+        setTimeout(() => {
+          generateMenuData()
+          setStep('review')
+        }, 500)
+      }
+    }, 120)
+
+    return () => clearInterval(interval)
+  }, [step, selectedPreset])
+
+  // Animación mientras Gemini analiza la imagen real (no completa sola: la
+  // transición a 'review' la dispara scanImage cuando llega la respuesta).
+  useEffect(() => {
+    if (step !== 'scanning' || selectedPreset !== null) return
+
+    let current = 6
+    const interval = setInterval(() => {
+      current = current >= 92 ? 92 : current + 3
+      setProgressPercent(current)
+      setProgressText(
+        current < 38 ? 'Subiendo y mejorando la imagen…' :
+        current < 72 ? 'IA leyendo platos y precios…' :
+        'Estructurando tu menú…',
+      )
+    }, 200)
+
+    return () => clearInterval(interval)
+  }, [step, selectedPreset])
 
   // Categories editing callbacks
   const handleCategoryNameChange = (catId: string, newName: string) => {
@@ -362,6 +446,13 @@ export function MenuDigitizerModal({ isOpen, onClose, tenantId, tenantName }: Me
               </p>
             </div>
 
+            {saveError && (
+              <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-left">
+                <AlertCircle size={15} className="shrink-0 text-red-500 mt-0.5" />
+                <p className="text-xs font-semibold text-red-700">{saveError}</p>
+              </div>
+            )}
+
             {/* Drag and Drop Zone */}
             <label className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-surface-200 bg-surface-50/50 hover:bg-surface-50 hover:border-brand-300 p-8 text-center cursor-pointer transition-all">
               <input
@@ -471,7 +562,7 @@ export function MenuDigitizerModal({ isOpen, onClose, tenantId, tenantName }: Me
 
             {/* Categories and dishes spreadsheet */}
             <div className="flex-1 overflow-y-auto max-h-[50vh] pr-1 flex flex-col gap-5">
-              {categories.map((cat, ci) => (
+              {categories.map((cat) => (
                 <div
                   key={cat.id}
                   className="rounded-2xl border border-surface-150 bg-surface-50/40 p-4 flex flex-col gap-3.5"

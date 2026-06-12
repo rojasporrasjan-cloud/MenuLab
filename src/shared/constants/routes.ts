@@ -10,6 +10,8 @@ export const ROUTES = {
   public: {
     menu: '/:tenantId/menu',
     dish: '/:tenantId/menu/:menuId/dish/:dishId',
+    reservations: '/:tenantId/reservar',
+    loyalty: '/:tenantId/sellos',
     notFound: '/404',
   },
 
@@ -32,11 +34,38 @@ export const ROUTES = {
     appearance: '/admin/appearance',
     analytics: '/admin/analytics',
     settings: '/admin/settings',
+    orders: '/admin/pedidos',
+    kds: '/admin/cocina',
+    reservations: '/admin/reservaciones',
+    plan: '/admin/plan',
+    loyalty: '/admin/lealtad',
+    customers: '/admin/clientes',
+    inventory: '/admin/inventario',
+    pos: '/admin/pos',
+    employees: '/admin/empleados',
+  },
+
+  /* ── Staff panel (trabajadores — entran con PIN por menú: /:tenantId/staff) ── */
+  staff: {
+    base: '/:tenantId/staff',
+    home: (tenantId: string) => `/${tenantId}/staff`,
+    segments: {
+      orders: 'pedidos',
+      availability: 'disponibilidad',
+      promos: 'promos',
+      tables: 'mesas',
+    },
   },
 
   /* ── Auth ── */
   auth: {
     login: '/auth/login',
     register: '/auth/register',
+  },
+
+  /* ── Platform super-admin (solo owner de la plataforma) ── */
+  platformAdmin: {
+    root: '/platform-admin',
+    tenants: '/platform-admin/tenants',
   },
 } as const

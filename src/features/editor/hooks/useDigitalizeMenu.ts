@@ -1,9 +1,11 @@
 import { useState }                    from 'react'
+import { useQueryClient }              from '@tanstack/react-query'
 import type { TemplateId }             from '@core/domain/entities/Tenant'
 import type { EditorTheme }            from '@features/editor/types/editor.types'
 import type { CanvaTemplateRef }       from '@features/editor/types/blocks.types'
 import type { GeminiMenuPayload }      from '@features/editor/services/AIParserService'
 import { parseGeminiPayload }          from '@features/editor/services/AIParserService'
+import { importGeminiMenuToFirestore } from '@features/editor/services/AIMenuImportService'
 import { useEditorStore, selectTheme } from '@features/editor/store/useEditorStore'
 import { GeminiApiService }            from '@infrastructure/services/GeminiApiService'
 
@@ -30,15 +32,16 @@ const FALLBACK_THEME: EditorTheme = {
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 //
 // Two-phase workflow:
-//   1. extract()  — calls Gemini REST API directly (no Cloud Function required),
-//                   stores raw payload, advances to 'preview' so the caller can
-//                   show extracted content and let the user pick a template.
-//   2. apply()    — receives the chosen templateId + canvaTemplate, calls
-//                   parseGeminiPayload, loads the document into the editor store.
+//   1. extract()  — calls Gemini REST API, stores raw payload, advances to 'preview'
+//                   so the caller can show extracted content and let the user pick a template.
+//   2. apply()    — saves Gemini payload to Firestore (real docs with Gemini IDs),
+//                   calls parseGeminiPayload to build the editor document (whose
+//                   DataLayer bindings now reference real Firestore IDs), loads it.
 
-export function useDigitalizeMenu(tenantId: string) {
+export function useDigitalizeMenu(tenantId: string, menuId: string | null) {
   const [status, setStatus] = useState<DigitalizePhase>({ phase: 'idle' })
 
+  const queryClient  = useQueryClient()
   const theme        = useEditorStore(selectTheme)
   const loadDocument = useEditorStore((s) => s.loadDocument)
 
@@ -63,30 +66,55 @@ export function useDigitalizeMenu(tenantId: string) {
     }
   }
 
-  function apply(
+  async function apply(
     templateId:    TemplateId,
     canvaTemplate: CanvaTemplateRef | null,
-  ): void {
+  ): Promise<void> {
     if (status.phase !== 'preview') return
 
-    setStatus({ phase: 'applying' })
-
-    const effectiveTheme = theme ?? FALLBACK_THEME
-    const parseResult    = parseGeminiPayload(
-      status.payload,
-      tenantId,
-      templateId,
-      canvaTemplate,
-      effectiveTheme,
-    )
-
-    if (!parseResult.ok) {
-      setStatus({ phase: 'error', message: parseResult.error.message, code: parseResult.error.code })
+    if (!menuId) {
+      setStatus({
+        phase:   'error',
+        message: 'No se encontró un menú activo. Crea uno desde la sección Menú antes de digitalizar.',
+        code:    'NO_MENU',
+      })
       return
     }
 
-    loadDocument(parseResult.document)
-    setStatus({ phase: 'done' })
+    setStatus({ phase: 'applying' })
+
+    try {
+      // 1. Save AI-extracted categories + dishes to Firestore using Gemini IDs as doc IDs.
+      //    This is what makes the DataLayer bindings resolve to real data.
+      await importGeminiMenuToFirestore(tenantId, menuId, status.payload)
+
+      // 2. Invalidate the dish/category caches so EditorPage rebuilds its context.
+      await queryClient.invalidateQueries({ queryKey: ['dishes', tenantId] })
+      await queryClient.invalidateQueries({ queryKey: ['categories', tenantId] })
+      await queryClient.invalidateQueries({ queryKey: ['menus', tenantId] })
+
+      // 3. Parse the payload into an EditorDocument whose DataLayers reference
+      //    the same IDs we just wrote to Firestore.
+      const effectiveTheme = theme ?? FALLBACK_THEME
+      const parseResult    = parseGeminiPayload(
+        status.payload,
+        tenantId,
+        templateId,
+        canvaTemplate,
+        effectiveTheme,
+      )
+
+      if (!parseResult.ok) {
+        setStatus({ phase: 'error', message: parseResult.error.message, code: parseResult.error.code })
+        return
+      }
+
+      loadDocument(parseResult.document)
+      setStatus({ phase: 'done' })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al guardar el menú. Intenta de nuevo.'
+      setStatus({ phase: 'error', message, code: 'SAVE_FAILED' })
+    }
   }
 
   function reset(): void {

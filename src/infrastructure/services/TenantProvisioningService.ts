@@ -101,6 +101,8 @@ export const TenantProvisioningService = {
         multiLanguageEnabled: paid,
         loyaltyEnabled: plan === 'enterprise',
         qrGeneratorEnabled: true,
+        orderingEnabled: paid,
+        reservationsEnabled: paid,
       },
       onboardingCompletedAt: null,
       createdAt: now,

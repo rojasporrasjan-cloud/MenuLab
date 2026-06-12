@@ -28,6 +28,8 @@ export class DishMapper {
       tags: (data['tags'] as string[]) ?? [],
       variantGroups: (data['variantGroups'] as DishVariantGroup[]) ?? [],
       sortOrder: (data['sortOrder'] as number) ?? 0,
+      featured: Boolean(data['featured'] ?? false),
+      featuredRank: typeof data['featuredRank'] === 'number' ? data['featuredRank'] : null,
       createdAt: data['createdAt'].toDate() as Date,
       updatedAt: data['updatedAt'].toDate() as Date,
     }

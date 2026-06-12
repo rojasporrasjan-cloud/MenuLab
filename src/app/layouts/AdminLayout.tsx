@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Outlet, useLocation, useMatch } from 'react-router-dom'
+import { Outlet, useLocation, useMatch, Navigate } from 'react-router-dom'
 import { Sidebar, Topbar } from '@features/dashboard'
 import { OnboardingWizard, useOnboardingState } from '@features/onboarding'
 import { useTenantContext } from '@app/providers/TenantProvider'
@@ -14,6 +14,12 @@ const PAGE_TITLES: Record<string, string> = {
   [ROUTES.admin.analytics]:    'Analíticas',
   [ROUTES.admin.settings]:     'Configuración',
   [ROUTES.admin.appearance]:   'Apariencia',
+  [ROUTES.admin.orders]:       'Pedidos',
+  [ROUTES.admin.reservations]: 'Reservaciones',
+  [ROUTES.admin.plan]:         'Mi Plan',
+  [ROUTES.admin.loyalty]:      'Lealtad',
+  [ROUTES.admin.customers]:    'Clientes',
+  [ROUTES.admin.inventory]:    'Inventario',
 }
 
 export function AdminLayout() {
@@ -22,7 +28,7 @@ export function AdminLayout() {
   const location    = useLocation()
   const isDishEditor = useMatch(ROUTES.admin.dishes.editor)
 
-  const { tenant } = useTenantContext()
+  const { tenant, tenantId, role } = useTenantContext()
   const { shouldShow: shouldShowOnboarding } = useOnboardingState(tenant)
 
   const pageTitle =
@@ -39,6 +45,11 @@ export function AdminLayout() {
   }
 
   const isAppearancePage = location.pathname === ROUTES.admin.appearance
+
+  // El staff no entra al admin del dueño — se le manda a su panel.
+  if (role === 'staff' && tenantId) {
+    return <Navigate to={ROUTES.staff.home(tenantId)} replace />
+  }
 
   return (
     <div className="flex h-svh overflow-hidden" style={{ background: '#faf9f7' }}>

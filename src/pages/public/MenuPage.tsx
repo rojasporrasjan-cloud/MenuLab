@@ -4,8 +4,15 @@ import { useTenantContext } from '@app/providers/TenantProvider'
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore'
 import { db } from '@infrastructure/firebase/firestore'
 import { cn } from '@shared/utils/cn'
-import { useTableMenu, useActiveDishes, MenuSkeleton, DishSelectionModal } from '@features/menu'
+import { COPY } from '@shared/copy/ui.copy'
+import { useTableMenu, useActiveDishes, MenuSkeleton, DishSelectionModal, FeaturedCarousel } from '@features/menu'
+import { selectFeaturedDishes } from '@core/domain/entities/Dish'
+import type { Dish } from '@core/domain/entities/Dish'
+import { LIMITS } from '@shared/constants/limits'
+import type { DishCartSelection } from '@features/menu/components/DishSelectionModal'
 import { useAdminMenus } from '@features/menus'
+import { CartProvider, CartButton, CartDrawer, useCart } from '@features/cart'
+import { useTrackEvent } from '@features/analytics/hooks/useTrackEvent'
 import { getTemplateComponent } from '@features/templates'
 import { usePublishedEditorDocument } from '@features/editor'
 import { DataLayerRenderer } from '@features/editor/components/DataLayerRenderer'
@@ -100,6 +107,7 @@ function buildDataLayerContext(
         description: d.description ?? null,
         imageUrl:    d.assets?.imageUrl ?? null,
         tags:        d.tags ?? [],
+        categoryId:  d.categoryId,
       }
     }
   }
@@ -142,6 +150,37 @@ const PoweredByBadge = memo(function PoweredByBadge({ tenantId }: { tenantId: st
     >
       <span style={{ color: '#e99a0e' }}>⚡</span>
       Menú por Soda La Rústica
+    </a>
+  )
+})
+
+// ─── Reservation link (floating pill) ─────────────────────────────────────────
+
+/**
+ * Acceso a la página pública de reservas desde la carta.
+ * Solo se muestra cuando tenant.features.reservationsEnabled está activo.
+ */
+const ReservationLink = memo(function ReservationLink({
+  tenantId,
+  accentColor,
+}: {
+  tenantId: string
+  accentColor: string
+}) {
+  return (
+    <a
+      href={`/${tenantId}/reservar`}
+      aria-label={COPY.reservations.menuLink}
+      className="fixed top-4 right-4 z-50 flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12px] font-bold backdrop-blur-md transition-all hover:scale-105 active:scale-95 select-none"
+      style={{
+        background: 'rgba(0,0,0,0.55)',
+        border: `1px solid ${accentColor}55`,
+        color: 'rgba(255,255,255,0.92)',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+      }}
+    >
+      <span style={{ color: accentColor }}>📅</span>
+      {COPY.reservations.menuLink}
     </a>
   )
 })
@@ -198,16 +237,57 @@ const LivePreviewIndicator = memo(function LivePreviewIndicator({ connected }: {
   )
 })
 
+// ─── Ordering overlay (FAB + drawer) ──────────────────────────────────────────
+
+/**
+ * Capa de pedidos en línea sobre la carta pública.
+ * Solo se monta cuando tenant.features.orderingEnabled está activo.
+ */
+function OrderingOverlay({
+  tenantId,
+  whatsappPhone,
+  tableId,
+  tableLabel,
+  accentColor,
+}: {
+  tenantId: string
+  whatsappPhone: string
+  tableId: string | null
+  tableLabel: string | null
+  accentColor: string
+}) {
+  return (
+    <>
+      <CartButton accentColor={accentColor} />
+      <CartDrawer
+        tenantId={tenantId}
+        whatsappPhone={whatsappPhone}
+        tableId={tableId}
+        tableLabel={tableLabel}
+        accentColor={accentColor}
+      />
+    </>
+  )
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function MenuPage() {
+  return (
+    <CartProvider>
+      <MenuPageContent />
+    </CartProvider>
+  )
+}
+
+function MenuPageContent() {
   const { tenantId, menuId, dishId } = useParams<{ tenantId: string; menuId?: string; dishId?: string }>()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const tableId = searchParams.get('table') ?? undefined
   const isPreview = searchParams.get('preview') === 'true'
 
-  const { tenant: baseTenant } = useTenantContext()
+  const { tenant: baseTenant, isLoading: isTenantLoading } = useTenantContext()
   const [previewTenant, setPreviewTenant] = useState<Tenant | null>(null)
   const [isLiveConnected, setIsLiveConnected] = useState(false)
 
@@ -250,6 +330,12 @@ export default function MenuPage() {
           ...baseTenant.branding,
           ...previewTenant.branding,
         },
+        // El preview en vivo también lleva los feature flags (p. ej. carrito),
+        // para que activarlos en Apariencia se refleje al instante en el menú.
+        features: {
+          ...baseTenant.features,
+          ...previewTenant.features,
+        },
       }
     : (previewTenant || baseTenant)
   const { data: tableMenu } = useTableMenu(tenantId ?? '', tableId ?? '')
@@ -283,6 +369,17 @@ export default function MenuPage() {
     setLink('canonical', window.location.href)
   }, [tenant])
 
+  // Aplica la tipografía seleccionada en vivo (móvil y PC). Los templates
+  // consumen `var(--tenant-font, <su-default>)` como fuente de cuerpo, así que
+  // basta con publicar la fuente del branding en el root para que se actualice
+  // sin remontar nada.
+  useEffect(() => {
+    const font = tenant?.branding.fontFamily
+    const root = document.documentElement
+    if (font) root.style.setProperty('--tenant-font', `"${font}"`)
+    return () => { root.style.removeProperty('--tenant-font') }
+  }, [tenant?.branding.fontFamily])
+
   // Memoizado: el registry devuelve referencias lazy estables; useMemo garantiza
   // identidad constante entre renders para no remontar el template.
   const TemplateComponent = useMemo(
@@ -295,8 +392,80 @@ export default function MenuPage() {
     return groups.flatMap((g) => g.dishes).find((d) => d.id === dishId) ?? null
   }, [dishId, groups])
 
+  // ── Ordering (carrito) ──────────────────────────────────────────────────────
+  const cart = useCart()
+  const { track } = useTrackEvent(tenantId ?? '')
+  const orderingEnabled = tenant?.features?.orderingEnabled ?? false
+  const orderingPhone =
+    tenant?.branding.infoFooter.phone ||
+    tenant?.branding.orderButton.whatsapp ||
+    tenant?.branding.socials.whatsapp ||
+    ''
+  const resolvedTableId = tableMenu?.table?.id ?? tableId ?? null
+  const resolvedTableLabel = tableMenu?.table?.label ?? tableMenu?.table?.number ?? null
+
+  function handleAddToCart(selection: DishCartSelection): void {
+    cart.add({
+      dishId: selection.dishId,
+      dishName: selection.dishName,
+      unitPrice: selection.unitPrice,
+      currency: selection.currency,
+      variantLabel: selection.variantLabel,
+      note: null,
+    })
+    track({ type: 'cart_add', dishId: selection.dishId, tableId: resolvedTableId })
+  }
+
+  // ── Destacados (carrusel) ───────────────────────────────────────────────────
+  const featuredDishes = useMemo(
+    () =>
+      selectFeaturedDishes(
+        groups.flatMap((g) => g.dishes),
+        LIMITS.featured.maxFeaturedDishes,
+      ),
+    [groups],
+  )
+
+  function handleFeaturedSelect(dish: Dish): void {
+    track({ type: 'featured_click', dishId: dish.id, tableId: resolvedTableId })
+    navigate(`/${tenantId}/menu/${resolvedMenuId}/dish/${dish.id}${window.location.search}`)
+  }
+
+  function handleFeaturedAdd(dish: Dish): void {
+    handleAddToCart({
+      dishId: dish.id,
+      dishName: dish.name,
+      unitPrice: dish.price.amount,
+      currency: dish.price.currency,
+      variantLabel: null,
+    })
+  }
+
+  function handleFeaturedView(): void {
+    track({ type: 'featured_view', tableId: resolvedTableId })
+  }
+
   if (!tenantId) return <MenuNotFound />
-  if (!tenant) return isLoading ? <MenuSkeleton /> : <MenuNotFound />
+  // El tenant puede tardar un instante en resolverse al recargar; mientras el
+  // contexto sigue cargando mostramos el skeleton (no el "Menú no disponible",
+  // que solo aplica cuando de verdad no existe el tenant).
+  if (!tenant) return (isTenantLoading || isLoading) ? <MenuSkeleton /> : <MenuNotFound />
+
+  // Carrusel de destacados: se inyecta DENTRO del template (debajo del Hero)
+  // vía la prop `featured`, en lugar de renderizarse por encima de la portada.
+  const featuredNode =
+    featuredDishes.length > 0 ? (
+      <div style={{ background: tenant.branding.backgroundColor }}>
+        <FeaturedCarousel
+          dishes={featuredDishes}
+          accentColor={tenant.branding.primaryColor}
+          orderingEnabled={orderingEnabled}
+          onSelect={handleFeaturedSelect}
+          onAdd={handleFeaturedAdd}
+          onView={handleFeaturedView}
+        />
+      </div>
+    ) : null
 
   return (
     <Suspense fallback={<MenuSkeleton />}>
@@ -310,6 +479,7 @@ export default function MenuPage() {
           table={tableMenu?.table ?? walkInTable(tenantId, resolvedMenuId)}
           groups={groups}
           tenantId={tenantId}
+          featured={featuredNode}
         />
       )}
       {selectedDish && (
@@ -325,7 +495,20 @@ export default function MenuPage() {
           }}
           dish={selectedDish}
           branding={tenant.branding}
+          onAddToCart={orderingEnabled ? handleAddToCart : undefined}
         />
+      )}
+      {orderingEnabled && (
+        <OrderingOverlay
+          tenantId={tenantId}
+          whatsappPhone={orderingPhone}
+          tableId={resolvedTableId}
+          tableLabel={resolvedTableLabel}
+          accentColor={tenant.branding.primaryColor}
+        />
+      )}
+      {(tenant.features?.reservationsEnabled ?? false) && !isPreview && (
+        <ReservationLink tenantId={tenantId} accentColor={tenant.branding.primaryColor} />
       )}
       {tenantId && <PoweredByBadge tenantId={tenantId} />}
     </Suspense>

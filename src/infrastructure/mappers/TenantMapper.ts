@@ -1,5 +1,6 @@
 import type { DocumentSnapshot, QueryDocumentSnapshot } from 'firebase/firestore'
-import type { Tenant, TenantBranding, TenantFeatureFlags, TenantPlan, TenantStatus, TemplateId, ImageRounding, GradientDirection } from '@core/domain/entities/Tenant'
+import type { Tenant, TenantBranding, TenantFeatureFlags, TenantPlan, TenantStatus, TemplateId, ImageRounding, GradientDirection, MenuLanguage } from '@core/domain/entities/Tenant'
+import { DEFAULT_LOYALTY_CONFIG } from '@core/domain/entities/Tenant'
 
 type FirestoreDoc = DocumentSnapshot | QueryDocumentSnapshot
 
@@ -43,8 +44,22 @@ export class TenantMapper {
         detailsCardStyle: data['branding']?.detailsCardStyle ?? 'glass',
         detailsCardOptionStyle: data['branding']?.detailsCardOptionStyle ?? 'list',
         detailsCardShowImage: data['branding']?.detailsCardShowImage ?? true,
+        defaultLanguage: (data['branding']?.defaultLanguage as MenuLanguage) ?? 'es',
       } as TenantBranding,
-      features: data['features'] as TenantFeatureFlags,
+      features: {
+        arEnabled: data['features']?.arEnabled ?? false,
+        analyticsEnabled: data['features']?.analyticsEnabled ?? true,
+        multiLanguageEnabled: data['features']?.multiLanguageEnabled ?? false,
+        loyaltyEnabled: data['features']?.loyaltyEnabled ?? false,
+        qrGeneratorEnabled: data['features']?.qrGeneratorEnabled ?? true,
+        orderingEnabled: data['features']?.orderingEnabled ?? false,
+        reservationsEnabled: data['features']?.reservationsEnabled ?? false,
+      } as TenantFeatureFlags,
+      loyaltyConfig: {
+        stampsForReward: data['loyaltyConfig']?.stampsForReward ?? DEFAULT_LOYALTY_CONFIG.stampsForReward,
+        rewardDescription: data['loyaltyConfig']?.rewardDescription ?? DEFAULT_LOYALTY_CONFIG.rewardDescription,
+        stampLabel: data['loyaltyConfig']?.stampLabel ?? DEFAULT_LOYALTY_CONFIG.stampLabel,
+      },
       timezone: data['timezone'] as string,
       locale: data['locale'] as string,
       onboardingCompletedAt:

@@ -49,7 +49,7 @@ export default function RegisterPage() {
   // Desde cero (sin ?template) → plantilla default; el dueño la cambia luego.
   const brandingSeed: TenantBrandingSeed = selectedTemplate?.seed ?? brandingSeedFor(DEFAULT_TEMPLATE_ID)
 
-  if (!isAuthLoading && isAuthenticated) {
+  if (!isAuthLoading && isAuthenticated && !isLoading && !error) {
     return <Navigate to={ROUTES.admin.dashboard} replace />
   }
 

@@ -1,9 +1,11 @@
 import type { ComponentType } from 'react'
-import { MessageCircle, Clock, MapPin, Phone, Calendar, Star, ExternalLink } from 'lucide-react'
+import { Clock, MapPin, Phone, Calendar, Star, ExternalLink } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import type { TenantBranding } from '@core/domain/entities/Tenant'
 import type { ThemeColors } from '@shared/utils/colorScale'
 import type { Dish } from '@core/domain/entities/Dish'
+import { cn } from '@shared/utils/cn'
+import { WhatsAppIcon } from '@shared/ui/icons/WhatsAppIcon'
 
 // ── Announcement Bar ──────────────────────────────────────────────────────────
 
@@ -74,7 +76,7 @@ export function SocialsBar({ branding, tc }: { branding: TenantBranding; tc: The
     },
     branding.socials.whatsapp && {
       key: 'whatsapp',
-      Icon: MessageCircle,
+      Icon: WhatsAppIcon,
       href: `https://wa.me/${branding.socials.whatsapp.replace(/\D/g, '')}`,
     },
   ].filter(Boolean) as { key: string; Icon: ComponentType<{ size?: number }>; href: string }[]
@@ -276,27 +278,52 @@ export function FeaturedSection({ branding, tc, dishes, tenantId, menuId }: {
 // ── Order Floating Button ─────────────────────────────────────────────────────
 
 export function OrderButton({ branding, tc }: { branding: TenantBranding; tc: ThemeColors }) {
-  if (!branding.orderButton.enabled) return null
+  const ob = branding.orderButton
+  if (!ob.enabled) return null
 
-  const number = branding.orderButton.whatsapp.replace(/\D/g, '')
+  const number = ob.whatsapp.replace(/\D/g, '')
   const href = number
     ? `https://wa.me/${number}?text=${encodeURIComponent('Hola, quiero hacer un pedido 🍽️')}`
     : '#'
+  const label = ob.label || 'Ordenar ahora'
+  const variant = ob.variant ?? 'floating'
+  const iconOnly = ob.iconOnly ?? false
 
+  // Barra fija a lo ancho de la pantalla (estilo "fijo").
+  if (variant === 'bar') {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={label}
+        className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-center gap-2.5 px-5 py-4 font-bold text-sm text-white transition-all active:scale-[0.99]"
+        style={{ backgroundColor: tc.primary, boxShadow: '0 -4px 20px rgba(0,0,0,0.18)' }}
+      >
+        <WhatsAppIcon size={20} />
+        {!iconOnly && label}
+      </a>
+    )
+  }
+
+  // Flotante: píldora con texto o, si es solo ícono, FAB circular.
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="fixed bottom-20 right-4 z-50 flex items-center gap-2 px-5 py-3 font-bold text-sm text-white transition-all active:scale-95 hover:opacity-90"
+      aria-label={label}
+      className={cn(
+        'fixed bottom-20 right-4 z-50 flex items-center justify-center text-white transition-all active:scale-95 hover:opacity-90',
+        iconOnly ? 'h-14 w-14 rounded-full' : 'gap-2 px-5 py-3 rounded-full font-bold text-sm',
+      )}
       style={{
         backgroundColor: tc.primary,
-        borderRadius: '999px',
         boxShadow: `0 4px 20px ${tc.primary}55, 0 2px 8px rgba(0,0,0,0.15)`,
       }}
     >
-      <MessageCircle size={16} />
-      {branding.orderButton.label || 'Ordenar ahora'}
+      <WhatsAppIcon size={iconOnly ? 26 : 18} />
+      {!iconOnly && label}
     </a>
   )
 }

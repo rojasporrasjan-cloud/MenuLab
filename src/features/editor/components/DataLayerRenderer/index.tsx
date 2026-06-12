@@ -15,6 +15,7 @@ export interface ResolvedDish {
   readonly description: string | null
   readonly imageUrl: string | null
   readonly tags: readonly string[]
+  readonly categoryId: string
 }
 
 export interface ResolvedCategory {
@@ -132,7 +133,9 @@ function resolveBinding(
     }
 
     case 'dish-list': {
-      const matchingDishes = Object.values(context.dishes).slice(0, binding.maxItems)
+      const matchingDishes = Object.values(context.dishes)
+        .filter((d) => d.categoryId === binding.categoryId)
+        .slice(0, binding.maxItems)
 
       if (matchingDishes.length === 0) {
         return { content: <DishListPlaceholder layout={binding.layout} maxItems={binding.maxItems} />, isImage: false }

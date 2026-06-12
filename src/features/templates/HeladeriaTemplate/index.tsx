@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Search, Cuboid, X, IceCreamCone } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { getThemeColors } from '@shared/utils/colorScale'
+import { matchesQuery } from '@shared/utils/menuSearch'
 import { AnnouncementBar, SocialsBar, InfoFooter, OrderButton, ReservationSection, PromoSection, FeaturedSection } from '../sections'
 import type { MenuTemplateProps } from '../types'
 import type { Dish } from '@core/domain/entities/Dish'
@@ -10,7 +11,7 @@ import type { TenantBranding } from '@core/domain/entities/Tenant'
 
 // Heladería — playful pastel, chubby rounded Baloo display, sprinkles and scoops.
 const DISPLAY = '"Baloo 2", cursive'
-const BODY = '"Nunito", sans-serif'
+const BODY = 'var(--tenant-font, "Nunito"), sans-serif'
 
 const PAPER = '#fdf0ff'
 const CARD = '#ffffff'
@@ -33,7 +34,7 @@ const fmt = (n: number, c: string): string =>
 
 const SPRINKLES = 'radial-gradient(circle at 20% 30%, #ff8fb1 0 3px, transparent 4px), radial-gradient(circle at 70% 60%, #6ad5ff 0 3px, transparent 4px), radial-gradient(circle at 45% 80%, #ffd23f 0 3px, transparent 4px), radial-gradient(circle at 88% 25%, #7bd88f 0 3px, transparent 4px)'
 
-export default function HeladeriaTemplate({ tenant, menu, table, groups, tenantId }: MenuTemplateProps): ReactNode {
+export default function HeladeriaTemplate({ tenant, menu, table, groups, tenantId, featured }: MenuTemplateProps): ReactNode {
   useEffect(loadFonts, [])
   const tc = getThemeColors(tenant.branding)
   const accent = tc.primary
@@ -60,7 +61,7 @@ export default function HeladeriaTemplate({ tenant, menu, table, groups, tenantI
 
   const scrollTo = (id: string): void => sectionRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   const filtered = query.trim()
-    ? allDishes.filter((d) => d.name.toLowerCase().includes(query.toLowerCase()) || (d.description ?? '').toLowerCase().includes(query.toLowerCase()))
+    ? allDishes.filter((d) => matchesQuery([d.name, d.description], query))
     : null
 
   return (
@@ -88,8 +89,19 @@ export default function HeladeriaTemplate({ tenant, menu, table, groups, tenantI
         </div>
       </header>
 
-      <nav className="sticky top-0 z-30" style={{ background: 'rgba(253,240,255,0.96)', backdropFilter: 'blur(10px)', borderBottom: `1px solid ${HAIR}` }}>
-        <div className="flex overflow-x-auto scrollbar-hide" style={{ padding: '11px 12px', gap: 8 }}>
+      {/* ── Sticky search & category nav ── */}
+      <div className="sticky top-0 z-30 flex flex-col" style={{ background: 'rgba(253,240,255,0.96)', backdropFilter: 'blur(10px)', borderBottom: `1px solid ${HAIR}` }}>
+        {tenant.branding.showSearch && (
+          <div style={{ padding: '11px 16px 3px' }}>
+            <div className="flex items-center gap-2.5" style={{ background: CARD, border: `1px solid ${HAIR}`, borderRadius: 999, padding: '11px 16px' }}>
+            <Search size={15} style={{ color: accent, flexShrink: 0 }} />
+            <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar sabor…" className="flex-1 bg-transparent focus:outline-none placeholder:opacity-45" style={{ color: INK, fontSize: '0.88rem', fontFamily: BODY }} />
+            {query ? <button onClick={() => setQuery('')}><X size={14} style={{ color: MUTED }} /></button> : null}
+          </div>
+          </div>
+        )}
+        <nav style={{ background: 'rgba(253, 240, 255, 0.96)', backdropFilter: 'blur(10px)' }}>
+          <div className="flex overflow-x-auto scrollbar-hide" style={{ padding: '11px 12px', gap: 8 }}>
           {groups.map((g) => {
             const isActive = active === g.category.id
             return (
@@ -99,18 +111,10 @@ export default function HeladeriaTemplate({ tenant, menu, table, groups, tenantI
             )
           })}
         </div>
-      </nav>
+        </nav>
+      </div>
 
-      {tenant.branding.showSearch ? (
-        <div style={{ padding: '14px 16px 2px' }}>
-          <div className="flex items-center gap-2.5" style={{ background: CARD, border: `1px solid ${HAIR}`, borderRadius: 999, padding: '11px 16px' }}>
-            <Search size={15} style={{ color: accent, flexShrink: 0 }} />
-            <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar sabor…" className="flex-1 bg-transparent focus:outline-none placeholder:opacity-45" style={{ color: INK, fontSize: '0.88rem', fontFamily: BODY }} />
-            {query ? <button onClick={() => setQuery('')}><X size={14} style={{ color: MUTED }} /></button> : null}
-          </div>
-        </div>
-      ) : null}
-
+      {featured}
       <FeaturedSection branding={tenant.branding} tc={tc} dishes={allDishes} tenantId={tenantId} menuId={menu.id} />
       <ReservationSection branding={tenant.branding} tc={tc} />
       <PromoSection branding={tenant.branding} tc={tc} />

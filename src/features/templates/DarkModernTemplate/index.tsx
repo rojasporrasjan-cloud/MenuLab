@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Cuboid, Utensils, Search } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { getThemeColors } from '@shared/utils/colorScale'
+import { matchesQuery } from '@shared/utils/menuSearch'
 import { AnnouncementBar, SocialsBar, InfoFooter, OrderButton, ReservationSection, PromoSection, FeaturedSection } from '../sections'
 import type { MenuTemplateProps } from '../types'
 import type { Dish } from '@core/domain/entities/Dish'
@@ -10,7 +11,7 @@ import type { Dish } from '@core/domain/entities/Dish'
 const fmt = (n: number, c: string) =>
   new Intl.NumberFormat('es-CR', { style: 'currency', currency: c, minimumFractionDigits: 0 }).format(n)
 
-export default function DarkModernTemplate({ tenant, menu, table, groups, tenantId }: MenuTemplateProps) {
+export default function DarkModernTemplate({ tenant, menu, table, groups, tenantId, featured }: MenuTemplateProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const tc = getThemeColors(tenant.branding)
 
@@ -22,10 +23,7 @@ export default function DarkModernTemplate({ tenant, menu, table, groups, tenant
   const tableLabel = table.label ?? `Mesa ${table.number}`
   const [searchQuery, setSearchQuery] = useState('')
   const filteredDishes = searchQuery.trim()
-    ? (activeGroup?.dishes ?? []).filter((d) =>
-        d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (d.description ?? '').toLowerCase().includes(searchQuery.toLowerCase()),
-      )
+    ? (activeGroup?.dishes ?? []).filter((d) => matchesQuery([d.name, d.description], searchQuery))
     : activeGroup?.dishes ?? []
 
   return (
@@ -74,7 +72,8 @@ export default function DarkModernTemplate({ tenant, menu, table, groups, tenant
 
       {/* ── Scrollable content ──────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
-        <FeaturedSection branding={tenant.branding} tc={tc} dishes={allDishes} tenantId={tenantId} menuId={menu.id} />
+        {featured}
+      <FeaturedSection branding={tenant.branding} tc={tc} dishes={allDishes} tenantId={tenantId} menuId={menu.id} />
         <ReservationSection branding={tenant.branding} tc={tc} />
         <PromoSection branding={tenant.branding} tc={tc} />
 

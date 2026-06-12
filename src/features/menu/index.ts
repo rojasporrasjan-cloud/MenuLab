@@ -11,6 +11,7 @@ export { DishCard } from './components/DishCard'
 export { DishGrid } from './components/DishGrid'
 export { MenuSkeleton } from './components/MenuSkeleton'
 export { DishSelectionModal } from './components/DishSelectionModal'
+export { FeaturedCarousel } from './components/FeaturedCarousel'
 
 // ── Store ─────────────────────────────────────────────────────────────────────
 export { useMenuStore } from './store/menuStore'

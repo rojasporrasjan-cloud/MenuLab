@@ -35,6 +35,7 @@ export interface AppearanceValues {
   socials: TenantSocials
   infoFooter: TenantInfoFooter
   orderButton: TenantOrderButton
+  orderingEnabled: boolean
   reservation: TenantReservation
   promo: TenantPromo
   featuredSection: TenantFeatured
@@ -99,6 +100,7 @@ export function useUpdateAppearance(tenantId: string) {
         socials: values.socials,
         infoFooter: values.infoFooter,
         orderButton: values.orderButton,
+        orderingEnabled: values.orderingEnabled,
         reservation: values.reservation,
         promo: values.promo,
         featuredSection: values.featuredSection,

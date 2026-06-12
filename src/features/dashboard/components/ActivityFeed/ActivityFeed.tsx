@@ -1,4 +1,4 @@
-import { QrCode, Eye, Cuboid, AlertCircle, Activity } from 'lucide-react'
+import { QrCode, Eye, Cuboid, AlertCircle, Activity, ShoppingCart, Receipt, Star, MousePointerClick } from 'lucide-react'
 import { Spinner }    from '@shared/ui/components/Spinner'
 import type { AnalyticsEvent, AnalyticsEventType } from '@core/domain/entities/AnalyticsEvent'
 
@@ -14,6 +14,10 @@ const EVENT_META: Record<AnalyticsEventType, { label: string; icon: typeof QrCod
   dish_view: { label: 'Vista de plato', icon: Eye,          iconBg: 'rgba(16,185,129,0.1)',   iconColor: '#059669' },
   ar_launch: { label: 'Lanzamiento AR', icon: Cuboid,       iconBg: 'rgba(139,92,246,0.1)',   iconColor: '#7c3aed' },
   ar_error:  { label: 'Error AR',       icon: AlertCircle,  iconBg: 'rgba(239,68,68,0.08)',   iconColor: '#dc2626' },
+  cart_add:       { label: 'Añadido al carrito',  icon: ShoppingCart,      iconBg: 'rgba(232,93,4,0.1)',    iconColor: '#e85d04' },
+  order_created:  { label: 'Pedido creado',       icon: Receipt,           iconBg: 'rgba(22,163,74,0.1)',   iconColor: '#16a34a' },
+  featured_view:  { label: 'Vista de destacado',  icon: Star,              iconBg: 'rgba(234,179,8,0.12)',  iconColor: '#ca8a04' },
+  featured_click: { label: 'Click en destacado',  icon: MousePointerClick, iconBg: 'rgba(14,165,233,0.1)', iconColor: '#0284c7' },
 }
 
 function formatRelativeTime(date: Date): string {

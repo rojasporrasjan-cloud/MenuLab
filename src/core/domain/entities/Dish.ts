@@ -54,6 +54,21 @@ export interface Dish {
   tags: string[]
   variantGroups: DishVariantGroup[]
   sortOrder: number
+  /** Aparece en el carrusel de destacados de la carta pública. */
+  featured: boolean
+  /** Orden dentro del carrusel (menor = primero). null si no es destacado. */
+  featuredRank: number | null
   createdAt: Date
   updatedAt: Date
+}
+
+/** Destacados de una lista de platos, ordenados por rank y limitados. */
+export function selectFeaturedDishes(dishes: readonly Dish[], max: number): Dish[] {
+  return dishes
+    .filter((d) => d.featured && d.status === 'available')
+    .sort(
+      (a, b) =>
+        (a.featuredRank ?? Number.MAX_SAFE_INTEGER) - (b.featuredRank ?? Number.MAX_SAFE_INTEGER),
+    )
+    .slice(0, max)
 }

@@ -27,5 +27,5 @@ export interface NavItem {
   path: string
   icon: LucideIcon
   badge?: string | number
-  badgeVariant?: 'brand' | 'violet'
+  badgeVariant?: 'brand' | 'violet' | 'danger'
 }
