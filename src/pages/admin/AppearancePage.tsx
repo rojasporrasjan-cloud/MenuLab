@@ -826,7 +826,6 @@ function SectionsPanel({
             : 'Mensaje en la parte superior del menú'}
           isOpen={openSection === 'announcement'}
           onToggle={() => toggleSection('announcement')}
-          locked
           enabled={editing.announcement.enabled}
           onEnable={(v) => set('announcement', { ...editing.announcement, enabled: v })}
         >
@@ -869,7 +868,6 @@ function SectionsPanel({
             : 'Botón flotante para ordenar por WhatsApp'}
           isOpen={openSection === 'orderButton'}
           onToggle={() => toggleSection('orderButton')}
-          locked
           enabled={editing.orderButton.enabled}
           onEnable={(v) => set('orderButton', { ...editing.orderButton, enabled: v })}
         >
@@ -927,7 +925,6 @@ function SectionsPanel({
             : 'Sección para reservar mesa en línea'}
           isOpen={openSection === 'reservation'}
           onToggle={() => toggleSection('reservation')}
-          locked
           enabled={editing.reservation.enabled}
           onEnable={(v) => set('reservation', { ...editing.reservation, enabled: v })}
         >
@@ -953,7 +950,6 @@ function SectionsPanel({
             : 'Banner con descuentos o eventos'}
           isOpen={openSection === 'promo'}
           onToggle={() => toggleSection('promo')}
-          locked
           enabled={editing.promo.enabled}
           onEnable={(v) => set('promo', { ...editing.promo, enabled: v })}
         >
@@ -1067,7 +1063,6 @@ function SectionsPanel({
             : 'Carrusel horizontal de tus mejores platos'}
           isOpen={openSection === 'featured'}
           onToggle={() => toggleSection('featured')}
-          locked
           enabled={editing.featuredSection.enabled}
           onEnable={(v) => set('featuredSection', { ...editing.featuredSection, enabled: v })}
         >
@@ -1096,7 +1091,6 @@ function SectionsPanel({
             : 'Instagram, TikTok, Facebook, WhatsApp'}
           isOpen={openSection === 'socials'}
           onToggle={() => toggleSection('socials')}
-          locked
           enabled={editing.socials.enabled}
           onEnable={(v) => set('socials', { ...editing.socials, enabled: v })}
         >
@@ -1114,7 +1108,6 @@ function SectionsPanel({
             : 'Horarios, dirección y teléfono'}
           isOpen={openSection === 'infoFooter'}
           onToggle={() => toggleSection('infoFooter')}
-          locked
           enabled={editing.infoFooter.enabled}
           onEnable={(v) => set('infoFooter', { ...editing.infoFooter, enabled: v })}
         >
