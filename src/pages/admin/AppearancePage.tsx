@@ -1604,7 +1604,7 @@ function SectionCard({
               onEnable(!enabled) 
             }}
             className={cn(
-              'relative shrink-0 h-[26px] w-[46px] rounded-full transition-colors duration-300 shadow-[inset_0_1px_4px_rgba(0,0,0,0.1)] mr-1 flex items-center justify-center',
+              'relative shrink-0 h-[26px] w-[46px] rounded-full transition-colors duration-300 shadow-[inset_0_1px_4px_rgba(0,0,0,0.1)] mr-1',
               isSwitchOn ? 'bg-brand-500' : 'bg-surface-200 hover:bg-surface-300',
               locked && 'opacity-80 cursor-not-allowed hover:bg-brand-500'
             )}
@@ -1612,7 +1612,7 @@ function SectionCard({
           >
             {locked && <span className="absolute inset-0 flex items-center justify-center text-[10px] pr-[18px]">💎</span>}
             <div className={cn(
-              'absolute top-[3px] h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.3)] transition-transform duration-300 flex items-center justify-center',
+              'absolute top-[3px] left-0 h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.3)] transition-transform duration-300 flex items-center justify-center',
               isSwitchOn ? 'translate-x-[23px]' : 'translate-x-[3px]',
               locked && 'opacity-90'
             )}>
