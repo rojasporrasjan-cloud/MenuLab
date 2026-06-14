@@ -345,7 +345,7 @@ export default function AppearancePage() {
         .catch((err) => {
           console.error("Error updating live preview document:", err)
         })
-    }, 600) // 600ms debounce to prevent rate limit
+    }, 1500) // 1500ms debounce to strictly respect Firestore 1 write/sec limit
     return () => clearTimeout(timeout)
   }, [tenantId, previewTenant])
 
@@ -365,7 +365,8 @@ export default function AppearancePage() {
               .catch((err) => console.error("Error resetting phoneActive:", err))
           }
         }
-      }
+      },
+      (err) => console.error("Live preview snapshot error:", err)
     )
     return () => unsub()
   }, [tenantId])
