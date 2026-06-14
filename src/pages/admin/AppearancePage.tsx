@@ -297,6 +297,7 @@ export default function AppearancePage() {
   // panel (antes era fijo y muy pequeño). El iframe se renderiza a tamaño
   // lógico de teléfono (390×863) y se reduce con transform para ser fiel.
   const phoneAreaRef = useRef<HTMLDivElement>(null)
+  const iframeRef = useRef<HTMLIFrameElement>(null)
   const [phoneScale, setPhoneScale] = useState(0.6)
 
   useEffect(() => {
@@ -348,6 +349,21 @@ export default function AppearancePage() {
     }, 1500) // 1500ms debounce to strictly respect Firestore 1 write/sec limit
     return () => clearTimeout(timeout)
   }, [tenantId, previewTenant])
+
+  // Truly live sync to iframe via postMessage (no Firebase limits)
+  useEffect(() => {
+    if (iframeRef.current?.contentWindow && previewTenant) {
+      iframeRef.current.contentWindow.postMessage({
+        type: 'LIVE_PREVIEW_UPDATE',
+        payload: {
+          name: previewTenant.name,
+          templateId: previewTenant.templateId,
+          branding: stripUndefined(previewTenant.branding),
+          features: previewTenant.features,
+        }
+      }, '*')
+    }
+  }, [previewTenant])
 
   // Listen for phone connection trigger to auto-close QR modal and collapse preview
   useEffect(() => {
@@ -688,6 +704,7 @@ export default function AppearancePage() {
                   {/* Screen Content */}
                   <div className="h-full w-full bg-surface-0 relative rounded-[32px] overflow-hidden" style={{ borderRadius: 32 * phoneScale }}>
                     <iframe
+                      ref={iframeRef}
                       src={`${menuPreviewUrl}?preview=true`}
                       title="Vista previa móvil"
                       className="border-0 phone-preview-scroll w-full h-full"

@@ -324,6 +324,20 @@ function MenuPageContent() {
     return () => unsub()
   }, [tenantId, isPreview])
 
+  // Instant local preview via postMessage (bypasses Firebase limits)
+  useEffect(() => {
+    if (!isPreview) return
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'LIVE_PREVIEW_UPDATE') {
+        setPreviewTenant(e.data.payload)
+        setIsLiveConnected(true)
+      }
+    }
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [isPreview])
+
+
   // Notify the PC editor that a phone has successfully connected/scanned
   useEffect(() => {
     if (!tenantId || !isPreview) return
