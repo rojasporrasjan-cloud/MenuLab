@@ -95,6 +95,8 @@ export const TenantProvisioningService = {
         fontFamily: input.branding.fontFamily,
         logoUrl: null,
         coverImageUrl: null,
+        orderButton: { enabled: true, whatsapp: '', label: 'Ordenar ahora' },
+        infoFooter: { enabled: true, hours: '', address: '', phone: '', wazeUrl: '', googleMapsUrl: '', sinpeNumber: '' },
       },
       features: {
         arEnabled: paid,
@@ -102,7 +104,7 @@ export const TenantProvisioningService = {
         multiLanguageEnabled: paid,
         loyaltyEnabled: plan === 'enterprise',
         qrGeneratorEnabled: true,
-        orderingEnabled: paid,
+        orderingEnabled: true, // Habilitado para todos los planes por defecto
         reservationsEnabled: paid,
       },
       onboardingCompletedAt: null,

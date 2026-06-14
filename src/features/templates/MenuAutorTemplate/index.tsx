@@ -4,7 +4,7 @@ import { Search, Cuboid, X } from 'lucide-react';
 import { cn } from '@shared/utils/cn';
 import { getThemeColors } from '@shared/utils/colorScale';
 import { matchesQuery } from '@shared/utils/menuSearch';
-import { AnnouncementBar, SocialsBar, InfoFooter, OrderButton, ReservationSection, PromoSection, FeaturedSection } from '../sections';
+import { AnnouncementBar, SocialsBar, InfoFooter, OrderButton, ReservationSection, PromoSection, FeaturedSection, ScheduleBanner } from '../sections';
 import type { MenuTemplateProps } from '../types';
 import type { Dish } from '@core/domain/entities/Dish';
 import type { TenantBranding } from '@core/domain/entities/Tenant';
@@ -73,6 +73,7 @@ export default function MenuAutorTemplate({ tenant, menu, table, groups, tenantI
   return (
     <div style={{ background: PAPER, minHeight: '100svh', color: INK, fontFamily: BODY, fontSize: tc.textScale }}>
       <AnnouncementBar branding={tenant.branding} tc={tc} />
+      <ScheduleBanner branding={tenant.branding} tc={tc} />
       <OrderButton branding={tenant.branding} tc={tc} />
 
       <header className="relative shrink-0 overflow-hidden" style={{ height: heroH, background: tenant.branding.coverImageUrl ? '#1a1410' : `radial-gradient(ellipse at 50% 0%, ${accent}12 0%, transparent 55%), linear-gradient(180deg, #fdf9f0 0%, #f5ecdc 100%)` }}>

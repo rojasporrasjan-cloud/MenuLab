@@ -24,6 +24,23 @@ export function AnnouncementBar({ branding, tc }: { branding: TenantBranding; tc
   )
 }
 
+// ── Schedule Banner ──────────────────────────────────────────────────────────
+
+export function ScheduleBanner({ branding, tc }: { branding: TenantBranding; tc: ThemeColors }) {
+  if (!branding.infoFooter.enabled || !branding.infoFooter.hours?.trim()) return null
+  return (
+    <div
+      className="shrink-0 flex items-center justify-center gap-1.5 px-4 py-2 text-center"
+      style={{ backgroundColor: `${tc.bg}E6`, borderBottom: `1px solid ${tc.border}`, backdropFilter: 'blur(8px)' }}
+    >
+      <Clock size={13} style={{ color: tc.primary }} />
+      <span className="text-xs font-medium" style={{ color: tc.text }}>
+        {branding.infoFooter.hours}
+      </span>
+    </div>
+  )
+}
+
 // ── Social brand icons (not in lucide) ───────────────────────────────────────
 
 function TikTokIcon({ size = 16 }: { size?: number }) {

@@ -4,7 +4,7 @@ import { Search, Cuboid, X, Pizza } from 'lucide-react';
 import { cn } from '@shared/utils/cn';
 import { getThemeColors } from '@shared/utils/colorScale';
 import { matchesQuery } from '@shared/utils/menuSearch';
-import { AnnouncementBar, SocialsBar, InfoFooter, OrderButton, ReservationSection, PromoSection, FeaturedSection } from '../sections';
+import { AnnouncementBar, SocialsBar, InfoFooter, OrderButton, ReservationSection, PromoSection, FeaturedSection, ScheduleBanner } from '../sections';
 import type { MenuTemplateProps } from '../types';
 import type { Dish } from '@core/domain/entities/Dish';
 import type { TenantBranding } from '@core/domain/entities/Tenant';
@@ -65,6 +65,7 @@ export default function PizzaRusticaTemplate({ tenant, menu, table, groups, tena
   return (
     <div style={{ background: INKBG, minHeight: '100svh', color: TEXT, fontFamily: BODY, fontSize: tc.textScale }}>
       <AnnouncementBar branding={tenant.branding} tc={tc} />
+      <ScheduleBanner branding={tenant.branding} tc={tc} />
       <OrderButton branding={tenant.branding} tc={tc} />
 
       <header className="relative shrink-0 overflow-hidden" style={{ height: heroH, backgroundColor: '#14110c' }}>

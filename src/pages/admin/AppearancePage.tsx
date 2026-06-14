@@ -345,7 +345,7 @@ export default function AppearancePage() {
         .catch((err) => {
           console.error("Error updating live preview document:", err)
         })
-    }, 75) // 75ms debounce for instant updates
+    }, 600) // 600ms debounce to prevent rate limit
     return () => clearTimeout(timeout)
   }, [tenantId, previewTenant])
 

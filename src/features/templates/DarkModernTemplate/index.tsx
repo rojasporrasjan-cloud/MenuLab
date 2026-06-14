@@ -4,7 +4,7 @@ import { Cuboid, Utensils, Search } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { getThemeColors } from '@shared/utils/colorScale'
 import { matchesQuery } from '@shared/utils/menuSearch'
-import { AnnouncementBar, SocialsBar, InfoFooter, OrderButton, ReservationSection, PromoSection, FeaturedSection } from '../sections'
+import { AnnouncementBar, SocialsBar, InfoFooter, OrderButton, ReservationSection, PromoSection, FeaturedSection, ScheduleBanner } from '../sections'
 import type { MenuTemplateProps } from '../types'
 import type { Dish } from '@core/domain/entities/Dish'
 
@@ -32,6 +32,7 @@ export default function DarkModernTemplate({ tenant, menu, table, groups, tenant
       style={{ background: tc.gradient, color: tc.text, fontFamily: tc.font, fontSize: tc.textScale, minHeight: '100svh' }}
     >
       <AnnouncementBar branding={tenant.branding} tc={tc} />
+      <ScheduleBanner branding={tenant.branding} tc={tc} />
       <OrderButton branding={tenant.branding} tc={tc} />
 
       {/* ── Cinematic hero ─────────────────────────────────────────── */}
@@ -69,6 +70,31 @@ export default function DarkModernTemplate({ tenant, menu, table, groups, tenant
           </div>
         </div>
       </header>
+
+      {/* ── Top category bar ─────────────────────────────────────── */}
+      <nav
+        className="flex shrink-0 gap-0 overflow-x-auto scrollbar-hide z-10 shadow-sm"
+        style={{ backgroundColor: `${tc.bg}f2`, backdropFilter: 'blur(20px)', borderBottom: `1px solid ${tc.border}` }}
+      >
+        {groups.map((g) => {
+          const isActive = activeCategory === g.category.id
+          return (
+            <button
+              key={g.category.id}
+              onClick={() => setSelectedCategory(g.category.id)}
+              className="flex min-w-[76px] shrink-0 flex-1 flex-col items-center justify-center gap-0.5 px-3 py-3 transition-all duration-200"
+              style={{ borderBottom: `2px solid ${isActive ? tc.primary : 'transparent'}` }}
+            >
+              <span
+                className="line-clamp-1 text-center text-xs font-bold leading-tight"
+                style={{ color: isActive ? tc.primary : tc.textMuted }}
+              >
+                {g.category.name}
+              </span>
+            </button>
+          )
+        })}
+      </nav>
 
       {/* ── Scrollable content ──────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
@@ -131,30 +157,6 @@ export default function DarkModernTemplate({ tenant, menu, table, groups, tenant
         <InfoFooter branding={tenant.branding} tc={tc} />
       </div>
 
-      {/* ── Bottom category bar ─────────────────────────────────────── */}
-      <nav
-        className="flex shrink-0 gap-0 overflow-x-auto scrollbar-hide"
-        style={{ backgroundColor: `${tc.bg}f2`, backdropFilter: 'blur(20px)', borderTop: `1px solid ${tc.border}` }}
-      >
-        {groups.map((g) => {
-          const isActive = activeCategory === g.category.id
-          return (
-            <button
-              key={g.category.id}
-              onClick={() => setSelectedCategory(g.category.id)}
-              className="flex min-w-[76px] shrink-0 flex-1 flex-col items-center justify-center gap-0.5 px-3 py-3 transition-all duration-200"
-              style={{ borderTop: `2px solid ${isActive ? tc.primary : 'transparent'}` }}
-            >
-              <span
-                className="line-clamp-1 text-center text-xs font-bold leading-tight"
-                style={{ color: isActive ? tc.primary : tc.textMuted }}
-              >
-                {g.category.name}
-              </span>
-            </button>
-          )
-        })}
-      </nav>
     </div>
   )
 }

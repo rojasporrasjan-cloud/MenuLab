@@ -4,7 +4,7 @@ import { Search, Cuboid, X, Wheat } from 'lucide-react';
 import { cn } from '@shared/utils/cn';
 import { getThemeColors } from '@shared/utils/colorScale';
 import { matchesQuery } from '@shared/utils/menuSearch';
-import { AnnouncementBar, SocialsBar, InfoFooter, OrderButton, ReservationSection, PromoSection, FeaturedSection } from '../sections';
+import { AnnouncementBar, SocialsBar, InfoFooter, OrderButton, ReservationSection, PromoSection, FeaturedSection, ScheduleBanner } from '../sections';
 import type { MenuTemplateProps } from '../types';
 import type { Dish } from '@core/domain/entities/Dish';
 import type { TenantBranding } from '@core/domain/entities/Tenant';
@@ -66,6 +66,7 @@ export default function PanaderiaTemplate({ tenant, menu, table, groups, tenantI
   return (
     <div style={{ background: PAPER, minHeight: '100svh', color: INK, fontFamily: BODY, fontSize: tc.textScale }}>
       <AnnouncementBar branding={tenant.branding} tc={tc} />
+      <ScheduleBanner branding={tenant.branding} tc={tc} />
       <OrderButton branding={tenant.branding} tc={tc} />
 
       <header className="relative shrink-0 overflow-hidden" style={{ height: heroH, background: hasCover ? '#231809' : `radial-gradient(ellipse at 50% 0%, ${accent}18 0%, transparent 55%), linear-gradient(180deg, #fdf3df 0%, #f3e2bf 100%)` }}>
