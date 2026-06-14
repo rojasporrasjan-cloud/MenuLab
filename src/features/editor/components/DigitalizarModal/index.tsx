@@ -57,13 +57,43 @@ function validateFile(file: File): ValidationError | null {
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
-    const reader    = new FileReader()
-    reader.onload   = () => {
-      const result = reader.result
-      if (typeof result !== 'string') { reject(new Error('FileReader error')); return }
-      const base64 = result.split(',')[1]
-      if (!base64) { reject(new Error('base64 extraction failed')); return }
-      resolve(base64)
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const MAX_DIMENSION = 1600
+        let width = img.width
+        let height = img.height
+
+        if (width > height && width > MAX_DIMENSION) {
+          height = Math.round((height * MAX_DIMENSION) / width)
+          width = MAX_DIMENSION
+        } else if (height > MAX_DIMENSION) {
+          width = Math.round((width * MAX_DIMENSION) / height)
+          height = MAX_DIMENSION
+        }
+
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          reject(new Error('No 2d context'))
+          return
+        }
+        ctx.drawImage(img, 0, 0, width, height)
+        
+        // Comprimir como JPEG al 70% de calidad para reducir dramáticamente el peso
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7)
+        const base64 = dataUrl.split(',')[1]
+        if (!base64) {
+          reject(new Error('base64 extraction failed'))
+          return
+        }
+        resolve(base64)
+      }
+      img.onerror = () => reject(new Error('Image load error'))
+      img.src = event.target?.result as string
     }
     reader.onerror = () => reject(reader.error)
     reader.readAsDataURL(file)
