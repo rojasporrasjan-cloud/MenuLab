@@ -7,6 +7,7 @@ interface FeaturedCarouselProps {
   readonly dishes: readonly Dish[]
   readonly accentColor: string
   readonly orderingEnabled: boolean
+  readonly showPrices: boolean
   readonly onSelect: (dish: Dish) => void
   readonly onAdd: (dish: Dish) => void
   /** Tracking: el carrusel entró en pantalla (una vez por sesión de página). */
@@ -29,6 +30,7 @@ export function FeaturedCarousel({
   dishes,
   accentColor,
   orderingEnabled,
+  showPrices,
   onSelect,
   onAdd,
   onView,
@@ -98,9 +100,11 @@ export function FeaturedCarousel({
               <div className="flex items-center gap-2 p-3">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[13.5px] font-bold text-white">{dish.name}</p>
-                  <p className="text-[12.5px] font-black tabular-nums" style={{ color: accentColor }}>
-                    {formatPrice(dish.price.amount, dish.price.currency)}
-                  </p>
+                  {showPrices && (
+                    <p className="text-[12.5px] font-black tabular-nums" style={{ color: accentColor }}>
+                      {formatPrice(dish.price.amount, dish.price.currency)}
+                    </p>
+                  )}
                 </div>
               </div>
             </button>
