@@ -8,12 +8,17 @@ import {
 } from '@features/editor/store/useEditorStore'
 import { ExportPDFService } from '@features/editor/services/ExportPDFService'
 
-export function ExportPDFButton() {
+interface ExportPDFButtonProps {
+  /** Variante compacta para la barra superior (icono + "PDF"). */
+  readonly compact?: boolean
+}
+
+export function ExportPDFButton({ compact = false }: ExportPDFButtonProps) {
   const document = useEditorStore(selectDocument)
   const isDirty = useEditorStore(selectIsDirty)
   const exportStatus = useEditorStore(selectExportStatus)
   const dispatch = useEditorStore((s) => s.dispatch)
-  
+
   const [localError, setLocalError] = useState<string | null>(null)
   const [showSuccessText, setShowSuccessText] = useState(false)
 
@@ -47,6 +52,32 @@ export function ExportPDFButton() {
       dispatch({ type: 'EXPORT_PDF_ERROR', message })
       setLocalError(message)
     }
+  }
+
+  // ── Variante compacta para la barra superior ────────────────────────────────
+  if (compact) {
+    return (
+      <button
+        onClick={handleExport}
+        disabled={isDisabled}
+        title={isDirty ? 'Guardando cambios…' : 'Exportar menú a PDF para imprenta'}
+        className={[
+          'flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-[12px] font-semibold transition-colors',
+          isDisabled
+            ? 'cursor-not-allowed border-zinc-800 bg-zinc-900 text-zinc-600'
+            : showSuccessText
+              ? 'border-emerald-600/40 bg-emerald-600/20 text-emerald-300'
+              : 'border-zinc-700 bg-zinc-800 text-zinc-100 hover:bg-zinc-700',
+        ].join(' ')}
+      >
+        {isExporting
+          ? <Loader2 size={13} className="animate-spin" />
+          : showSuccessText
+            ? <CheckCircle2 size={13} />
+            : <Download size={13} />}
+        <span>{isExporting ? 'PDF…' : showSuccessText ? 'Listo' : 'PDF'}</span>
+      </button>
+    )
   }
 
   return (

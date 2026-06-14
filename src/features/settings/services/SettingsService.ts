@@ -10,6 +10,18 @@ export const SettingsService = {
       name: values.name,
       timezone: values.timezone,
       locale: values.locale,
+      'branding.orderButton.whatsapp': values.whatsapp ?? '',
+      'branding.socials.instagram': values.instagram ?? '',
+      'branding.socials.facebook': values.facebook ?? '',
+      'branding.socials.tiktok': values.tiktok ?? '',
+      'branding.socials.enabled': !!(values.instagram || values.facebook || values.tiktok),
+      'branding.infoFooter.hours': values.hours ?? '',
+      'branding.infoFooter.address': values.address ?? '',
+      'branding.infoFooter.phone': values.phone ?? '',
+      'branding.infoFooter.wazeUrl': values.wazeUrl ?? '',
+      'branding.infoFooter.googleMapsUrl': values.googleMapsUrl ?? '',
+      'branding.infoFooter.sinpeNumber': values.sinpeNumber ?? '',
+      'branding.infoFooter.enabled': !!(values.hours || values.address || values.phone || values.wazeUrl || values.googleMapsUrl || values.sinpeNumber),
       updatedAt: serverTimestamp(),
     })
   },
@@ -105,6 +117,13 @@ export const SettingsService = {
   async updateEmployeePin(tenantId: string, pinHash: string): Promise<void> {
     await updateDoc(doc(db, firestorePaths.tenant(tenantId)), {
       employeePinHash: pinHash,
+      updatedAt: serverTimestamp(),
+    })
+  },
+
+  async updateLockedModules(tenantId: string, lockedModules: string[]): Promise<void> {
+    await updateDoc(doc(db, firestorePaths.tenant(tenantId)), {
+      lockedModules,
       updatedAt: serverTimestamp(),
     })
   },

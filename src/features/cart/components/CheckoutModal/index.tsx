@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
-import { X, Check } from 'lucide-react'
+import { X, Check, Copy, Smartphone } from 'lucide-react'
 import { buildWhatsAppUrl } from '@shared/utils/whatsapp'
 import { formatCurrency } from '@shared/utils/formatCurrency'
 import { cn } from '@shared/utils/cn'
@@ -17,6 +17,8 @@ interface CheckoutModalProps {
   readonly tenantId: string
   /** Número de WhatsApp del restaurante (formato internacional). */
   readonly whatsappPhone: string
+  /** Número de SINPE Móvil del restaurante (o null si no lo configuró). */
+  readonly sinpeNumber: string | null
   readonly tableId: string | null
   readonly tableLabel: string | null
   readonly accentColor: string
@@ -47,6 +49,7 @@ function buildOrderMessage(input: {
   customerName: string
   customerPhone: string
   note: string
+  sinpePayment: boolean
 }): string {
   const divider = '──────────────────'
   const itemLines: string[] = []
@@ -68,6 +71,7 @@ function buildOrderMessage(input: {
   ]
   if (input.customerPhone.trim()) parts.push(`📞 ${input.customerPhone.trim()}`)
   if (input.mode === 'delivery' && input.deliveryAddress?.trim()) parts.push(`📍 ${input.deliveryAddress.trim()}`)
+  if (input.sinpePayment) parts.push('💸 Pago: SINPE Móvil')
   if (input.note.trim()) parts.push(`🗒️ ${input.note.trim()}`)
   parts.push(`⏰ ${time}`)
   parts.push('_Enviado desde la carta digital_')
@@ -85,6 +89,7 @@ export function CheckoutModal({
   onClose,
   tenantId,
   whatsappPhone,
+  sinpeNumber,
   tableId,
   tableLabel,
   accentColor,
@@ -92,6 +97,18 @@ export function CheckoutModal({
   const cart = useCart()
   const createOrder = useCreateOrder()
   const { track } = useTrackEvent(tenantId)
+  const [copiedSinpe, setCopiedSinpe] = useState(false)
+
+  // Total a mostrar en la pantalla de "pedido enviado" (el carrito ya se vació).
+  const [sentTotal, setSentTotal] = useState('')
+
+  function handleCopySinpe(): void {
+    if (!sinpeNumber) return
+    void navigator.clipboard?.writeText(sinpeNumber).then(() => {
+      setCopiedSinpe(true)
+      setTimeout(() => setCopiedSinpe(false), 1800)
+    })
+  }
 
   // Pedido de mesa (QR escaneado en la mesa) vs. pedido desde el menú digital.
   const isTableOrder = tableId !== null
@@ -159,6 +176,7 @@ export function CheckoutModal({
       customerName: customerName.trim(),
       customerPhone,
       note,
+      sinpePayment: sinpeNumber !== null,
     })
 
     // Cachea los datos del cliente para el próximo pedido.
@@ -182,6 +200,7 @@ export function CheckoutModal({
       window.open(buildWhatsAppUrl(whatsappPhone, message), '_blank', 'noopener,noreferrer')
     }
 
+    setSentTotal(totalFormatted)
     setIsSent(true)
     cart.clear()
   }
@@ -213,6 +232,36 @@ export function CheckoutModal({
               <p className="max-w-xs text-xs leading-relaxed text-neutral-400">
                 Tu pedido fue enviado al restaurante. Te confirmarán por WhatsApp.
               </p>
+
+              {/* Pago por SINPE Móvil — solo si el restaurante lo configuró */}
+              {sinpeNumber && (
+                <div className="w-full rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left">
+                  <p className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-neutral-400">
+                    <Smartphone size={12} style={{ color: accentColor }} />
+                    Pagá por SINPE Móvil
+                  </p>
+                  <div className="mt-2.5 flex items-center justify-between gap-3">
+                    <span className="text-2xl font-black tracking-wide text-white">{sinpeNumber}</span>
+                    <button
+                      type="button"
+                      onClick={handleCopySinpe}
+                      className="flex shrink-0 items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-bold text-neutral-200 transition-colors hover:bg-white/10"
+                    >
+                      {copiedSinpe ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                      {copiedSinpe ? 'Copiado' : 'Copiar'}
+                    </button>
+                  </div>
+                  {sentTotal && (
+                    <p className="mt-2 text-xs font-semibold text-neutral-400">
+                      Monto a transferir: <span className="font-black text-white">{sentTotal}</span>
+                    </p>
+                  )}
+                  <p className="mt-2 text-[11px] leading-relaxed text-neutral-500">
+                    Hacé el SINPE a ese número y envía el comprobante por WhatsApp.
+                  </p>
+                </div>
+              )}
+
               <button
                 type="button"
                 onClick={handleClose}

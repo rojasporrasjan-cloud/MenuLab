@@ -1,6 +1,3 @@
-import html2canvas from 'html2canvas'
-import { jsPDF } from 'jspdf'
-
 import type { EditorDocument } from '@features/editor/types/editor.types'
 
 // ─── Format registry ──────────────────────────────────────────────────────────
@@ -87,6 +84,12 @@ export class ExportPDFService {
     if (!element) {
       throw new Error(`Contenedor del editor con ID "${elementId}" no fue encontrado en el DOM.`)
     }
+
+    // Libs pesadas cargadas solo al exportar (lazy ~250kb fuera del bundle del editor).
+    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+      import('html2canvas'),
+      import('jspdf'),
+    ])
 
     let canvas: HTMLCanvasElement
     try {

@@ -1,6 +1,8 @@
-import { UtensilsCrossed, Sparkles, QrCode, BarChart3 } from 'lucide-react'
+import { useState } from 'react'
+import { UtensilsCrossed, Sparkles, QrCode, BarChart3, FileText } from 'lucide-react'
 import { Button } from '@shared/ui/components/Button'
 import type { Tenant } from '@core/domain/entities/Tenant'
+import { MenuDigitizerModal } from '../MenuDigitizerModal/MenuDigitizerModal'
 
 interface WelcomeStepProps {
   tenant: Tenant
@@ -27,7 +29,9 @@ const HIGHLIGHTS = [
   },
 ]
 
-export function WelcomeStep({ tenant, onNext, onSkip, isSkipping }: WelcomeStepProps) {
+export function WelcomeStep({ tenant, onNext }: WelcomeStepProps) {
+  const [isDigitizerOpen, setIsDigitizerOpen] = useState(false)
+
   return (
     <div className="flex flex-col gap-6">
 
@@ -65,19 +69,31 @@ export function WelcomeStep({ tenant, onNext, onSkip, isSkipping }: WelcomeStepP
       </ul>
 
       {/* Actions */}
-      <div className="flex items-center justify-between gap-3 pt-2">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
         <button
           type="button"
-          onClick={onSkip}
-          disabled={isSkipping}
-          className="text-xs text-surface-500 hover:text-surface-700 hover:underline disabled:opacity-50"
+          onClick={onNext}
+          className="text-xs text-surface-500 hover:text-surface-700 hover:underline flex items-center gap-1"
         >
-          Saltar configuración
+          <FileText size={14} />
+          Ingresar platos manualmente
         </button>
-        <Button onClick={onNext} className="px-6">
-          Empezar
+        <Button onClick={() => setIsDigitizerOpen(true)} className="px-6 w-full sm:w-auto flex items-center gap-2">
+          <Sparkles size={16} />
+          Escanear Menú Físico
         </Button>
       </div>
+
+      <MenuDigitizerModal
+        isOpen={isDigitizerOpen}
+        onClose={() => setIsDigitizerOpen(false)}
+        tenantId={tenant.id}
+        tenantName={tenant.name}
+        onSuccessNavigate={() => {
+          setIsDigitizerOpen(false)
+          onNext()
+        }}
+      />
     </div>
   )
 }

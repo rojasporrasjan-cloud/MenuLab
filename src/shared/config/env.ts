@@ -7,6 +7,10 @@ export const ENV = {
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean),
+  platformAdminEmails: getEnv('VITE_PLATFORM_ADMIN_EMAILS')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean),
   stripe: {
     // Opcionales — si faltan, el upgrade cae al flujo de WhatsApp.
     publishableKey: getEnv('VITE_STRIPE_PUBLISHABLE_KEY'),

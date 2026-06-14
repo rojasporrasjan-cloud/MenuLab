@@ -30,6 +30,9 @@ export interface TenantInfoFooter {
   hours: string
   address: string
   phone: string
+  wazeUrl: string
+  googleMapsUrl: string
+  sinpeNumber: string
 }
 
 /** Disposición visual del botón de pedidos por WhatsApp. */
@@ -153,6 +156,10 @@ export interface Tenant {
   id: string
   slug: string
   name: string
+  /** UID del dueño (quién registró el restaurante). */
+  ownerId: string | null
+  /** Email del dueño — visible solo para el superadmin de la plataforma. */
+  ownerEmail: string | null
   plan: TenantPlan
   status: TenantStatus
   templateId: TemplateId
@@ -161,6 +168,7 @@ export interface Tenant {
   timezone: string
   locale: string
   employeePinHash: string | null
+  lockedModules: string[]
   loyaltyConfig: LoyaltyConfig
   onboardingCompletedAt: Date | null
   createdAt: Date

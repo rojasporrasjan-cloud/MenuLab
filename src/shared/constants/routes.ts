@@ -42,6 +42,7 @@ export const ROUTES = {
     customers: '/admin/clientes',
     inventory: '/admin/inventario',
     pos: '/admin/pos',
+    cash: '/admin/caja',
     employees: '/admin/empleados',
   },
 
@@ -66,6 +67,9 @@ export const ROUTES = {
   /* ── Platform super-admin (solo owner de la plataforma) ── */
   platformAdmin: {
     root: '/platform-admin',
+    dashboard: '/platform-admin/dashboard',
     tenants: '/platform-admin/tenants',
+    tenantDetail: '/platform-admin/tenants/:tenantId',
+    tenant: (tenantId: string) => `/platform-admin/tenants/${tenantId}`,
   },
 } as const

@@ -31,13 +31,13 @@ export default function TemplatesPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
+          <p className="text-[11px] font-black uppercase tracking-[0.22em] text-brand-600">
             Diseño
           </p>
-          <h1 className="text-[26px] font-bold tracking-[-0.02em] text-zinc-900">
+          <h1 className="text-[22px] font-black leading-tight tracking-tight text-surface-900">
             Plantillas
           </h1>
-          <p className="text-[13px] text-zinc-500">
+          <p className="text-[13px] text-surface-500">
             Elige el diseño visual de tu menú público. El cambio se aplica de inmediato.
           </p>
         </div>

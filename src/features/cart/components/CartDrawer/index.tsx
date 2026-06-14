@@ -11,6 +11,8 @@ interface CartDrawerProps {
   readonly tenantId: string
   /** Número de WhatsApp del restaurante. */
   readonly whatsappPhone: string
+  /** Número de SINPE Móvil del restaurante (o null si no lo configuró). */
+  readonly sinpeNumber: string | null
   readonly tableId: string | null
   readonly tableLabel: string | null
   readonly accentColor: string
@@ -19,6 +21,7 @@ interface CartDrawerProps {
 export function CartDrawer({
   tenantId,
   whatsappPhone,
+  sinpeNumber,
   tableId,
   tableLabel,
   accentColor,
@@ -135,6 +138,7 @@ export function CartDrawer({
         onClose={() => setIsCheckoutOpen(false)}
         tenantId={tenantId}
         whatsappPhone={whatsappPhone}
+        sinpeNumber={sinpeNumber}
         tableId={tableId}
         tableLabel={tableLabel}
         accentColor={accentColor}

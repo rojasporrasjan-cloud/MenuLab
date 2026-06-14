@@ -13,6 +13,7 @@ import { POSLayout } from '@app/layouts/POSLayout'
 import { PublicLayout } from '@app/layouts/PublicLayout'
 import { MarketingLayout } from '@app/layouts/MarketingLayout'
 import { PlatformAdminLayout } from '@app/layouts/PlatformAdminLayout'
+import { RequirePin } from '@app/router/RequirePin'
 
 import {
   LandingPage,
@@ -39,9 +40,12 @@ import {
   CustomersPage,
   InventoryPage,
   POSPage,
+  CashRegisterPage,
   LoginPage,
   RegisterPage,
+  PlatformDashboardPage,
   TenantsListPage,
+  TenantDetailPage,
   StaffAvailabilityPage,
   StaffPromosPage,
 } from './routes'
@@ -97,31 +101,32 @@ export function AppRouter() {
               <Route path={ROUTES.admin.editor} element={<EditorPage />} />
 
               {/* KDS — pantalla fullscreen para tablet de cocina, sin admin shell */}
-              <Route element={<KDSLayout />}>
+              <Route element={<RequirePin moduleId="kds"><KDSLayout /></RequirePin>}>
                 <Route path={ROUTES.admin.kds} element={<KDSPage />} />
               </Route>
 
               {/* POS — comandero fullscreen para tablet de salón, sin admin shell */}
-              <Route element={<POSLayout />}>
+              <Route element={<RequirePin moduleId="orders"><POSLayout /></RequirePin>}>
                 <Route path={ROUTES.admin.pos} element={<POSPage />} />
               </Route>
 
               <Route element={<AdminLayout />}>
                 <Route path={ROUTES.admin.root} element={<Navigate to={ROUTES.admin.dashboard} replace />} />
-                <Route path={ROUTES.admin.dashboard} element={<DashboardPage />} />
-                <Route path={ROUTES.admin.menu.list} element={<MenuManagerPage />} />
-                <Route path={ROUTES.admin.dishes.list} element={<DishListPage />} />
-                <Route path={ROUTES.admin.dishes.new} element={<DishEditorPage />} />
-                <Route path={ROUTES.admin.dishes.editor} element={<DishEditorPage />} />
-                <Route path={ROUTES.admin.qr} element={<QRManagerPage />} />
-                <Route path={ROUTES.admin.templates} element={<TemplatesPage />} />
-                <Route path={ROUTES.admin.appearance} element={<AppearancePage />} />
-                <Route path={ROUTES.admin.analytics} element={<AnalyticsPage />} />
+                <Route path={ROUTES.admin.dashboard} element={<RequirePin moduleId="dashboard"><DashboardPage /></RequirePin>} />
+                <Route path={ROUTES.admin.menu.list} element={<RequirePin moduleId="menu"><MenuManagerPage /></RequirePin>} />
+                <Route path={ROUTES.admin.dishes.list} element={<RequirePin moduleId="dishes"><DishListPage /></RequirePin>} />
+                <Route path={ROUTES.admin.dishes.new} element={<RequirePin moduleId="dishes"><DishEditorPage /></RequirePin>} />
+                <Route path={ROUTES.admin.dishes.editor} element={<RequirePin moduleId="dishes"><DishEditorPage /></RequirePin>} />
+                <Route path={ROUTES.admin.qr} element={<RequirePin moduleId="qr"><QRManagerPage /></RequirePin>} />
+                <Route path={ROUTES.admin.templates} element={<RequirePin moduleId="templates"><TemplatesPage /></RequirePin>} />
+                <Route path={ROUTES.admin.appearance} element={<RequirePin moduleId="appearance"><AppearancePage /></RequirePin>} />
+                <Route path={ROUTES.admin.analytics} element={<RequirePin moduleId="analytics"><AnalyticsPage /></RequirePin>} />
                 <Route path={ROUTES.admin.settings} element={<SettingsPage />} />
-                <Route path={ROUTES.admin.orders} element={<OrdersPage />} />
-                <Route path={ROUTES.admin.reservations} element={<AdminReservationsPage />} />
+                <Route path={ROUTES.admin.orders} element={<RequirePin moduleId="orders"><OrdersPage /></RequirePin>} />
+                <Route path={ROUTES.admin.cash} element={<RequirePin moduleId="cash"><CashRegisterPage /></RequirePin>} />
+                <Route path={ROUTES.admin.reservations} element={<RequirePin moduleId="reservations"><AdminReservationsPage /></RequirePin>} />
                 <Route path={ROUTES.admin.plan} element={<PlanPage />} />
-                <Route path={ROUTES.admin.loyalty} element={<LoyaltyPage />} />
+                <Route path={ROUTES.admin.loyalty} element={<RequirePin moduleId="loyalty"><LoyaltyPage /></RequirePin>} />
                 <Route path={ROUTES.admin.customers} element={<CustomersPage />} />
                 <Route path={ROUTES.admin.inventory} element={<InventoryPage />} />
               </Route>
@@ -130,8 +135,10 @@ export function AppRouter() {
             {/* ── Platform super-admin routes ── */}
             <Route element={<PlatformAdminGuard />}>
               <Route element={<PlatformAdminLayout />}>
-                <Route path={ROUTES.platformAdmin.root} element={<Navigate to={ROUTES.platformAdmin.tenants} replace />} />
+                <Route path={ROUTES.platformAdmin.root} element={<Navigate to={ROUTES.platformAdmin.dashboard} replace />} />
+                <Route path={ROUTES.platformAdmin.dashboard} element={<PlatformDashboardPage />} />
                 <Route path={ROUTES.platformAdmin.tenants} element={<TenantsListPage />} />
+                <Route path={ROUTES.platformAdmin.tenantDetail} element={<TenantDetailPage />} />
               </Route>
             </Route>
 

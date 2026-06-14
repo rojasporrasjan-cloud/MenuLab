@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Trash2 } from 'lucide-react'
 
 import type { Dish } from '@core/domain/entities/Dish'
@@ -32,11 +32,16 @@ export function RecipeEditor({ tenantId, dish, ingredients }: RecipeEditorProps)
   const [items, setItems] = useState<RecipeItem[]>([])
   const [recipeYield, setRecipeYield] = useState(DEFAULT_YIELD)
 
-  // Cargar la receta existente cuando llega (o resetear al cambiar de plato).
-  useEffect(() => {
+  // Sembrar los campos editables cuando cambia el plato o cuando llega la receta
+  // async por primera vez — ajustar estado durante el render (sin useEffect, y
+  // sin pisar las ediciones del usuario en refetches de fondo).
+  const [syncedFor, setSyncedFor] = useState<string | null>(null)
+  const syncKey = `${dish.id}:${recipe ? 'loaded' : 'empty'}`
+  if (syncKey !== syncedFor) {
+    setSyncedFor(syncKey)
     setItems(recipe ? [...recipe.items] : [])
     setRecipeYield(recipe?.yield ?? DEFAULT_YIELD)
-  }, [recipe, dish.id])
+  }
 
   const available = useMemo(
     () => ingredients.filter((i) => !items.some((item) => item.ingredientId === i.id)),

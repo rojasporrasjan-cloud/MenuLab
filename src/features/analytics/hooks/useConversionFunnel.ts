@@ -12,18 +12,23 @@ const FULL_PERCENT = 100
  */
 export function useConversionFunnel(summaries: DailySummary[]): FunnelStage[] {
   return useMemo(() => {
-    let previous: number | null = null
+    // Conteo por etapa primero; luego la conversión se calcula contra la etapa
+    // anterior por índice (sin variable mutable de acumulación durante el render).
+    const counts = FUNNEL_STAGES.map(({ key, label }) => ({
+      key,
+      label,
+      count: AnalyticsPageService.sumByType(summaries, key),
+    }))
 
-    return FUNNEL_STAGES.map(({ key, label }) => {
-      const count = AnalyticsPageService.sumByType(summaries, key)
+    return counts.map((stage, index) => {
+      const previous = index === 0 ? null : counts[index - 1]?.count ?? null
       const conversionFromPrevious =
         previous === null
           ? FULL_PERCENT
           : previous > 0
-            ? (count / previous) * FULL_PERCENT
+            ? (stage.count / previous) * FULL_PERCENT
             : 0
-      previous = count
-      return { key, label, count, conversionFromPrevious }
+      return { ...stage, conversionFromPrevious }
     })
   }, [summaries])
 }

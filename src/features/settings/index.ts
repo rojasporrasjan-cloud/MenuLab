@@ -10,6 +10,7 @@ export { useUpdateProfile } from './hooks/useUpdateProfile'
 export { useUpdateBranding } from './hooks/useUpdateBranding'
 export { useTenantAssetUpload } from './hooks/useTenantAssetUpload'
 export { useUpdateEmployeePin } from './hooks/useUpdateEmployeePin'
+export { useUpdateLockedModules } from './hooks/useUpdateLockedModules'
 
 // Services
 export { SettingsService } from './services/SettingsService'

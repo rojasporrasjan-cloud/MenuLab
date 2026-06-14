@@ -20,6 +20,15 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/tenants/$(tenantId)/members/$(request.auth.uid)).data.role == 'owner';
     }
 
+    // Superadmin de la plataforma — por correo del token.
+    // Para agregar/cambiar admins: edita esta lista (y el .env VITE_PLATFORM_ADMIN_EMAILS).
+    // Tip de seguridad: con login de Google el correo viene verificado; si usas
+    // email/contraseña, crea la cuenta tú mismo en Firebase para que nadie más la registre.
+    function isPlatformAdmin() {
+      return isAuthenticated()
+        && request.auth.token.email in ['janrojasporras@gmail.com', 'rojasporrasjan@gmail.com'];
+    }
+
     // ── Tenants ───────────────────────────────────────────────────────────────
     match /tenants/{tenantId} {
       // Public read: required for QR customer views (branding, feature flags, template refs)
@@ -29,14 +38,23 @@ service cloud.firestore {
       // existe, así que no puede sobreescribir un tenant ajeno.
       allow create: if isAuthenticated()
                     && request.resource.data.ownerId == request.auth.uid;
-      // El owner puede cambiar todo. El staff (member) puede actualizar SOLO
-      // la promo del día y el infoFooter (horario/dirección/teléfono) — nada más
-      // del branding ni del tenant. Se valida con diff de mapas anidados.
-      allow update: if isTenantOwner(tenantId)
+      // El superadmin de la plataforma puede cambiar plan/estado (gestión de
+      // suscripciones). El owner puede cambiar todo. El staff (member) puede
+      // actualizar SOLO la promo del día y el infoFooter — nada más del branding
+      // ni del tenant. Se valida con diff de mapas anidados.
+      allow update: if isPlatformAdmin()
+                    || isTenantOwner(tenantId)
                     || (isTenantMember(tenantId)
                         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['branding', 'updatedAt'])
                         && request.resource.data.branding.diff(resource.data.branding).affectedKeys().hasOnly(['promo', 'infoFooter']));
       allow delete: if isTenantOwner(tenantId);
+
+      // Superadmin de la plataforma: lectura total de TODO lo del tenant (para
+      // "ver como"/soporte). Es aditivo — no le quita permisos a nadie, solo
+      // concede lectura al superadmin sobre cualquier subcolección anidada.
+      match /{document=**} {
+        allow read: if isPlatformAdmin();
+      }
 
       // ── Members (internal — never expose full list to customers) ─────────────
       match /members/{userId} {
@@ -156,10 +174,14 @@ service cloud.firestore {
       }
 
       // ── CRM customers (datos sensibles — solo el restaurante) ─────────────────
-      // create también permitido sin auth: el upsert ocurre al crear un pedido
-      // público con teléfono. update sin auth solo vía merge del mismo flujo.
+      // El upsert ocurre sin auth al crear un pedido público con teléfono, así
+      // que create/update siguen abiertos PERO acotados al tenant: la escritura
+      // debe traer el tenantId correcto y no puede cambiar el teléfono (la
+      // clave del documento). Lectura y borrado solo para el restaurante.
       match /customers/{customerId} {
-        allow create, update: if true;
+        allow create: if request.resource.data.tenantId == tenantId;
+        allow update: if request.resource.data.tenantId == tenantId
+                      && request.resource.data.phone == resource.data.phone;
         allow read:   if isTenantMember(tenantId);
         allow delete: if false;
       }
@@ -180,6 +202,21 @@ service cloud.firestore {
       match /payments/{paymentId} {
         allow read, create: if isTenantMember(tenantId);
         allow update, delete: if false;
+      }
+
+      // ── Cash sessions (cierre de caja / arqueo) ───────────────────────────────
+      // El restaurante abre, consulta y cierra sus cajas. No se borran (auditoría).
+      match /cashSessions/{sessionId} {
+        allow read, create, update: if isTenantMember(tenantId);
+        allow delete: if false;
+      }
+
+      // ── Facturas electrónicas (Hacienda CR) ───────────────────────────────────
+      // Comprobantes fiscales — solo el restaurante. Inmutables salvo el estado
+      // (firmado/enviado/aceptado). Nunca se borran (auditoría fiscal).
+      match /invoices/{invoiceId} {
+        allow read, create, update: if isTenantMember(tenantId);
+        allow delete: if false;
       }
 
       // ── Employees (PINs hasheados — nunca expuestos al público) ───────────────

@@ -22,8 +22,8 @@ import {
   FreePlanUpgradeBanner,
   useDashboardMetrics,
   useActivityFeed,
-  useTodayMetrics,
 } from '@features/dashboard'
+import { usePendingReservations } from '@features/reservations'
 import { useLowStockAlerts, LowStockAlert } from '@features/inventory'
 import { formatCurrency } from '@shared/utils/formatCurrency'
 import { greeting } from '@shared/utils/datetime'
@@ -31,7 +31,9 @@ import { TenantProvisioningService } from '@infrastructure/services/TenantProvis
 import { TEMPLATE_DEFAULT_BRANDING, DEFAULT_TEMPLATE_ID, TEMPLATE_DEFINITIONS } from '@features/templates'
 import { Spinner } from '@shared/ui/components/Spinner'
 import { Button } from '@shared/ui/components/Button'
+import { PageHeader } from '@shared/ui/components/PageHeader'
 import type { MetricCardData } from '@features/dashboard'
+import type { TemplateId } from '@core/domain/entities/Tenant'
 
 // ─── Menu link banner ─────────────────────────────────────────────────────────
 
@@ -48,33 +50,21 @@ const MenuLinkBanner = memo(function MenuLinkBanner({ tenantId }: { tenantId: st
   }
 
   return (
-    <div
-      className="flex flex-col gap-3 rounded-2xl p-4 sm:flex-row sm:items-center sm:gap-4"
-      style={{
-        background: 'linear-gradient(135deg, #fef9ee 0%, #fef3c7 100%)',
-        border: '1px solid rgba(217,119,6,0.25)',
-      }}
-    >
+    <div className="flex flex-col gap-3 rounded-2xl border border-brand-200/70 bg-gradient-to-br from-brand-50 to-brand-100/30 p-4 shadow-sm sm:flex-row sm:items-center sm:gap-4">
       {/* Icon */}
-      <div
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-        style={{ background: 'rgba(217,119,6,0.12)' }}
-      >
-        <QrCode size={18} style={{ color: '#b45309' }} />
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-500 text-white shadow-sm shadow-brand-500/30">
+        <QrCode size={19} strokeWidth={2.2} />
       </div>
 
       {/* Text */}
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <p className="text-[12px] font-semibold uppercase tracking-[0.1em]" style={{ color: '#92400e' }}>
+        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-brand-700">
           Tu link del menú
         </p>
-        <p
-          className="truncate font-mono text-[13px] font-semibold"
-          style={{ color: '#1c1409' }}
-        >
+        <p className="truncate font-mono text-[13px] font-semibold text-surface-900">
           {menuUrl}
         </p>
-        <p className="text-[11px]" style={{ color: '#a16207' }}>
+        <p className="text-[11px] text-brand-700/70">
           Compártelo con tus clientes o imprimilo en un QR
         </p>
       </div>
@@ -84,12 +74,11 @@ const MenuLinkBanner = memo(function MenuLinkBanner({ tenantId }: { tenantId: st
         <button
           type="button"
           onClick={handleCopy}
-          className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-[12px] font-semibold transition-all active:scale-95"
-          style={{
-            background: copied ? '#d1fae5' : '#fff',
-            border: `1px solid ${copied ? '#6ee7b7' : 'rgba(217,119,6,0.3)'}`,
-            color: copied ? '#065f46' : '#92400e',
-          }}
+          className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[12px] font-bold transition-all active:scale-95 ${
+            copied
+              ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+              : 'border-brand-200 bg-white text-brand-700 hover:border-brand-300 hover:bg-brand-50'
+          }`}
         >
           {copied ? <Check size={13} /> : <Copy size={13} />}
           {copied ? 'Copiado' : 'Copiar'}
@@ -98,11 +87,7 @@ const MenuLinkBanner = memo(function MenuLinkBanner({ tenantId }: { tenantId: st
           href={`/${tenantId}/menu`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-[12px] font-semibold transition-all active:scale-95"
-          style={{
-            background: '#b45309',
-            color: '#fff',
-          }}
+          className="flex items-center gap-1.5 rounded-xl bg-brand-600 px-3 py-2 text-[12px] font-bold text-white transition-all hover:bg-brand-700 active:scale-95"
         >
           <ExternalLink size={13} />
           Ver menú
@@ -237,12 +222,14 @@ function ProvisioningWizard() {
             </label>
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               {Object.entries(TEMPLATE_DEFINITIONS).map(([id, def]) => {
-                const isSelected = templateId === id
+                // safe: las claves de TEMPLATE_DEFINITIONS son TemplateId; Object.entries las ensancha a string
+                const templateKey = id as TemplateId
+                const isSelected = templateId === templateKey
                 return (
                   <button
                     key={id}
                     type="button"
-                    onClick={() => setTemplateId(id as any)}
+                    onClick={() => setTemplateId(templateKey)}
                     disabled={isCreating}
                     className={`flex flex-col gap-1.5 p-3 rounded-2xl border text-left transition-all ${
                       isSelected
@@ -275,13 +262,21 @@ function ProvisioningWizard() {
 
 // ─── Main ──────────────────────────────────────────────────────────────────────
 
+import type { DateRangePreset } from '@features/dashboard'
+import { useDateRangeMetrics } from '@features/dashboard'
+
 export default function DashboardPage() {
   const { tenantId, tenant, isLoading: tenantLoading } = useTenantContext()
   const { user } = useAuth()
 
+  const [dateRange, setDateRange] = useState<DateRangePreset>('today')
+  
   const { data: metrics, isLoading: metricsLoading } = useDashboardMetrics(tenantId)
   const { events: activityItems, isLoading: activityLoading } = useActivityFeed(tenantId)
-  const today = useTodayMetrics(tenantId ?? '')
+  
+  const rangeMetrics = useDateRangeMetrics(tenantId ?? '', dateRange)
+  const { count: pendingReservations } = usePendingReservations(tenantId ?? '')
+  
   const { alerts: lowStockAlerts } = useLowStockAlerts(tenantId ?? '')
 
   if (tenantLoading) {
@@ -296,39 +291,38 @@ export default function DashboardPage() {
     return <ProvisioningWizard />
   }
 
-  // Métricas del día (arriba) — pedidos hoy con flecha vs ayer.
-  const todayCards: MetricCardData[] = [
+  const rangeCards: MetricCardData[] = [
     {
-      label: 'Pedidos hoy',
-      value: today.ordersToday,
-      icon: ShoppingBag,
-      color: 'brand',
-      trend: {
-        value: Math.round(today.ordersTrendPercent),
-        isPositive: today.ordersTrendPositive,
-      },
-    },
-    {
-      label: 'Ingresos hoy',
-      value: formatCurrency(today.revenueToday, today.currency),
+      label: 'Ingresos',
+      value: formatCurrency(rangeMetrics.revenueTotal, rangeMetrics.currency),
       icon: Wallet,
       color: 'green',
     },
     {
-      label: 'Ticket promedio',
-      value: formatCurrency(today.averageTicket, today.currency),
-      icon: Receipt,
-      color: 'blue',
+      label: 'Pedidos',
+      value: rangeMetrics.ordersCount,
+      icon: ShoppingBag,
+      color: 'brand',
+      trend: {
+        value: Math.round(rangeMetrics.ordersTrendPercent),
+        isPositive: rangeMetrics.ordersTrendPositive,
+      },
     },
     {
-      label: 'Reservas pendientes',
-      value: today.pendingReservations,
-      icon: CalendarCheck,
-      color: 'purple',
+      label: 'Ticket Promedio',
+      value: formatCurrency(rangeMetrics.averageTicket, rangeMetrics.currency),
+      icon: Receipt,
+      color: 'blue',
     },
   ]
 
   const metricCards: MetricCardData[] = [
+    {
+      label: 'Reservas pendientes',
+      value: pendingReservations,
+      icon: CalendarCheck,
+      color: 'purple',
+    },
     {
       label: 'Platos activos',
       value: metrics?.activeDishes ?? 0,
@@ -356,27 +350,43 @@ export default function DashboardPage() {
       {tenantId && <FreePlanUpgradeBanner tenantId={tenantId} />}
       {lowStockAlerts.length > 0 && <LowStockAlert alerts={lowStockAlerts} />}
 
-      <div className="flex flex-col gap-1">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
-          {greeting()}
-        </p>
-        <h1 className="text-[26px] font-bold tracking-[-0.02em] text-zinc-900">
-          {tenant?.name ?? 'Dashboard'}
-        </h1>
-      </div>
+      <PageHeader eyebrow={greeting()} title={tenant?.name ?? 'Dashboard'} />
 
-      {/* Métricas del día */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {todayCards.map((card) => (
-          <MetricCard key={card.label} data={card} isLoading={today.isLoading} />
+      {/* Selector de Rango de Fechas */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar">
+        {(['today', 'week', 'month'] as const).map((preset) => (
+          <button
+            key={preset}
+            onClick={() => setDateRange(preset)}
+            className={`whitespace-nowrap rounded-full px-4 py-1.5 text-[13px] font-semibold transition-all ${
+              dateRange === preset
+                ? 'bg-zinc-800 text-white shadow-md'
+                : 'bg-white text-zinc-600 hover:bg-zinc-100 border border-zinc-200'
+            }`}
+          >
+            {preset === 'today' ? 'Hoy' : preset === 'week' ? 'Esta Semana' : 'Este Mes'}
+          </button>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {metricCards.map((card) => (
-          <MetricCard key={card.label} data={card} isLoading={metricsLoading} />
-        ))}
-      </div>
+      {/* Métricas por Rango de Fecha */}
+      <section className="flex flex-col gap-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {rangeCards.map((card) => (
+            <MetricCard key={card.label} data={card} isLoading={rangeMetrics.isLoading} />
+          ))}
+        </div>
+      </section>
+
+      {/* Métricas Generales del Restaurante */}
+      <section className="flex flex-col gap-3">
+        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-brand-600">Estado General</p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {metricCards.map((card) => (
+            <MetricCard key={card.label} data={card} isLoading={metricsLoading} />
+          ))}
+        </div>
+      </section>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <QuickActions />

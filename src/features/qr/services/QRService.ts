@@ -60,6 +60,19 @@ export class QRService {
     }
   }
 
+  static async updateTable(
+    tenantId: string,
+    tableId: string,
+    values: Partial<TableFormValues>,
+  ): Promise<void> {
+    const { doc, updateDoc } = await import('firebase/firestore')
+    const ref = doc(db, firestorePaths.tables(tenantId), tableId)
+    await updateDoc(ref, {
+      ...values,
+      updatedAt: serverTimestamp(),
+    })
+  }
+
   static async generateQR(payload: GenerateQRPayload): Promise<string> {
     const result = await generateQRCallable(payload)
     return result.data.qrCodeUrl

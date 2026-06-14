@@ -120,8 +120,8 @@ export default function DishEditorPage() {
         Volver a platos
       </Link>
 
-      <div className="rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm">
-        <h1 className="mb-6 text-[20px] font-bold tracking-tight text-zinc-900">
+      <div className="rounded-2xl border border-surface-200 bg-white p-6 shadow-sm">
+        <h1 className="mb-6 text-[20px] font-black tracking-tight text-surface-900">
           {isEditing ? 'Editar plato' : 'Nuevo plato'}
         </h1>
 

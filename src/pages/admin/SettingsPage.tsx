@@ -1,5 +1,7 @@
-import { useState, useRef } from 'react'
-import { User, CreditCard, Users, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react'
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useState, useRef, useEffect } from 'react'
+import { CreditCard, Users, Eye, EyeOff, CheckCircle2, AlertCircle, UserCircle, Smartphone, Lock } from 'lucide-react'
+import { PageHeader } from '@shared/ui/components/PageHeader'
 import { useTenantContext } from '@app/providers/TenantProvider'
 import { cn } from '@shared/utils/cn'
 import { sha256 } from '@shared/utils/sha256'
@@ -8,6 +10,7 @@ import {
   PlanInfo,
   useUpdateProfile,
   useUpdateEmployeePin,
+  useUpdateLockedModules,
 } from '@features/settings'
 import { Spinner } from '@shared/ui/components/Spinner'
 import { StaffAccountService } from '@infrastructure/services/StaffAccountService'
@@ -19,23 +22,57 @@ interface TabDef {
   key: SettingsTab
   label: string
   icon: React.ElementType
+  description: string
 }
 
 const TABS: TabDef[] = [
-  { key: 'profile',   label: 'Perfil',     icon: User       },
-  { key: 'plan',      label: 'Plan',       icon: CreditCard },
-  { key: 'employees', label: 'Empleados',  icon: Users      },
+  { key: 'profile',   label: 'Perfil del Restaurante',     icon: UserCircle, description: 'Datos básicos, logo y redes sociales.' },
+  { key: 'plan',      label: 'Suscripción',       icon: CreditCard, description: 'Tu plan actual y facturación.' },
+  { key: 'employees', label: 'Accesos y Empleados',  icon: Users, description: 'Control de pines y permisos operativos.' },
 ]
 
+// ─── Header Info ──────────────────────────────────────────────────────────────
+function SettingsHeader() {
+  return (
+    <div className="mb-8">
+      <PageHeader
+        eyebrow="Cuenta"
+        title="Configuración"
+        subtitle="Ajusta los detalles generales de tu negocio y la seguridad de tu panel."
+      />
+    </div>
+  )
+}
+
 // ── Employee PIN form ──────────────────────────────────────────────────────────
+
+const MODULES = [
+  { id: 'dashboard', label: 'Panel de Control' },
+  { id: 'orders', label: 'Pedidos / POS' },
+  { id: 'cash', label: 'Caja (cierre / arqueo)' },
+  { id: 'reservations', label: 'Reservaciones' },
+  { id: 'dishes', label: 'Platillos (Catálogo)' },
+  { id: 'menu', label: 'Menús y Categorías' },
+  { id: 'kds', label: 'Pantalla de Cocina (KDS)' },
+  { id: 'templates', label: 'Plantillas Visuales' },
+  { id: 'appearance', label: 'Apariencia y Secciones' },
+  { id: 'qr', label: 'Códigos QR' },
+  { id: 'loyalty', label: 'Programa de Lealtad' },
+  { id: 'analytics', label: 'Reportes y Métricas' },
+]
+
 function EmployeePinSection({
   tenantId,
   hasPinSet,
+  lockedModules,
 }: {
   tenantId: string
   hasPinSet: boolean
+  lockedModules: string[]
 }) {
   const { updatePin, isLoading, error, success } = useUpdateEmployeePin(tenantId)
+  const { updateLockedModules } = useUpdateLockedModules(tenantId)
+  
   const [pin, setPin] = useState('')
   const [confirm, setConfirm] = useState('')
   const [showPin, setShowPin] = useState(false)
@@ -62,99 +99,170 @@ function EmployeePinSection({
     pinRef.current?.focus()
   }
 
+  const [localLocked, setLocalLocked] = useState<string[]>(lockedModules)
+
+  useEffect(() => {
+    setLocalLocked(lockedModules)
+  }, [lockedModules])
+
+  const handleToggleModule = async (moduleId: string) => {
+    const isLocked = localLocked.includes(moduleId)
+    const newLocked = isLocked
+      ? localLocked.filter(id => id !== moduleId)
+      : [...localLocked, moduleId]
+    
+    setLocalLocked(newLocked)
+    await updateLockedModules(newLocked)
+  }
+
   const displayError = localError ?? error
 
   return (
-    <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-5">
+    <div className="space-y-8 rounded-3xl border border-black/[0.04] bg-white p-6 shadow-sm">
+      <div className="flex items-start gap-4 border-b border-black/[0.04] pb-6">
+         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 border border-amber-100">
+           <Lock size={24} />
+         </div>
+         <div>
+            <h2 className="text-lg font-black text-neutral-900 tracking-tight">PIN de Empleados (POS)</h2>
+            <p className="text-[13.5px] text-neutral-500 mt-1">Este PIN identifica a cada empleado en el comandero POS y bloquea áreas sensibles.</p>
+         </div>
+      </div>
 
-      {/* Status banner */}
-      <div className={cn(
-        'flex items-center gap-3 rounded-xl px-4 py-3 text-[13px]',
-        hasPinSet
-          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-          : 'bg-amber-50 text-amber-700 border border-amber-200',
-      )}>
+      <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-6">
+        {/* Status banner */}
         <div className={cn(
-          'size-2 rounded-full',
-          hasPinSet ? 'bg-emerald-500' : 'bg-amber-500',
-        )} />
-        <span>
-          {hasPinSet
-            ? 'PIN de empleados configurado. Puedes cambiarlo en cualquier momento.'
-            : 'Aún no has configurado un PIN. Los empleados no podrán acceder al panel.'}
-        </span>
-      </div>
+          'flex items-start gap-3 rounded-2xl px-5 py-4 text-[13.5px] font-medium leading-relaxed transition-colors border',
+          hasPinSet
+            ? 'bg-emerald-50/80 text-emerald-800 border-emerald-200/60 shadow-sm'
+            : 'bg-amber-50/80 text-amber-800 border-amber-200/60 shadow-sm',
+        )}>
+          <div className={cn(
+            'mt-1 flex h-2 w-2 shrink-0 rounded-full shadow-sm',
+            hasPinSet ? 'bg-emerald-500 shadow-emerald-500/50' : 'bg-amber-500 shadow-amber-500/50',
+          )} />
+          <span>
+            {hasPinSet
+              ? 'PIN maestro configurado. Úsalo para proteger secciones clave del panel.'
+              : 'Configura un PIN maestro para bloquear el acceso a ciertos módulos. Tus empleados no podrán entrar sin él.'}
+          </span>
+        </div>
 
-      {/* PIN field */}
-      <div className="space-y-1.5">
-        <label className="block text-[13px] font-medium text-zinc-700" htmlFor="emp-pin">
-          Nuevo PIN
-        </label>
-        <div className="relative">
-          <input
-            ref={pinRef}
-            id="emp-pin"
-            type={showPin ? 'text' : 'password'}
-            inputMode="numeric"
-            pattern="\d*"
-            maxLength={6}
-            placeholder="4–6 dígitos"
-            value={pin}
-            onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
-            className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 pr-10 text-[14px] outline-none ring-0 transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
-          />
-          <button
-            type="button"
-            tabIndex={-1}
-            onClick={() => setShowPin(v => !v)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
-          >
-            {showPin ? <EyeOff size={15} /> : <Eye size={15} />}
-          </button>
+        {/* PIN field */}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <div className="space-y-2">
+            <label className="block text-[13px] font-bold uppercase tracking-wider text-neutral-500" htmlFor="emp-pin">
+              Nuevo PIN
+            </label>
+            <div className="relative">
+              <input
+                ref={pinRef}
+                id="emp-pin"
+                type={showPin ? 'text' : 'password'}
+                inputMode="numeric"
+                pattern="\d*"
+                maxLength={6}
+                placeholder="4–6 dígitos"
+                value={pin}
+                onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
+                className="w-full rounded-2xl border border-neutral-200 bg-neutral-50/50 px-4 py-3.5 pr-12 text-[15px] font-bold outline-none transition-colors focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100"
+              />
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={() => setShowPin(v => !v)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors"
+              >
+                {showPin ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-[13px] font-bold uppercase tracking-wider text-neutral-500" htmlFor="emp-pin-confirm">
+              Confirmar PIN
+            </label>
+            <div className="relative">
+               <input
+                 id="emp-pin-confirm"
+                 type={showPin ? 'text' : 'password'}
+                 inputMode="numeric"
+                 pattern="\d*"
+                 maxLength={6}
+                 placeholder="Repítelo"
+                 value={confirm}
+                 onChange={e => setConfirm(e.target.value.replace(/\D/g, ''))}
+                 className="w-full rounded-2xl border border-neutral-200 bg-neutral-50/50 px-4 py-3.5 text-[15px] font-bold outline-none transition-colors focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100"
+               />
+            </div>
+          </div>
+        </div>
+
+        {displayError && (
+          <div className="flex items-center gap-2 rounded-xl bg-red-50 px-4 py-3 text-[13px] font-bold text-red-700 border border-red-200">
+            <AlertCircle size={16} />
+            {displayError}
+          </div>
+        )}
+
+        {success && (
+          <div className="flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-[13px] font-bold text-emerald-700 border border-emerald-200">
+            <CheckCircle2 size={16} />
+            PIN actualizado correctamente
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={isLoading || !pin || !confirm}
+          className="w-full sm:w-auto rounded-2xl bg-amber-500 px-8 py-3.5 text-[14px] font-black text-white shadow-lg shadow-amber-500/20 transition-all hover:-translate-y-0.5 hover:bg-amber-600 hover:shadow-xl active:scale-95 disabled:pointer-events-none disabled:opacity-40 flex items-center justify-center gap-2"
+        >
+          {isLoading ? <Spinner size="sm" /> : null}
+          {hasPinSet ? 'Actualizar PIN' : 'Crear PIN Maestro'}
+        </button>
+      </form>
+
+      {/* Modules List */}
+      <div className="pt-8 mt-2 border-t border-black/[0.04]">
+        <h3 className="text-[16px] font-black text-neutral-900 mb-1">Cerrar pantallas con candado</h3>
+        <p className="text-[13.5px] text-neutral-500 mb-6">Selecciona qué pantallas requerirán el PIN anterior para poder entrar.</p>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {MODULES.map(module => {
+            const isLocked = localLocked.includes(module.id)
+            return (
+              <label 
+                key={module.id}
+                className={cn(
+                  "flex items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-all duration-300",
+                  isLocked 
+                     ? "border-amber-400 bg-amber-50/30 shadow-sm" 
+                     : "border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-sm"
+                )}
+              >
+                <div className="mt-0.5 relative flex items-center justify-center">
+                   <input
+                     type="checkbox"
+                     checked={isLocked}
+                     onChange={() => { void handleToggleModule(module.id) }}
+                     className="peer sr-only"
+                   />
+                   <div className={cn(
+                     "h-5 w-5 rounded-md border-2 transition-colors flex items-center justify-center",
+                     isLocked ? "border-amber-500 bg-amber-500" : "border-neutral-300 bg-white"
+                   )}>
+                      {isLocked && <CheckCircle2 size={12} className="text-white" />}
+                   </div>
+                </div>
+                <span className={cn("text-[13.5px] font-bold leading-tight", isLocked ? "text-amber-900" : "text-neutral-700")}>
+                  {module.label}
+                </span>
+              </label>
+            )
+          })}
         </div>
       </div>
-
-      {/* Confirm PIN field */}
-      <div className="space-y-1.5">
-        <label className="block text-[13px] font-medium text-zinc-700" htmlFor="emp-pin-confirm">
-          Confirmar PIN
-        </label>
-        <input
-          id="emp-pin-confirm"
-          type={showPin ? 'text' : 'password'}
-          inputMode="numeric"
-          pattern="\d*"
-          maxLength={6}
-          placeholder="4–6 dígitos"
-          value={confirm}
-          onChange={e => setConfirm(e.target.value.replace(/\D/g, ''))}
-          className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-[14px] outline-none ring-0 transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
-        />
-      </div>
-
-      {displayError && (
-        <div className="flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2.5 text-[13px] text-red-700 border border-red-200">
-          <AlertCircle size={14} />
-          {displayError}
-        </div>
-      )}
-
-      {success && (
-        <div className="flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-2.5 text-[13px] text-emerald-700 border border-emerald-200">
-          <CheckCircle2 size={14} />
-          PIN actualizado correctamente
-        </div>
-      )}
-
-      <button
-        type="submit"
-        disabled={isLoading || !pin || !confirm}
-        className="w-full rounded-xl bg-amber-500 px-4 py-2.5 text-[13px] font-semibold text-white transition hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-      >
-        {isLoading ? <Spinner size="sm" /> : null}
-        {hasPinSet ? 'Actualizar PIN' : 'Crear PIN'}
-      </button>
-    </form>
+    </div>
   )
 }
 
@@ -195,76 +303,100 @@ function StaffAccountSection({ tenantId }: { tenantId: string }) {
   }
 
   return (
-    <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-4">
-      <div className="rounded-xl bg-zinc-50 border border-zinc-200 px-4 py-3 text-[12px] text-zinc-600 leading-relaxed">
-        Tus trabajadores entran en{' '}
-        <code className="rounded bg-zinc-200 px-1 py-0.5 text-[11px] font-semibold text-zinc-700">{staffUrl}</code>{' '}
-        y escriben este PIN — desde cualquier celular. Comparte ese link + el PIN con tu equipo. Solo ven lo operativo (pedidos, disponibilidad, promos/horarios, mesas), nunca el diseño ni el plan.
+    <div className="space-y-6 rounded-3xl border border-black/[0.04] bg-white p-6 shadow-sm">
+      <div className="flex items-start gap-4 border-b border-black/[0.04] pb-6">
+         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 border border-blue-100">
+           <Smartphone size={24} />
+         </div>
+         <div>
+            <h2 className="text-lg font-black text-neutral-900 tracking-tight">Cuenta de Staff (Móvil)</h2>
+            <p className="text-[13.5px] text-neutral-500 mt-1">Acceso independiente para tus meseros al comandero y menú digital desde sus teléfonos.</p>
+         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <label className="block text-[13px] font-medium text-zinc-700" htmlFor="staff-pin">PIN de acceso (6–8 dígitos)</label>
-        <div className="relative">
-          <input
-            id="staff-pin"
-            type={showPin ? 'text' : 'password'}
-            inputMode="numeric"
-            maxLength={8}
-            autoComplete="off"
-            placeholder="6 a 8 dígitos"
-            value={pin}
-            onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-            className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 pr-10 text-[14px] outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
-          />
-          <button
-            type="button"
-            tabIndex={-1}
-            onClick={() => setShowPin((v) => !v)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
-          >
-            {showPin ? <EyeOff size={15} /> : <Eye size={15} />}
-          </button>
+      <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-5">
+        <div className="rounded-2xl bg-blue-50/50 border border-blue-100/50 p-4">
+           <div className="flex flex-col gap-2">
+             <p className="text-[13.5px] font-medium text-blue-900/80 leading-relaxed">
+               Pide a tu equipo que ingrese a:
+             </p>
+             <code className="inline-block w-fit rounded-xl bg-blue-100 px-3 py-2 text-[14px] font-black text-blue-800 select-all border border-blue-200/60 shadow-sm">
+               {staffUrl}
+             </code>
+             <p className="text-[13px] text-blue-800/70 mt-1">
+               Escribirán este PIN para entrar. Ellos no verán ventas ni configuraciones, solo tomarán órdenes y verán la disponibilidad.
+             </p>
+           </div>
         </div>
-      </div>
 
-      <div className="space-y-1.5">
-        <label className="block text-[13px] font-medium text-zinc-700" htmlFor="staff-pin-confirm">Confirmar PIN</label>
-        <input
-          id="staff-pin-confirm"
-          type={showPin ? 'text' : 'password'}
-          inputMode="numeric"
-          maxLength={8}
-          autoComplete="off"
-          placeholder="Repite el PIN"
-          value={confirm}
-          onChange={(e) => setConfirm(e.target.value.replace(/\D/g, ''))}
-          className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-[14px] outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
-        />
-      </div>
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <div className="space-y-2">
+            <label className="block text-[13px] font-bold uppercase tracking-wider text-neutral-500" htmlFor="staff-pin">PIN de acceso (6–8 dígitos)</label>
+            <div className="relative">
+              <input
+                id="staff-pin"
+                type={showPin ? 'text' : 'password'}
+                inputMode="numeric"
+                maxLength={8}
+                autoComplete="off"
+                placeholder="Ej. 123456"
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                className="w-full rounded-2xl border border-neutral-200 bg-neutral-50/50 px-4 py-3.5 pr-12 text-[15px] font-bold outline-none transition-colors focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
+              />
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={() => setShowPin((v) => !v)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors"
+              >
+                {showPin ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
 
-      {error && (
-        <div className="flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2.5 text-[13px] text-red-700 border border-red-200">
-          <AlertCircle size={14} />
-          {error}
+          <div className="space-y-2">
+            <label className="block text-[13px] font-bold uppercase tracking-wider text-neutral-500" htmlFor="staff-pin-confirm">Confirmar PIN</label>
+            <div className="relative">
+              <input
+                id="staff-pin-confirm"
+                type={showPin ? 'text' : 'password'}
+                inputMode="numeric"
+                maxLength={8}
+                autoComplete="off"
+                placeholder="Repítelo"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value.replace(/\D/g, ''))}
+                className="w-full rounded-2xl border border-neutral-200 bg-neutral-50/50 px-4 py-3.5 text-[15px] font-bold outline-none transition-colors focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
+              />
+            </div>
+          </div>
         </div>
-      )}
 
-      {success && (
-        <div className="flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-2.5 text-[13px] text-emerald-700 border border-emerald-200">
-          <CheckCircle2 size={14} />
-          PIN de staff configurado. Tu equipo ya puede entrar en {staffUrl}.
-        </div>
-      )}
+        {error && (
+          <div className="flex items-center gap-2 rounded-xl bg-red-50 px-4 py-3 text-[13px] font-bold text-red-700 border border-red-200">
+            <AlertCircle size={16} />
+            {error}
+          </div>
+        )}
 
-      <button
-        type="submit"
-        disabled={isLoading || !pin || !confirm}
-        className="w-full rounded-xl bg-amber-500 px-4 py-2.5 text-[13px] font-semibold text-white transition hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-      >
-        {isLoading ? <Spinner size="sm" /> : null}
-        Configurar PIN de staff
-      </button>
-    </form>
+        {success && (
+          <div className="flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-[13px] font-bold text-emerald-700 border border-emerald-200">
+            <CheckCircle2 size={16} />
+            PIN de staff configurado correctamente.
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={isLoading || !pin || !confirm}
+          className="w-full sm:w-auto rounded-2xl bg-blue-600 px-8 py-3.5 text-[14px] font-black text-white shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-xl active:scale-95 disabled:pointer-events-none disabled:opacity-40 flex items-center justify-center gap-2"
+        >
+          {isLoading ? <Spinner size="sm" /> : null}
+          Configurar PIN Móvil
+        </button>
+      </form>
+    </div>
   )
 }
 
@@ -277,6 +409,7 @@ export default function SettingsPage() {
     updateProfile,
     isLoading: isProfileLoading,
     error: profileError,
+    success: profileSuccess,
   } = useUpdateProfile(tenantId)
 
   const handleProfileSubmit = async (values: ProfileFormValues) => {
@@ -284,74 +417,89 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
-          Configuración
-        </p>
-        <h1 className="text-[26px] font-bold tracking-[-0.02em] text-zinc-900">
-          Ajustes
-        </h1>
-      </div>
+    <div className="mx-auto max-w-5xl pb-16">
+      <SettingsHeader />
 
-      <div className="flex gap-1 rounded-2xl border border-zinc-200 bg-zinc-50 p-1">
-        {TABS.map(({ key, label, icon: Icon }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setActiveTab(key)}
-            className={cn(
-              'flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-[13px] font-medium transition-all',
-              activeTab === key
-                ? 'bg-white text-zinc-900 shadow-sm'
-                : 'text-zinc-500 hover:text-zinc-700',
-            )}
-          >
-            <Icon size={14} />
-            {label}
-          </button>
-        ))}
-      </div>
-
-      <div className="rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 shadow-sm">
-        {activeTab === 'profile' && tenant && (
-          <ProfileForm
-            tenant={tenant}
-            isLoading={isProfileLoading}
-            error={profileError}
-            success={false}
-            onSubmit={(values) => { void handleProfileSubmit(values) }}
-          />
-        )}
-        {activeTab === 'plan' && tenant && (
-          <PlanInfo tenant={tenant} />
-        )}
-        {activeTab === 'employees' && (
-          <div className="flex flex-col gap-8">
-            <div className="flex flex-col gap-4">
-              <div>
-                <h2 className="text-[15px] font-semibold text-zinc-800">Cuenta de staff (panel separado)</h2>
-                <p className="text-[13px] text-zinc-500 mt-0.5">
-                  Acceso de tus trabajadores al panel operativo, separado de tu admin.
-                </p>
+      <div className="flex flex-col lg:flex-row gap-8 mt-2">
+        
+        {/* Sidebar Nav */}
+        <div className="w-full lg:w-64 shrink-0 flex flex-col gap-2">
+          {TABS.map(({ key, label, icon: Icon, description }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setActiveTab(key)}
+              className={cn(
+                'group flex flex-col items-start gap-1 rounded-3xl p-4 text-left transition-all duration-300',
+                activeTab === key
+                  ? 'bg-neutral-900 text-white shadow-xl shadow-neutral-900/10'
+                  : 'bg-transparent text-neutral-600 hover:bg-neutral-100/80',
+              )}
+            >
+              <div className="flex items-center gap-2.5">
+                <Icon size={18} className={activeTab === key ? "text-neutral-300" : "text-neutral-400 group-hover:text-neutral-600"} />
+                <span className={cn("text-[14.5px] font-black", activeTab === key ? "text-white" : "text-neutral-800")}>
+                   {label}
+                </span>
               </div>
-              <StaffAccountSection tenantId={tenantId} />
+              <span className={cn("text-[12.5px] font-medium leading-relaxed pl-[28px]", activeTab === key ? "text-neutral-400" : "text-neutral-500")}>
+                {description}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Content Area */}
+        <div className="flex-1 min-w-0">
+          {activeTab === 'profile' && tenant && (
+            <div className="rounded-3xl border border-black/[0.04] bg-white p-6 shadow-sm">
+               <div className="flex items-center gap-3 border-b border-black/[0.04] pb-6 mb-6">
+                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral-100 text-neutral-600 border border-neutral-200">
+                   <UserCircle size={24} />
+                 </div>
+                 <div>
+                    <h2 className="text-lg font-black text-neutral-900 tracking-tight">Perfil de {tenant.name}</h2>
+                    <p className="text-[13.5px] text-neutral-500 mt-1">Configura el nombre público, redes sociales y logotipo de tu menú.</p>
+                 </div>
+              </div>
+              <ProfileForm
+                tenant={tenant}
+                isLoading={isProfileLoading}
+                error={profileError}
+                success={profileSuccess}
+                onSubmit={(values) => { void handleProfileSubmit(values) }}
+              />
             </div>
-
-            <div className="flex flex-col gap-4 border-t border-zinc-200 pt-6">
-              <div>
-                <h2 className="text-[15px] font-semibold text-zinc-800">PIN de empleados (POS)</h2>
-                <p className="text-[13px] text-zinc-500 mt-0.5">
-                  Este PIN identifica a cada empleado en el comandero POS.
-                </p>
+          )}
+          
+          {activeTab === 'plan' && tenant && (
+            <div className="rounded-3xl border border-black/[0.04] bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-3 border-b border-black/[0.04] pb-6 mb-6">
+                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100">
+                   <CreditCard size={24} />
+                 </div>
+                 <div>
+                    <h2 className="text-lg font-black text-neutral-900 tracking-tight">Datos de Suscripción</h2>
+                    <p className="text-[13.5px] text-neutral-500 mt-1">Resumen rápido de los límites de tu cuenta y plan activo.</p>
+                 </div>
               </div>
+              <PlanInfo tenant={tenant} />
+            </div>
+          )}
+          
+          {activeTab === 'employees' && (
+            <div className="flex flex-col gap-6">
+              <StaffAccountSection tenantId={tenantId} />
+              
               <EmployeePinSection
                 tenantId={tenantId}
                 hasPinSet={!!tenant?.employeePinHash}
+                lockedModules={tenant?.lockedModules ?? []}
               />
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
       </div>
     </div>
   )

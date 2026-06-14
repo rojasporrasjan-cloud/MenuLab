@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import { CheckCircle2, Sparkles, LayoutTemplate, X, Search } from 'lucide-react'
 
 import { useEditorStore } from '@features/editor/store/useEditorStore'
+import { useTenantContext } from '@app/providers/TenantProvider'
+import { useAdminMenus } from '@features/dishes'
+import { useMenuCategories } from '@features/menus'
 import { TEMPLATE_LIST } from '@features/editor/templates/templateRegistry'
 import type { TemplateDefinition, TemplateCategory } from '@features/editor/templates/templateRegistry'
 
@@ -272,16 +275,42 @@ export function TemplatePicker() {
   const dispatch          = useEditorStore((s) => s.dispatch)
   const hasDocument       = useEditorStore((s) => s.state.document !== null)
 
+  const { tenantId } = useTenantContext()
+  const { data: menus } = useAdminMenus(tenantId)
+  const resolvedMenuId = menus?.[0]?.id ?? null
+  const { data: categories } = useMenuCategories(tenantId, resolvedMenuId)
+
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   const currentTemplate = TEMPLATE_LIST.find((t) => t.id === currentTemplateId) ?? null
 
   function handleApply(def: TemplateDefinition): void {
+    const mappedLayers = def.defaultLayers.map(layer => {
+      let mappedLayer = { ...layer }
+      if (layer.binding.type === 'category-name' || layer.binding.type === 'dish-list') {
+        const catIndex = layer.binding.categoryId === '__cat_main__' ? 0 : 
+                         layer.binding.categoryId === '__cat_secondary__' ? 1 : -1
+                         
+        if (catIndex !== -1 && categories && categories.length > 0) {
+          // If the requested index doesn't exist, fallback to the last available category
+          const realCatId = categories[Math.min(catIndex, categories.length - 1)].id
+          mappedLayer = {
+            ...layer,
+            binding: {
+              ...layer.binding,
+              categoryId: realCatId
+            }
+          }
+        }
+      }
+      return mappedLayer
+    })
+
     dispatch({
       type:          'APPLY_TEMPLATE',
       templateId:    def.id,
       canvaTemplate: def.canvaTemplate,
-      defaultLayers: def.defaultLayers,
+      defaultLayers: mappedLayers,
       theme:         def.suggestedTheme,
     })
   }

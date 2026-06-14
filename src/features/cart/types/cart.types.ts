@@ -26,4 +26,5 @@ export type CartAction =
 export const orderQueryKeys = {
   active: (tenantId: string) => ['orders', tenantId, 'active'] as const,
   byDate: (tenantId: string, date: string) => ['orders', tenantId, 'date', date] as const,
+  between: (tenantId: string, start: string, end: string) => ['orders', tenantId, 'between', start, end] as const,
 } as const

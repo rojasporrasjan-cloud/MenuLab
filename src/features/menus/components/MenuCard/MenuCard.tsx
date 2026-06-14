@@ -1,4 +1,4 @@
-import { BookOpen, ChevronRight, Archive } from 'lucide-react'
+import { BookOpen, ChevronRight, Archive, Clock } from 'lucide-react'
 import type { Menu } from '@core/domain/entities/Menu'
 
 interface MenuCardProps {
@@ -12,18 +12,6 @@ interface MenuCardProps {
   onArchive: () => void
 }
 
-const STATUS_STYLES: Record<Menu['status'], string> = {
-  active: 'bg-green-50 text-green-700',
-  draft: 'bg-amber-50 text-amber-700',
-  archived: 'bg-surface-100 text-surface-500',
-}
-
-const STATUS_LABELS: Record<Menu['status'], string> = {
-  active: 'Activo',
-  draft: 'Borrador',
-  archived: 'Archivado',
-}
-
 export function MenuCard({
   menu,
   categoryCount,
@@ -34,67 +22,97 @@ export function MenuCard({
   onArchive,
 }: MenuCardProps) {
   const isArchived = menu.status === 'archived'
+  const isActive = menu.status === 'active'
 
   return (
     <div
-      className={[
-        'group relative rounded-2xl border p-4 transition-all cursor-pointer',
-        isSelected
-          ? 'border-brand-300 bg-brand-50 shadow-sm'
-          : 'border-surface-100 bg-surface-0 hover:border-surface-200 hover:shadow-sm',
-        isArchived ? 'opacity-60' : '',
-      ].join(' ')}
       onClick={onSelect}
+      className={`group relative flex flex-col gap-3 rounded-[20px] p-4 transition-all duration-300 cursor-pointer overflow-hidden ${
+        isSelected
+          ? 'bg-gradient-to-b from-amber-50/50 to-white border-2 border-amber-400 shadow-[0_8px_24px_-10px_rgba(245,158,11,0.2)]'
+          : 'bg-white border border-zinc-200 hover:border-amber-300 hover:shadow-md'
+      } ${isArchived ? 'opacity-60 grayscale' : ''}`}
     >
-      <div className="flex items-start gap-3">
-        <div
-          className={[
-            'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors',
-            isSelected ? 'bg-brand-100 text-brand-600' : 'bg-surface-100 text-surface-500',
-          ].join(' ')}
-        >
-          <BookOpen size={16} />
-        </div>
+      {/* Glow background if selected */}
+      {isSelected && (
+        <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-amber-400/10 blur-2xl pointer-events-none" />
+      )}
 
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <p className="truncate text-sm font-semibold text-surface-900">{menu.name}</p>
-            <span
-              className={`shrink-0 rounded-full px-1.5 py-0.5 text-xs font-medium ${STATUS_STYLES[menu.status]}`}
-            >
-              {STATUS_LABELS[menu.status]}
-            </span>
+      <div className="flex items-start justify-between relative z-10">
+        <div className="flex items-center gap-3">
+          <div
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition-all duration-300 ${
+              isSelected ? 'bg-amber-100 text-amber-600 shadow-inner' : 'bg-zinc-50 border border-zinc-100 text-zinc-400'
+            }`}
+          >
+            <BookOpen size={20} strokeWidth={isSelected ? 2.5 : 1.5} />
           </div>
 
-          {menu.description && (
-            <p className="mt-0.5 truncate text-xs text-surface-400">{menu.description}</p>
-          )}
-
-          <p className="mt-1 text-xs text-surface-400">
-            {categoryCount} {categoryCount === 1 ? 'categoría' : 'categorías'}
-          </p>
+          <div className="flex flex-col">
+            <h3 className="text-[15px] font-bold text-zinc-800 leading-tight">
+              {menu.name}
+            </h3>
+            
+            <div className="flex items-center gap-1.5 mt-1">
+              {isActive ? (
+                <div className="flex items-center gap-1 text-emerald-600 text-[11px] font-bold">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  ACTIVO
+                </div>
+              ) : isArchived ? (
+                <div className="flex items-center gap-1 text-zinc-500 text-[11px] font-bold">
+                  <Archive size={10} />
+                  ARCHIVADO
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 text-amber-600 text-[11px] font-bold">
+                  <Clock size={10} />
+                  BORRADOR
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
-        <ChevronRight
-          size={15}
-          className={`shrink-0 transition-transform ${isSelected ? 'text-brand-400 rotate-90' : 'text-surface-300'}`}
-        />
+        <div className="flex items-center justify-center h-8 w-8 rounded-full bg-zinc-50/50 group-hover:bg-white transition-colors">
+          <ChevronRight
+            size={18}
+            className={`transition-all duration-300 ${
+              isSelected ? 'text-amber-500 translate-x-0.5' : 'text-zinc-300'
+            }`}
+          />
+        </div>
       </div>
 
-      {/* Inline action buttons — visible on hover or when selected */}
+      <div className="flex flex-col gap-1 mt-1 relative z-10 pl-14">
+        {menu.description && (
+          <p className="truncate text-[13px] text-zinc-500">{menu.description}</p>
+        )}
+        <p className="text-[12px] font-medium text-zinc-400">
+          {categoryCount} {categoryCount === 1 ? 'categoría' : 'categorías'}
+        </p>
+      </div>
+
+      {/* Acciones Inline */}
       <div
-        className={[
-          'mt-3 flex gap-2 transition-opacity',
-          isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
-        ].join(' ')}
+        className={`mt-2 flex gap-2 transition-all duration-300 pl-14 ${
+          isSelected ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         <button
           type="button"
           onClick={onEdit}
-          className="flex-1 rounded-lg border border-surface-200 py-1 text-xs font-medium text-surface-600 hover:bg-surface-50 transition-colors"
+          className={`flex-1 rounded-xl py-2 text-[12px] font-bold transition-all active:scale-95 ${
+            isSelected 
+              ? 'bg-amber-100 text-amber-800 hover:bg-amber-200' 
+              : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+          }`}
         >
-          Editar
+          Modificar
         </button>
 
         {!isArchived && (
@@ -106,10 +124,10 @@ export function MenuCard({
               }
             }}
             disabled={isArchiving}
-            className="flex h-7 w-7 items-center justify-center rounded-lg border border-surface-200 text-surface-400 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 transition-colors disabled:opacity-50"
+            className="flex items-center justify-center w-10 rounded-xl bg-zinc-50 text-zinc-400 hover:bg-red-50 hover:text-red-600 transition-all active:scale-95 disabled:opacity-50"
             aria-label="Archivar menú"
           >
-            <Archive size={13} />
+            <Archive size={14} />
           </button>
         )}
       </div>

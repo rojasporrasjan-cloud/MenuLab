@@ -6,6 +6,7 @@ import {
   getCountFromServer,
   Timestamp,
 } from 'firebase/firestore'
+import type { Query, DocumentData } from 'firebase/firestore'
 import { db } from '@infrastructure/firebase/firestore'
 import { firestorePaths } from '@infrastructure/firebase/paths'
 import type { DashboardMetrics } from '../types/dashboard.types'
@@ -27,34 +28,43 @@ export const DashboardService = {
       new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
     )
 
+    const safeGetCount = async (q: Query<DocumentData>) => {
+      try {
+        const snap = await getCountFromServer(q)
+        return snap.data().count
+      } catch (error) {
+        console.warn('Error en query de conteo (posible índice faltante):', error)
+        return 0
+      }
+    }
+
     const [activeMenus, activeDishes, activeTables, arLaunches, qrScans] = await Promise.all([
-      getCountFromServer(
+      safeGetCount(
         query(
           collection(db, firestorePaths.menus(tenantId)),
           where('status', '==', 'active'),
         ),
       ),
-      getCountFromServer(
+      safeGetCount(
         query(
           collectionGroup(db, 'dishes'),
           where('tenantId', '==', tenantId),
-          where('status', '==', 'available'),
         ),
       ),
-      getCountFromServer(
+      safeGetCount(
         query(
           collection(db, firestorePaths.tables(tenantId)),
           where('status', '==', 'active'),
         ),
       ),
-      getCountFromServer(
+      safeGetCount(
         query(
           collection(db, firestorePaths.analyticsEvents(tenantId)),
           where('type', '==', 'ar_launch'),
           where('timestamp', '>=', thirtyDaysAgo),
         ),
       ),
-      getCountFromServer(
+      safeGetCount(
         query(
           collection(db, firestorePaths.analyticsEvents(tenantId)),
           where('type', '==', 'qr_scan'),
@@ -64,11 +74,11 @@ export const DashboardService = {
     ])
 
     return {
-      activeMenus: activeMenus.data().count,
-      activeDishes: activeDishes.data().count,
-      activeTables: activeTables.data().count,
-      arLaunchesLast30d: arLaunches.data().count,
-      qrScansLast30d: qrScans.data().count,
+      activeMenus,
+      activeDishes,
+      activeTables,
+      arLaunchesLast30d: arLaunches,
+      qrScansLast30d: qrScans,
     }
   },
 }

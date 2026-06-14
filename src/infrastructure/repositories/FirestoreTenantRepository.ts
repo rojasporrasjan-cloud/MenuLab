@@ -7,11 +7,13 @@ import {
   query,
   where,
   limit,
+  updateDoc,
+  serverTimestamp,
 } from 'firebase/firestore'
 import { db } from '@infrastructure/firebase/firestore'
 import { firestorePaths } from '@infrastructure/firebase/paths'
 import { TenantMapper } from '@infrastructure/mappers/TenantMapper'
-import type { ITenantRepository } from '@core/domain/repositories/ITenantRepository'
+import type { ITenantRepository, TenantSubscriptionPatch } from '@core/domain/repositories/ITenantRepository'
 import type { Tenant } from '@core/domain/entities/Tenant'
 import { NotFoundError } from '@core/errors/NotFoundError'
 
@@ -41,5 +43,12 @@ export class FirestoreTenantRepository implements ITenantRepository {
     )
     const snap = await getDocs(q)
     return snap.docs.map((d) => TenantMapper.toDomain(d))
+  }
+
+  async updateSubscription(tenantId: string, patch: TenantSubscriptionPatch): Promise<void> {
+    const data: Record<string, unknown> = { updatedAt: serverTimestamp() }
+    if (patch.plan) data['plan'] = patch.plan
+    if (patch.status) data['status'] = patch.status
+    await updateDoc(doc(db, firestorePaths.tenant(tenantId)), data)
   }
 }

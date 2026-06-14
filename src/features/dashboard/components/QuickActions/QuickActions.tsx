@@ -9,44 +9,28 @@ const ACTIONS = [
     description: 'Agrega un platillo al menú',
     icon:        PlusCircle,
     to:          ROUTES.admin.dishes.new,
-    iconBg:      'rgba(233,154,14,0.1)',
-    iconColor:   '#cc7809',
-    hoverBg:     'rgba(233,154,14,0.15)',
+    chip:        'bg-brand-50 text-brand-600',
   },
   {
     label:       'Generar QR',
     description: 'Crea un código QR de mesa',
     icon:        QrCode,
     to:          ROUTES.admin.qr,
-    iconBg:      'rgba(59,130,246,0.1)',
-    iconColor:   '#2563eb',
-    hoverBg:     'rgba(59,130,246,0.15)',
+    chip:        'bg-blue-50 text-blue-600',
   },
   {
     label:       'Ver analíticas',
     description: 'Escaneos y vistas del menú',
     icon:        BarChart3,
     to:          ROUTES.admin.analytics,
-    iconBg:      'rgba(139,92,246,0.1)',
-    iconColor:   '#7c3aed',
-    hoverBg:     'rgba(139,92,246,0.15)',
+    chip:        'bg-violet-50 text-violet-600',
   },
 ] as const
 
 export const QuickActions = memo(function QuickActions() {
   return (
-    <div
-      className="rounded-2xl p-5"
-      style={{
-        background: '#ffffff',
-        border:     '1px solid #efede9',
-        boxShadow:  '0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)',
-      }}
-    >
-      <h3
-        className="mb-4 text-[11px] font-bold uppercase tracking-[0.12em]"
-        style={{ color: '#bfbbb4' }}
-      >
+    <div className="rounded-2xl border border-surface-150 bg-white p-5 shadow-sm">
+      <h3 className="mb-4 text-[11px] font-black uppercase tracking-[0.18em] text-brand-600">
         Acciones rápidas
       </h3>
 
@@ -57,29 +41,22 @@ export const QuickActions = memo(function QuickActions() {
             <Link
               key={action.to}
               to={action.to}
-              className="group flex items-center gap-3 rounded-xl px-2.5 py-2.5 transition-all"
-              style={{ color: 'inherit' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#faf9f7' }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+              className="group flex items-center gap-3 rounded-xl px-2.5 py-2.5 transition-colors hover:bg-surface-50"
             >
-              <div
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all"
-                style={{ background: action.iconBg }}
-              >
-                <Icon size={15} strokeWidth={1.8} style={{ color: action.iconColor }} />
+              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${action.chip}`}>
+                <Icon size={16} strokeWidth={2} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-semibold" style={{ color: '#27251f' }}>
+                <p className="text-[13px] font-bold text-surface-800">
                   {action.label}
                 </p>
-                <p className="text-[11px]" style={{ color: '#a8a49d' }}>
+                <p className="text-[11px] text-surface-400">
                   {action.description}
                 </p>
               </div>
               <ArrowRight
-                size={13}
-                className="shrink-0 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100"
-                style={{ color: '#bfbbb4' }}
+                size={14}
+                className="shrink-0 text-surface-300 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100"
               />
             </Link>
           )

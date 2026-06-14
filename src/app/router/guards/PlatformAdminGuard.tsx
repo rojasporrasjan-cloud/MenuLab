@@ -1,6 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuthContext } from '@app/providers/AuthProvider'
-import { ENV } from '@shared/config/env'
+import { isPlatformAdminUser } from '@shared/config/platformAdmin'
 import { ROUTES } from '@shared/constants/routes'
 
 export function PlatformAdminGuard() {
@@ -12,7 +12,7 @@ export function PlatformAdminGuard() {
     return <Navigate to={ROUTES.auth.login} replace />
   }
 
-  if (!ENV.platformAdminUids.includes(firebaseUser.uid)) {
+  if (!isPlatformAdminUser({ uid: firebaseUser.uid, email: firebaseUser.email })) {
     return <Navigate to={ROUTES.admin.dashboard} replace />
   }
 

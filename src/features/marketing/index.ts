@@ -5,6 +5,11 @@ export { FeatureShowcase } from './components/FeatureShowcase'
 export { PricingTable } from './components/PricingTable'
 export { TemplateGalleryCard } from './components/TemplateGalleryCard'
 export { QuoteForm } from './components/QuoteForm'
+export { Reveal } from './components/Reveal'
+export { FoodMarquee } from './components/FoodMarquee'
+export { HeroPhoneShowcase } from './components/HeroPhoneShowcase'
+export { BentoFeatures } from './components/BentoFeatures'
+export { ValueStack } from './components/ValueStack'
 
 export { useSubmitQuote } from './hooks/useSubmitQuote'
 

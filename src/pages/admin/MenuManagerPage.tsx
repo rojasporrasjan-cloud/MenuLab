@@ -90,13 +90,13 @@ export default function MenuManagerPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
+          <p className="text-[11px] font-black uppercase tracking-[0.22em] text-brand-600">
             Organización
           </p>
-          <h1 className="text-[26px] font-bold tracking-[-0.02em] text-zinc-900">
+          <h1 className="text-[22px] font-black leading-tight tracking-tight text-surface-900">
             Menús
           </h1>
-          <p className="text-[13px] text-zinc-500">
+          <p className="text-[13px] text-surface-500">
             Organiza tus menús y sus categorías.
           </p>
         </div>
@@ -136,10 +136,10 @@ export default function MenuManagerPage() {
 
       {/* Two-panel layout */}
       {!menusLoading && menus.length > 0 && (
-        <div className="grid gap-4 lg:grid-cols-5">
+        <div className="grid gap-6 lg:grid-cols-12">
 
           {/* ── Left panel: menu list ── */}
-          <div className="flex flex-col gap-2 lg:col-span-2">
+          <div className="flex flex-col gap-3 lg:col-span-4">
             {menus.map((menu) => (
               <MenuCard
                 key={menu.id}
@@ -156,77 +156,93 @@ export default function MenuManagerPage() {
 
           {/* ── Right panel: categories ── */}
           <div
-            className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm lg:col-span-3"
+            className="flex flex-col gap-5 rounded-[24px] border border-zinc-200/80 bg-white p-6 shadow-sm lg:col-span-8"
           >
             {!selectedMenu ? (
-              <div className="flex h-40 items-center justify-center text-zinc-400">
-                <p className="text-sm">Selecciona un menú</p>
+              <div className="flex h-40 flex-col items-center justify-center text-zinc-400 gap-2">
+                <BookOpen size={32} className="opacity-50" />
+                <p className="text-[14px] font-medium">Selecciona un menú a la izquierda</p>
               </div>
             ) : (
               <>
-                {/* Panel header */}
-                <div className="mb-4 flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <h2 className="truncate text-sm font-semibold text-zinc-800">
-                      {selectedMenu.name}
-                    </h2>
-                    <p className="text-xs text-zinc-400">Categorías del menú</p>
+                {/* Panel header con Banner descriptivo */}
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <h2 className="truncate text-[20px] font-bold text-zinc-900 leading-tight">
+                        {selectedMenu.name}
+                      </h2>
+                      <p className="text-[13px] text-zinc-500 font-medium">Categorías de este menú</p>
+                    </div>
+                    
+                    <div className="flex shrink-0 gap-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        asChild
+                        className="rounded-xl shadow-sm text-[13px]"
+                      >
+                        <Link to={dishListUrl}>
+                          <ExternalLink size={15} className="mr-1.5" />
+                          Ver platos
+                        </Link>
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => setCategoryModal({ type: 'create' })}
+                        className="rounded-xl shadow-sm text-[13px] bg-amber-500 hover:bg-amber-600 border-none"
+                      >
+                        <PlusCircle size={15} className="mr-1.5" />
+                        Añadir Categoría
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex shrink-0 gap-2">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      asChild
-                      className="rounded-xl shadow-sm"
-                    >
-                      <Link to={dishListUrl}>
-                        <ExternalLink size={13} className="mr-1.5" />
-                        Ver platos
-                      </Link>
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => setCategoryModal({ type: 'create' })}
-                      className="rounded-xl shadow-sm"
-                    >
-                      <PlusCircle size={13} className="mr-1.5" />
-                      Categoría
-                    </Button>
+
+                  {/* Banner explicativo a prueba de tontos */}
+                  <div className="rounded-xl bg-gradient-to-r from-amber-50 to-orange-50/50 p-4 border border-amber-100/50">
+                    <p className="text-[13px] text-amber-900 leading-relaxed">
+                      <strong className="font-bold">💡 Tip:</strong> Este es el esqueleto de tu menú. Las categorías agrupan tus platos y los clientes las verán <strong>exactamente en el orden que las organices aquí</strong>. <br className="hidden sm:block"/>
+                      Ejemplo de categorías: <em>Entradas, Platos Fuertes, Bebidas, Postres</em>.
+                    </p>
                   </div>
                 </div>
 
                 {/* Category loading */}
                 {catLoading && (
-                  <div className="flex items-center justify-center py-8">
-                    <Spinner size="sm" />
+                  <div className="flex items-center justify-center py-12">
+                    <Spinner size="md" />
                   </div>
                 )}
 
                 {/* Empty categories */}
                 {!catLoading && categories.length === 0 && (
                   <div
-                    className="flex flex-col items-center justify-center rounded-xl py-12 text-center border border-dashed border-zinc-200 bg-zinc-50/50 p-6"
+                    className="flex flex-col items-center justify-center rounded-[20px] py-14 text-center border-2 border-dashed border-zinc-200 bg-zinc-50/50 p-6"
                   >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white border border-zinc-200/60 text-zinc-400 shadow-sm">
-                      <Layers size={20} strokeWidth={1.5} />
+                    <div className="relative mb-4">
+                      <div className="absolute -inset-4 rounded-full bg-amber-100/50 blur-xl" />
+                      <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm border border-amber-100 text-amber-500">
+                        <Layers size={32} strokeWidth={1.5} />
+                      </div>
                     </div>
-                    <p className="mt-4 text-[14px] font-semibold text-zinc-700">Sin categorías</p>
-                    <p className="mt-1 text-[12px] text-zinc-500 max-w-[240px]">
-                      Las categorías agrupan los platos en el menú público.
+                    <p className="text-[18px] font-bold text-zinc-800">No tienes categorías aún</p>
+                    <p className="mt-2 text-[14px] text-zinc-500 max-w-[320px] leading-relaxed">
+                      El primer paso para armar tu menú es crear categorías. Por ejemplo: "Bebidas Calientes" o "Sándwiches".
                     </p>
-                    <button
-                      type="button"
+                    <Button
+                      size="md"
                       onClick={() => setCategoryModal({ type: 'create' })}
-                      className="mt-4 text-[13px] font-semibold text-amber-600 transition-colors hover:text-amber-700"
+                      className="mt-6 shadow-sm bg-amber-500 hover:bg-amber-600 rounded-xl font-bold"
                     >
-                      + Agregar primera categoría
-                    </button>
+                      <PlusCircle size={16} className="mr-2" />
+                      Crear mi primera categoría
+                    </Button>
                   </div>
                 )}
 
                 {/* Category list */}
                 {!catLoading && categories.length > 0 && (
-                  <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-col gap-2 mt-2">
                     {categories.map((cat, idx) => (
                       <CategoryItem
                         key={cat.id}
@@ -246,10 +262,10 @@ export default function MenuManagerPage() {
 
                 {/* Alert for dish impact on delete */}
                 {!catLoading && categories.length > 0 && (
-                  <div className="mt-4 flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2.5">
-                    <AlertCircle size={13} className="mt-0.5 shrink-0 text-amber-500" />
-                    <p className="text-xs text-amber-700">
-                      Eliminar una categoría no elimina sus platos, pero los dejará sin categoría asignada.
+                  <div className="mt-2 flex items-start gap-2.5 rounded-xl bg-zinc-50 px-4 py-3 border border-zinc-200/60">
+                    <AlertCircle size={15} className="mt-0.5 shrink-0 text-zinc-400" />
+                    <p className="text-[12px] text-zinc-500 leading-relaxed">
+                      Si eliminas una categoría, <strong>no perderás los platos</strong> que están dentro de ella, simplemente quedarán sin categoría asignada en tu lista general de platos.
                     </p>
                   </div>
                 )}

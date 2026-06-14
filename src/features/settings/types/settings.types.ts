@@ -11,6 +11,16 @@ export const profileFormSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido').max(80),
   timezone: z.string().min(1),
   locale: z.string().min(1),
+  whatsapp: z.string().optional(),
+  sinpeNumber: z.string().optional(),
+  wazeUrl: z.string().url('URL inválida').optional().or(z.literal('')),
+  googleMapsUrl: z.string().url('URL inválida').optional().or(z.literal('')),
+  hours: z.string().optional(),
+  address: z.string().optional(),
+  phone: z.string().optional(),
+  instagram: z.string().optional(),
+  facebook: z.string().optional(),
+  tiktok: z.string().optional(),
 })
 
 export type ProfileFormValues = z.infer<typeof profileFormSchema>

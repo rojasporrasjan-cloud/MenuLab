@@ -82,94 +82,131 @@ export class GeminiApiService {
     return Boolean(ENV.gemini.apiKey)
   }
 
-  static async analyzeMenuImage(
-    imageBase64: string,
-    mimeType: string,
+  static async analyzeMenuImages(
+    images: Array<{ base64: string; mimeType: string }>,
   ): Promise<GeminiMenuPayload> {
     const apiKey = ENV.gemini.apiKey
     if (!apiKey) {
       throw new Error('GEMINI_KEY_MISSING: Configura VITE_GEMINI_API_KEY en .env para usar el digitalizador de IA.')
     }
 
+    // Acumuladores mutables — el payload final se construye inmutable al final.
+    const allCategories: GeminiMenuPayload['categories'][number][] = []
+    const allDishes: GeminiMenuPayload['dishes'][number][] = []
+    let detectedLocale: string | null = null
+    let tenantFields: GeminiMenuPayload['tenantFields'] = []
+
     const url = `${GEMINI_BASE}/${GEMINI_MODEL}:generateContent?key=${apiKey}`
 
-    const body = {
-      contents: [
-        {
-          parts: [
-            {
-              inline_data: {
-                mime_type: mimeType,
-                data: imageBase64,
+    for (let i = 0; i < images.length; i++) {
+      const img = images[i]
+      const body = {
+        contents: [
+          {
+            parts: [
+              {
+                inline_data: {
+                  mime_type: img.mimeType,
+                  data: img.base64,
+                },
               },
-            },
-            { text: EXTRACT_PROMPT },
-          ],
+              { text: EXTRACT_PROMPT },
+            ],
+          },
+        ],
+        generationConfig: {
+          response_mime_type: 'application/json',
+          temperature: 0.1,
+          maxOutputTokens: 8192,
         },
-      ],
-      generationConfig: {
-        response_mime_type: 'application/json',
-        temperature: 0.1,
-        maxOutputTokens: 8192,
-      },
+      }
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+
+      const data = (await response.json()) as GeminiApiResponse
+
+      if (!response.ok) {
+        const message = data.error?.message ?? `HTTP ${response.status}`
+        if (
+          response.status === 401 ||
+          response.status === 403 ||
+          /API key not valid|invalid authentication|UNAUTHENTICATED|API_KEY_INVALID/i.test(message)
+        ) {
+          throw new Error(
+            'La API key de Gemini no es válida. Crea una en https://aistudio.google.com/apikey (debe empezar con "AIza…") y ponla en VITE_GEMINI_API_KEY.',
+          )
+        }
+        if (response.status === 404 && /model/i.test(message)) {
+          throw new Error('El modelo de Gemini no está disponible para tu key. Verifica que tu proyecto tenga acceso a la API de Gemini.')
+        }
+        if (response.status === 429) {
+          throw new Error('Se agotó la cuota de Gemini por ahora. Espera unos minutos o revisa tu cuota/plan en Google AI Studio.')
+        }
+        throw new Error(`Error de Gemini en la imagen ${i + 1}: ${message}`)
+      }
+
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text
+      if (!text) {
+        throw new Error(`Gemini no retornó contenido para la imagen ${i + 1}. Intenta con una imagen más clara.`)
+      }
+
+      let payload: GeminiMenuPayload
+      try {
+        payload = JSON.parse(text) as GeminiMenuPayload
+      } catch (_parseError) {
+        // A veces Gemini envuelve el JSON con texto extra: rescatamos el bloque {...}
+        try {
+          const start = text.indexOf('{')
+          const end = text.lastIndexOf('}')
+          if (start !== -1 && end !== -1 && end > start) {
+            const jsonString = text.substring(start, end + 1)
+            payload = JSON.parse(jsonString) as GeminiMenuPayload
+          } else {
+            throw new Error('No JSON format detected.', { cause: _parseError })
+          }
+        } catch (innerErr) {
+          throw new Error(
+            `La respuesta de Gemini no es válida para la imagen ${i + 1}. Puede que el texto sea muy largo. Intenta con menos imágenes.`,
+            { cause: innerErr },
+          )
+        }
+      }
+
+      // Fusión de campos generales (gana la primera imagen que los traiga)
+      if (!detectedLocale && payload.detectedLocale) {
+        detectedLocale = payload.detectedLocale
+      }
+      if (payload.tenantFields && tenantFields.length === 0) {
+        tenantFields = payload.tenantFields
+      }
+
+      // Evitar colisiones de IDs entre imágenes: copias con sufijo por imagen
+      // (los tipos del payload son readonly — nunca se mutan en sitio).
+      const suffix = `_img${i + 1}`
+      allCategories.push(
+        ...(payload.categories ?? []).map((cat) => ({ ...cat, id: `${cat.id}${suffix}` })),
+      )
+      allDishes.push(
+        ...(payload.dishes ?? []).map((dish) => ({
+          ...dish,
+          id: `${dish.id}${suffix}`,
+          categoryId: `${dish.categoryId}${suffix}`,
+        })),
+      )
     }
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-
-    const data = (await response.json()) as GeminiApiResponse
-
-    if (!response.ok) {
-      const message = data.error?.message ?? `HTTP ${response.status}`
-      // Key inválida / no autorizada → mensaje accionable para el dueño.
-      if (
-        response.status === 401 ||
-        response.status === 403 ||
-        /API key not valid|invalid authentication|UNAUTHENTICATED|API_KEY_INVALID/i.test(message)
-      ) {
-        throw new Error(
-          'La API key de Gemini no es válida. Crea una en https://aistudio.google.com/apikey (debe empezar con "AIza…") y ponla en VITE_GEMINI_API_KEY.',
-        )
-      }
-      if (response.status === 404 && /model/i.test(message)) {
-        throw new Error('El modelo de Gemini no está disponible para tu key. Verifica que tu proyecto tenga acceso a la API de Gemini.')
-      }
-      if (response.status === 429) {
-        throw new Error('Se agotó la cuota de Gemini por ahora. Espera unos minutos o revisa tu cuota/plan en Google AI Studio.')
-      }
-      throw new Error(`Error de Gemini: ${message}`)
-    }
-
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text
-    if (!text) {
-      throw new Error('Gemini no retornó contenido. Intenta con una imagen más clara.')
-    }
-
-    let payload: GeminiMenuPayload
-    try {
-      payload = JSON.parse(text) as GeminiMenuPayload
-    } catch {
-      // Sometimes Gemini wraps with backticks despite the mime_type hint
-      const jsonMatch = /```(?:json)?\s*([\s\S]+?)\s*```/.exec(text)
-      if (jsonMatch?.[1]) {
-        payload = JSON.parse(jsonMatch[1]) as GeminiMenuPayload
-      } else {
-        throw new Error('La respuesta de Gemini no es JSON válido. Intenta con otra imagen.')
-      }
-    }
-
-    // Normalize — Gemini might send different field shapes
     return {
-      sourceImageWidthPx:  payload.sourceImageWidthPx  ?? 1024,
-      sourceImageHeightPx: payload.sourceImageHeightPx ?? 1024,
+      sourceImageWidthPx: 1024,
+      sourceImageHeightPx: 1024,
       suggestedTemplateId: null,
-      detectedLocale:      payload.detectedLocale ?? null,
-      categories:          payload.categories     ?? [],
-      dishes:              payload.dishes         ?? [],
-      tenantFields:        payload.tenantFields   ?? [],
+      detectedLocale,
+      tenantFields,
+      categories: allCategories,
+      dishes: allDishes,
     }
   }
 }

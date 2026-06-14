@@ -1,4 +1,4 @@
-import { addDoc, collection, getDoc, serverTimestamp } from 'firebase/firestore'
+import { addDoc, collection, getDoc, getDocs, orderBy, query, serverTimestamp, where } from 'firebase/firestore'
 import { db } from '@infrastructure/firebase/firestore'
 import { firestorePaths } from '@infrastructure/firebase/paths'
 import { PaymentMapper } from '@infrastructure/mappers/PaymentMapper'
@@ -19,5 +19,16 @@ export class FirestorePaymentRepository implements IPaymentRepository {
     const snap = await getDoc(ref)
     if (!snap.exists()) throw new NotFoundError('Payment', ref.id)
     return PaymentMapper.toDomain(snap, payment.tenantId)
+  }
+
+  async listBetween(tenantId: string, start: Date, end: Date): Promise<Payment[]> {
+    const q = query(
+      collection(db, firestorePaths.payments(tenantId)),
+      where('createdAt', '>=', start),
+      where('createdAt', '<=', end),
+      orderBy('createdAt', 'asc'),
+    )
+    const snap = await getDocs(q)
+    return snap.docs.map((d) => PaymentMapper.toDomain(d, tenantId))
   }
 }

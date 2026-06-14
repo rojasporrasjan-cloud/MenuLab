@@ -137,3 +137,175 @@ body {
     animation-duration: 1ms;
   }
 }
+
+/* ─── Marketing landing: cinematic effect kit ────────────────────────────────
+   Animaciones de la landing pública (hero futurista, marquee, reveals).
+   Solo CSS — sin librerías de animación. Prefijo mk- para no colisionar. */
+
+/* Flotación suave con 3 cadencias (elementos de comida y badges del hero). */
+@keyframes mk-float {
+  0%, 100% { transform: translateY(0) rotate(var(--mk-rot, 0deg)); }
+  50%      { transform: translateY(-14px) rotate(var(--mk-rot, 0deg)); }
+}
+.mk-float-a { animation: mk-float 5s ease-in-out infinite; }
+.mk-float-b { animation: mk-float 6.5s ease-in-out 0.9s infinite; }
+.mk-float-c { animation: mk-float 8s ease-in-out 1.8s infinite; }
+
+/* Barrido de luz sobre texto con gradiente (titular del hero). */
+@keyframes mk-shimmer { to { background-position: 200% center; } }
+.mk-shimmer-text {
+  background-image: linear-gradient(110deg, #f5b520 0%, #fff3d6 22%, #e99a0e 45%, #f7c94a 70%, #f5b520 100%);
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: mk-shimmer 4.5s linear infinite;
+}
+
+/* Orbes aurora que derivan lentamente por el fondo. */
+@keyframes mk-aurora {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(60px, -40px) scale(1.15); }
+  66%      { transform: translate(-50px, 30px) scale(0.92); }
+}
+.mk-aurora { animation: mk-aurora 18s ease-in-out infinite; }
+
+/* Grid futurista que se desplaza, desvanecido hacia los bordes. */
+@keyframes mk-grid-pan { to { background-position: 0 56px; } }
+.mk-grid {
+  background-image:
+    linear-gradient(rgba(245, 181, 32, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245, 181, 32, 0.07) 1px, transparent 1px);
+  background-size: 56px 56px;
+  animation: mk-grid-pan 4s linear infinite;
+  mask-image: radial-gradient(ellipse 85% 75% at 50% 38%, black 25%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse 85% 75% at 50% 38%, black 25%, transparent 78%);
+}
+
+/* Marquee infinito (las dos mitades del track son idénticas → -50% = loop). */
+@keyframes mk-marquee { to { transform: translateX(-50%); } }
+.mk-marquee-track { display: flex; width: max-content; animation: mk-marquee 38s linear infinite; }
+.mk-marquee:hover .mk-marquee-track { animation-play-state: paused; }
+
+/* Línea de escaneo que recorre la pantalla del teléfono del hero. */
+@keyframes mk-scan {
+  0%        { top: -18%; opacity: 0; }
+  8%        { opacity: 1; }
+  55%       { top: 108%; opacity: 1; }
+  60%, 100% { top: 108%; opacity: 0; }
+}
+.mk-scanline { animation: mk-scan 6s ease-in-out 2s infinite; }
+
+/* Anillo decorativo girando alrededor del teléfono. */
+@keyframes mk-spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+.mk-spin-slow { animation: mk-spin 32s linear infinite; }
+
+/* Pulso de brillo del CTA principal. */
+@keyframes mk-glow-pulse {
+  0%, 100% { box-shadow: 0 8px 30px rgba(233, 154, 14, 0.35); }
+  50%      { box-shadow: 0 8px 60px rgba(233, 154, 14, 0.7); }
+}
+.mk-glow-cta { animation: mk-glow-pulse 3.2s ease-in-out infinite; }
+
+/* Reveal al hacer scroll (lo activa el componente Reveal vía IntersectionObserver). */
+.mk-reveal {
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+.mk-reveal-visible { opacity: 1; transform: translateY(0); }
+
+/* Tipografía editorial: texto solo-contorno (titulares y números de tiempo). */
+.mk-outline-text {
+  -webkit-text-stroke: 2px rgba(245, 181, 32, 0.85);
+  color: transparent;
+}
+.mk-outline-text-dark {
+  -webkit-text-stroke: 1.5px rgba(23, 21, 15, 0.22);
+  color: transparent;
+}
+
+/* Tachado animado en ámbar ("la carta de papel ~~murió~~"). */
+@keyframes mk-strike { to { transform: scaleX(1); } }
+.mk-strike { position: relative; white-space: nowrap; }
+.mk-strike::after {
+  content: '';
+  position: absolute;
+  left: -2%;
+  top: 55%;
+  height: 0.09em;
+  width: 104%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f5b520, #cc7809);
+  transform: scaleX(0);
+  transform-origin: left center;
+  animation: mk-strike 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.7s forwards;
+}
+
+/* Palabra rotativa del titular (entra girando desde abajo). */
+@keyframes mk-word-in {
+  from { opacity: 0; transform: translateY(60%) rotateX(-50deg); }
+  to   { opacity: 1; transform: translateY(0) rotateX(0); }
+}
+.mk-word-in {
+  display: inline-block;
+  transform-origin: bottom;
+  animation: mk-word-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Pop elástico (carrito del demo al agregar un plato). */
+@keyframes mk-pop {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.16); }
+  100% { transform: scale(1); }
+}
+.mk-pop { animation: mk-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+/* Toast efímero del demo ("agregado ✓"). */
+@keyframes mk-toast {
+  0%        { opacity: 0; transform: translateY(10px) scale(0.9); }
+  12%, 78%  { opacity: 1; transform: translateY(0) scale(1); }
+  100%      { opacity: 0; transform: translateY(-8px) scale(0.95); }
+}
+.mk-toast { animation: mk-toast 1.6s ease both; }
+
+/* Grano cinematográfico sobre secciones oscuras. */
+.mk-grain::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* El marquee se inclina con la velocidad del scroll (lo setea JS vía --mk-skew). */
+.mk-skew-wrap { transform: skewX(var(--mk-skew, 0deg)); will-change: transform; }
+
+/* Barras/medidores que crecen cuando su Reveal padre se hace visible. */
+.mk-grow {
+  transform: scaleY(0.12);
+  transform-origin: bottom;
+  transition: transform 1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.mk-reveal-visible .mk-grow { transform: scaleY(1); }
+.mk-grow-x {
+  transform: scaleX(0.1);
+  transform-origin: left;
+  transition: transform 1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.mk-reveal-visible .mk-grow-x { transform: scaleX(1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .mk-float-a, .mk-float-b, .mk-float-c,
+  .mk-shimmer-text, .mk-aurora, .mk-grid,
+  .mk-marquee-track, .mk-scanline, .mk-spin-slow, .mk-glow-cta,
+  .mk-word-in, .mk-pop, .mk-toast {
+    animation: none;
+  }
+  .mk-strike::after { animation: none; transform: scaleX(1); }
+  .mk-reveal { opacity: 1; transform: none; transition: none; }
+  .mk-grow, .mk-grow-x { transform: none; transition: none; }
+}

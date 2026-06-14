@@ -106,6 +106,10 @@ export function CartProvider({ children }: CartProviderProps) {
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>
 }
 
+// Los hooks del contexto viven junto al provider a propósito (patrón estándar de
+// React Context). `react-refresh/only-export-components` es solo una optimización
+// de HMR en desarrollo — no afecta el runtime ni la correctitud.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useCartContext(): CartContextValue {
   const ctx = useContext(CartContext)
   if (!ctx) throw new Error('useCartContext must be used inside <CartProvider>')
@@ -113,6 +117,7 @@ export function useCartContext(): CartContextValue {
 }
 
 /** Variante opcional: retorna null fuera del provider (para componentes compartidos). */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useOptionalCartContext(): CartContextValue | null {
   return useContext(CartContext)
 }

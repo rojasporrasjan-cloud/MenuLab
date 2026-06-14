@@ -15,19 +15,19 @@ interface PendingReservationsState {
  */
 export function usePendingReservations(tenantId: string): PendingReservationsState {
   const [reservations, setReservations] = useState<Reservation[]>([])
+  const enabled = Boolean(tenantId) && isFirebaseConfigured
 
   useEffect(() => {
-    if (!tenantId || !isFirebaseConfigured) {
-      setReservations([])
-      return
-    }
+    if (!enabled) return
     const unsubscribe = ReservationRealtimeService.subscribePending(
       tenantId,
       setReservations,
       () => setReservations([]),
     )
     return () => unsubscribe()
-  }, [tenantId])
+  }, [tenantId, enabled])
 
+  // Sin tenant o sin Firebase: vacío derivado (sin setState en el efecto).
+  if (!enabled) return { reservations: [], count: 0 }
   return { reservations, count: reservations.length }
 }

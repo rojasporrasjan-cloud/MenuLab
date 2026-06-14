@@ -20,6 +20,7 @@ import {
   Users,
   Package,
   MonitorSmartphone,
+  Wallet,
 } from 'lucide-react'
 import { cn }               from '@shared/utils/cn'
 import { ROUTES }           from '@shared/constants/routes'
@@ -41,33 +42,44 @@ const NAV_GROUPS: readonly NavGroup[] = [
   {
     items: [
       { label: 'Dashboard',     path: ROUTES.admin.dashboard,   icon: LayoutDashboard },
+    ],
+  },
+  {
+    label: 'Mi Carta',
+    items: [
       { label: 'Menú',          path: ROUTES.admin.menu.list,   icon: BookOpen },
       { label: 'Platos',        path: ROUTES.admin.dishes.list, icon: ChefHat },
       { label: 'Mesas & QR',    path: ROUTES.admin.qr,          icon: QrCode },
+      { label: 'Apariencia',    path: ROUTES.admin.appearance,  icon: Palette, badge: 'IA', badgeVariant: 'violet' },
     ],
   },
   {
     label: 'Operación',
     items: [
-      { label: 'Pedidos',       path: ROUTES.admin.orders,        icon: ShoppingBag },
-      { label: 'Reservas',      path: ROUTES.admin.reservations,  icon: CalendarCheck },
-      { label: 'Cocina',        path: ROUTES.admin.kds,           icon: CookingPot },
-      { label: 'POS',           path: ROUTES.admin.pos,           icon: MonitorSmartphone },
-      { label: 'Clientes',      path: ROUTES.admin.customers,     icon: Users },
-      { label: 'Lealtad',       path: ROUTES.admin.loyalty,       icon: Star },
-      { label: 'Inventario',    path: ROUTES.admin.inventory,     icon: Package },
+      { label: 'Pedidos',       path: ROUTES.admin.orders,      icon: ShoppingBag },
+      { label: 'POS',           path: ROUTES.admin.pos,         icon: MonitorSmartphone },
+      { label: 'Cocina',        path: ROUTES.admin.kds,         icon: CookingPot },
+      { label: 'Caja',          path: ROUTES.admin.cash,        icon: Wallet },
     ],
   },
   {
-    label: 'Personalización',
+    label: 'Clientes',
     items: [
-      { label: 'Apariencia',    path: ROUTES.admin.appearance,  icon: Palette, badge: 'IA', badgeVariant: 'violet' },
+      { label: 'Reservas',      path: ROUTES.admin.reservations, icon: CalendarCheck },
+      { label: 'Clientes',      path: ROUTES.admin.customers,    icon: Users },
+      { label: 'Lealtad',       path: ROUTES.admin.loyalty,      icon: Star },
     ],
   },
   {
-    label: 'Datos',
+    label: 'Inventario y datos',
     items: [
+      { label: 'Inventario',    path: ROUTES.admin.inventory,   icon: Package },
       { label: 'Analíticas',    path: ROUTES.admin.analytics,   icon: BarChart3 },
+    ],
+  },
+  {
+    label: 'Cuenta',
+    items: [
       { label: 'Mi Plan',       path: ROUTES.admin.plan,        icon: CreditCard },
       { label: 'Configuración', path: ROUTES.admin.settings,    icon: Settings },
     ],
@@ -124,7 +136,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) 
         className={cn(
           'fixed inset-y-0 left-0 z-40 flex w-[220px] flex-col',
           'transition-all duration-200 ease-in-out',
-          'lg:static lg:z-auto',
+          'lg:static lg:z-auto lg:h-svh',
           isOpen ? 'translate-x-0' : '-translate-x-full',
           isCollapsed ? 'lg:-translate-x-full lg:w-0 lg:opacity-0 overflow-hidden' : 'lg:translate-x-0 lg:w-[220px] lg:opacity-100',
         )}
@@ -177,13 +189,13 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) 
         </div>
 
         {/* ── Navigation ────────────────────────────────────────────────────── */}
-        <nav className="sidebar-scroll flex flex-1 flex-col overflow-y-auto px-2 py-3 gap-5">
+        <nav className="sidebar-scroll flex min-h-0 flex-1 flex-col overflow-y-auto px-2.5 py-3 gap-4">
           {NAV_GROUPS.map((group, gi) => (
-            <div key={gi} className="flex flex-col gap-0.5">
+            <div key={gi} className="flex flex-col gap-[3px]">
               {group.label && (
                 <p
-                  className="mb-1 px-2 text-[9.5px] font-bold uppercase tracking-[0.2em]"
-                  style={{ color: 'rgba(255,255,255,0.22)' }}
+                  className="mb-1 px-2.5 text-[9.5px] font-bold uppercase tracking-[0.18em]"
+                  style={{ color: 'rgba(255,255,255,0.32)' }}
                 >
                   {group.label}
                 </p>
@@ -300,20 +312,23 @@ function SidebarNavItem({ item, onNavigate }: { item: NavItem; onNavigate: () =>
       to={item.path}
       onClick={onNavigate}
       aria-current={isActive ? 'page' : undefined}
-      className="group relative flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-[13px] font-medium transition-all duration-100"
+      className="group relative flex items-center gap-2.5 rounded-[10px] px-2.5 py-[7px] text-[13px] font-medium transition-all duration-100"
       style={{
-        color:      isActive ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.42)',
-        background: isActive ? 'rgba(255,255,255,0.08)' : 'transparent',
+        color:      isActive ? 'rgba(255,255,255,0.96)' : 'rgba(255,255,255,0.44)',
+        background: isActive
+          ? 'linear-gradient(90deg, rgba(245,181,32,0.16) 0%, rgba(245,181,32,0.035) 100%)'
+          : 'transparent',
+        boxShadow:  isActive ? 'inset 0 0 0 1px rgba(245,181,32,0.14)' : 'none',
       }}
       onMouseEnter={(e) => {
         if (!isActive) {
-          e.currentTarget.style.color      = 'rgba(255,255,255,0.72)'
-          e.currentTarget.style.background = 'rgba(255,255,255,0.045)'
+          e.currentTarget.style.color      = 'rgba(255,255,255,0.82)'
+          e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
         }
       }}
       onMouseLeave={(e) => {
         if (!isActive) {
-          e.currentTarget.style.color      = 'rgba(255,255,255,0.42)'
+          e.currentTarget.style.color      = 'rgba(255,255,255,0.44)'
           e.currentTarget.style.background = 'transparent'
         }
       }}
@@ -321,16 +336,16 @@ function SidebarNavItem({ item, onNavigate }: { item: NavItem; onNavigate: () =>
       {/* Active left accent */}
       {isActive && (
         <span
-          className="absolute left-0 top-1 bottom-1 w-[2.5px] rounded-r-full"
-          style={{ background: 'linear-gradient(180deg, #f5b520 0%, #e99a0e 100%)' }}
+          className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full"
+          style={{ background: 'linear-gradient(180deg, #f5b520 0%, #e99a0e 100%)', boxShadow: '0 0 8px rgba(245,181,32,0.5)' }}
         />
       )}
 
       <Icon
-        size={15}
+        size={16}
         strokeWidth={isActive ? 2.2 : 1.7}
         style={{
-          color: isActive ? '#f5b520' : 'rgba(255,255,255,0.35)',
+          color: isActive ? '#f5b520' : 'rgba(255,255,255,0.38)',
           flexShrink: 0,
           transition: 'color 100ms',
         }}

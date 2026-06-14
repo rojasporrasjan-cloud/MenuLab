@@ -11,6 +11,8 @@ import {
   AlertCircle,
   HelpCircle
 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { ROUTES } from '@shared/constants/routes'
 import { cn } from '@shared/utils/cn'
 import { OnboardingService } from '../../services/OnboardingService'
 import { useQuery } from '@tanstack/react-query'
@@ -23,6 +25,7 @@ interface MenuDigitizerModalProps {
   readonly onClose: () => void
   readonly tenantId: string
   readonly tenantName: string
+  readonly onSuccessNavigate?: () => void
 }
 
 interface ScannedDish {
@@ -149,16 +152,20 @@ const CAFE_PRESET: ScannedCategory[] = [
   },
 ]
 
-export function MenuDigitizerModal({ isOpen, onClose, tenantId, tenantName }: MenuDigitizerModalProps) {
+export function MenuDigitizerModal({ isOpen, onClose, tenantId, tenantName, onSuccessNavigate }: MenuDigitizerModalProps) {
+  const navigate = useNavigate()
   const [step, setStep] = useState<'upload' | 'scanning' | 'review' | 'success'>('upload')
   const [selectedPreset, setSelectedPreset] = useState<'soda' | 'pizza' | 'cafe' | null>(null)
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null)
+  const [uploadedImages, setUploadedImages] = useState<Array<{ url: string; file: File }>>([])
 
-  // Revoke blob URL when uploadedImage changes or component unmounts.
+  // Revoke blob URLs when uploadedImages changes or component unmounts.
   useEffect(() => {
-    if (!uploadedImage?.startsWith('blob:')) return
-    return () => URL.revokeObjectURL(uploadedImage)
-  }, [uploadedImage])
+    return () => {
+      uploadedImages.forEach(img => {
+        if (img.url.startsWith('blob:')) URL.revokeObjectURL(img.url)
+      })
+    }
+  }, [uploadedImages])
 
   // Scanning log state
   const [progressPercent, setProgressPercent] = useState(0)
@@ -177,31 +184,39 @@ export function MenuDigitizerModal({ isOpen, onClose, tenantId, tenantName }: Me
   })
   const defaultMenuId = menus[0]?.id ?? ''
 
-  // Subida real: la foto se manda a Gemini y se mapea al editor de revisión.
+  // Subida real: las fotos se mandan a Gemini y se mapean al editor de revisión.
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) void scanImage(file)
+    const files = Array.from(e.target.files ?? [])
+    if (files.length > 5) {
+      setSaveError('Por favor, selecciona un máximo de 5 fotos a la vez para no sobrecargar la lectura.')
+      return
+    }
+    if (files.length > 0) void scanImages(files)
   }
 
-  const scanImage = async (file: File) => {
-    setUploadedImage(URL.createObjectURL(file))
+  const scanImages = async (files: File[]) => {
+    const newImages = files.map(file => ({ url: URL.createObjectURL(file), file }))
+    setUploadedImages(newImages)
     setSelectedPreset(null)
     setSaveError(null)
     setStep('scanning')
     setProgressPercent(0)
     try {
-      const base64 = await fileToBase64(file)
-      const payload = await GeminiApiService.analyzeMenuImage(base64, file.type)
+      const payloads = await Promise.all(files.map(async file => ({
+        base64: await fileToBase64(file),
+        mimeType: file.type
+      })))
+      const payload = await GeminiApiService.analyzeMenuImages(payloads)
       const mapped = payloadToCategories(payload)
       if (mapped.length === 0) {
-        setSaveError('No pudimos leer platos en la foto. Prueba con una imagen más nítida y de frente.')
+        setSaveError('No pudimos leer platos en las fotos. Prueba con imágenes más nítidas y de frente.')
         setStep('upload')
         return
       }
       setCategories(mapped)
       setStep('review')
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'No se pudo leer el menú. Intenta con otra foto.')
+      setSaveError(err instanceof Error ? err.message : 'No se pudo leer el menú. Intenta con otras fotos.')
       setStep('upload')
     }
   }
@@ -285,6 +300,9 @@ export function MenuDigitizerModal({ isOpen, onClose, tenantId, tenantName }: Me
     }, 120)
 
     return () => clearInterval(interval)
+    // Intencional: la animación depende solo de step/preset. `generateMenuData`
+    // se invoca al completar y NO debe estar en deps (reiniciaría la animación).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, selectedPreset])
 
   // Animación mientras Gemini analiza la imagen real (no completa sola: la
@@ -457,6 +475,7 @@ export function MenuDigitizerModal({ isOpen, onClose, tenantId, tenantName }: Me
             <label className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-surface-200 bg-surface-50/50 hover:bg-surface-50 hover:border-brand-300 p-8 text-center cursor-pointer transition-all">
               <input
                 type="file"
+                multiple
                 accept="image/*"
                 onChange={handleFileChange}
                 className="hidden"
@@ -515,16 +534,33 @@ export function MenuDigitizerModal({ isOpen, onClose, tenantId, tenantName }: Me
           <div className="flex flex-col items-center justify-center py-8 text-center gap-5">
             {/* Visual Scanner Mock */}
             <div className="relative h-44 w-36 overflow-hidden rounded-xl border border-surface-200 bg-surface-100 shadow-inner flex items-center justify-center">
-              {uploadedImage ? (
-                <img src={uploadedImage} alt="Physical Menu" className="h-full w-full object-cover opacity-60" />
+              {uploadedImages.length > 0 ? (
+                <>
+                  {uploadedImages.map((img, i) => (
+                    <img key={i} src={img.url} alt={`Menu page ${i+1}`} className="absolute inset-0 h-full w-full object-cover" style={{ opacity: i === 0 ? 0.6 : 0, transition: 'opacity 0.5s ease-in-out' }} />
+                  ))}
+                  <div className="absolute top-2 right-2 bg-black/60 rounded-full px-2 py-0.5 flex items-center justify-center">
+                    <span className="text-[9px] font-bold text-white">{uploadedImages.length} fotos</span>
+                  </div>
+                </>
               ) : (
                 <div className="flex flex-col items-center gap-1.5 text-surface-350">
                   <FileText size={40} className="stroke-[1.5]" />
                   <span className="text-[9px] font-semibold">MockMenu.jpg</span>
                 </div>
               )}
-              {/* Laser beam scan lines */}
-              <div className="absolute left-0 right-0 h-1 bg-brand-500/80 shadow-[0_0_12px_#e99a0e] animate-bounce w-full" style={{ animationDuration: '2.5s' }} />
+              {/* Improved Laser beam scan lines */}
+              <div 
+                className="absolute left-0 top-0 w-full h-full bg-gradient-to-b from-transparent via-brand-500/10 to-brand-500/50 border-b-2 border-brand-500" 
+                style={{ animation: 'scan-vertical 3s ease-in-out infinite' }} 
+              />
+              <style>{`
+                @keyframes scan-vertical {
+                  0% { transform: translateY(-100%); }
+                  50% { transform: translateY(0%); }
+                  100% { transform: translateY(100%); }
+                }
+              `}</style>
             </div>
 
             <div className="flex flex-col gap-2 w-full px-4">
@@ -725,7 +761,14 @@ export function MenuDigitizerModal({ isOpen, onClose, tenantId, tenantName }: Me
             </div>
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => {
+                onClose()
+                if (onSuccessNavigate) {
+                  onSuccessNavigate()
+                } else {
+                  navigate(ROUTES.admin.editor)
+                }
+              }}
               className="w-full rounded-2xl bg-brand-500 hover:bg-brand-600 py-3.5 text-xs font-black text-white shadow-md active:scale-95 transition-all cursor-pointer"
             >
               Listo, Continuar

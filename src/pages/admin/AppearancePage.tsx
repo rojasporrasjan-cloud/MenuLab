@@ -1,8 +1,9 @@
+/* eslint-disable react-hooks/static-components */
 import { useState, useEffect, useMemo, Suspense, useRef, type ReactNode } from 'react'
 import {
   CheckCircle2, ExternalLink, Smartphone, Monitor,
   ChevronDown, Palette, Type, LayoutGrid, Upload, X,
-  GripHorizontal, Sparkles, Search, QrCode, Eye, EyeOff,
+  GripHorizontal, Sparkles, Search, QrCode, Eye, EyeOff, ShoppingBag
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import * as Dialog from '@radix-ui/react-dialog'
@@ -23,7 +24,6 @@ import type { TemplateId, TenantAnnouncement, TenantSocials, TenantInfoFooter, T
 import type { Tenant } from '@core/domain/entities/Tenant'
 import type { Menu } from '@core/domain/entities/Menu'
 import type { Table } from '@core/domain/entities/Table'
-import type { DishesGroupedByCategory } from '@core/use-cases/menu/GetActiveDishesUseCase'
 import type { Dish } from '@core/domain/entities/Dish'
 
 // ── Color palette presets ─────────────────────────────────────────────────────
@@ -56,22 +56,7 @@ const PREVIEW_TABLE: Table = {
   createdAt:     new Date(),
 }
 
-const MOCK_GROUPS: DishesGroupedByCategory[] = [
-  {
-    category: { id: 'c1', menuId: 'preview', tenantId: 'preview', name: 'Entradas', description: null, imageUrl: null, sortOrder: 0 },
-    dishes: [
-      { id: 'd1', tenantId: 'preview', menuId: 'preview', categoryId: 'c1', name: 'Ceviche de Corvina', description: 'Fresco y delicioso', price: { amount: 8500, currency: 'CRC' }, status: 'available', assets: { imageUrl: null, thumbnailUrl: null, modelGlbUrl: null, modelUsdzUrl: null, hasAR: false }, nutrition: { calories: null, allergens: [], isVegetarian: false, isVegan: false, isGlutenFree: false }, tags: [], variantGroups: [], featured: false, featuredRank: null, sortOrder: 0, createdAt: new Date(), updatedAt: new Date() },
-      { id: 'd2', tenantId: 'preview', menuId: 'preview', categoryId: 'c1', name: 'Patacones con Guacamole', description: 'Crujientes y sabrosos', price: { amount: 4500, currency: 'CRC' }, status: 'available', assets: { imageUrl: null, thumbnailUrl: null, modelGlbUrl: null, modelUsdzUrl: null, hasAR: false }, nutrition: { calories: null, allergens: [], isVegetarian: true, isVegan: true, isGlutenFree: true }, tags: [], variantGroups: [], featured: false, featuredRank: null, sortOrder: 1, createdAt: new Date(), updatedAt: new Date() },
-    ],
-  },
-  {
-    category: { id: 'c2', menuId: 'preview', tenantId: 'preview', name: 'Platos Fuertes', description: null, imageUrl: null, sortOrder: 1 },
-    dishes: [
-      { id: 'd3', tenantId: 'preview', menuId: 'preview', categoryId: 'c2', name: 'Casado de Pollo', description: 'Con arroz, frijoles y ensalada', price: { amount: 6500, currency: 'CRC' }, status: 'available', assets: { imageUrl: null, thumbnailUrl: null, modelGlbUrl: null, modelUsdzUrl: null, hasAR: false }, nutrition: { calories: null, allergens: [], isVegetarian: false, isVegan: false, isGlutenFree: false }, tags: [], variantGroups: [], featured: false, featuredRank: null, sortOrder: 0, createdAt: new Date(), updatedAt: new Date() },
-      { id: 'd4', tenantId: 'preview', menuId: 'preview', categoryId: 'c2', name: 'Filete de Pescado', description: 'Con vegetales al vapor', price: { amount: 9500, currency: 'CRC' }, status: 'available', assets: { imageUrl: null, thumbnailUrl: null, modelGlbUrl: null, modelUsdzUrl: null, hasAR: false }, nutrition: { calories: null, allergens: ['pescado'], isVegetarian: false, isVegan: false, isGlutenFree: true }, tags: [], variantGroups: [], featured: false, featuredRank: null, sortOrder: 1, createdAt: new Date(), updatedAt: new Date() },
-    ],
-  },
-]
+
 
 // ── Editing state ──────────────────────────────────────────────────────────────
 
@@ -142,9 +127,9 @@ export default function AppearancePage() {
   const { save, isLoading, error, success } = useUpdateAppearance(tenantId)
   const { data: menus } = useAdminMenus(tenantId)
 
-  const firstMenuId = menus?.[0]?.id ?? null
-  const { groups: realGroups } = useActiveDishes(tenantId, firstMenuId ?? '', menus?.[0]?.categoryOrder ?? [])
-  const previewGroups = realGroups.length > 0 ? realGroups : MOCK_GROUPS
+  const resolvedMenuId = menus?.[0]?.id ?? ''
+  const { groups: realGroups = [] } = useActiveDishes(tenantId, resolvedMenuId, menus?.[0]?.categoryOrder ?? [])
+  const previewGroups = realGroups
 
   const defaultEditing = (): EditingState => ({
     templateId: tenant?.templateId ?? 'dark-modern',
@@ -170,14 +155,14 @@ export default function AppearancePage() {
     detailsCardStyle: tenant?.branding.detailsCardStyle ?? 'glass',
     detailsCardOptionStyle: tenant?.branding.detailsCardOptionStyle ?? 'list',
     detailsCardShowImage: tenant?.branding.detailsCardShowImage ?? true,
-    announcement: tenant?.branding.announcement ?? { enabled: false, text: '¡Bienvenidos! Descubre nuestro menú', emoji: '🎉', bgColor: null },
-    socials: tenant?.branding.socials ?? { enabled: false, instagram: '', facebook: '', tiktok: '', whatsapp: '' },
-    infoFooter: tenant?.branding.infoFooter ?? { enabled: false, hours: '', address: '', phone: '' },
-    orderButton: tenant?.branding.orderButton ?? { enabled: false, whatsapp: '', label: 'Ordenar ahora' },
-    orderingEnabled: tenant?.features.orderingEnabled ?? false,
-    reservation: tenant?.branding.reservation ?? { enabled: false, title: 'Reserva tu mesa', phone: '', bookingUrl: '', buttonLabel: 'Reservar ahora' },
-    promo: tenant?.branding.promo ?? { enabled: false, title: '', description: '', imageUrl: null, ctaLabel: 'Ver más', ctaLink: '' },
-    featuredSection: tenant?.branding.featuredSection ?? { enabled: false, title: 'Nuestros favoritos', dishIds: [] },
+    announcement: tenant?.branding.announcement ?? { enabled: true, text: '¡Bienvenidos! Descubre nuestro menú', emoji: '🎉', bgColor: null },
+    socials: tenant?.branding.socials ?? { enabled: true, instagram: '', facebook: '', tiktok: '', whatsapp: '' },
+    infoFooter: tenant?.branding.infoFooter ?? { enabled: true, hours: '', address: '', phone: '', wazeUrl: '', googleMapsUrl: '', sinpeNumber: '' },
+    orderButton: tenant?.branding.orderButton ?? { enabled: true, whatsapp: '', label: 'Ordenar ahora' },
+    orderingEnabled: tenant?.features?.orderingEnabled ?? true,
+    reservation: tenant?.branding.reservation ?? { enabled: true, title: 'Reserva tu mesa', phone: '', bookingUrl: '', buttonLabel: 'Reservar ahora' },
+    promo: tenant?.branding.promo ?? { enabled: true, title: '', description: '', imageUrl: null, ctaLabel: 'Ver más', ctaLink: '' },
+    featuredSection: tenant?.branding.featuredSection ?? { enabled: true, title: 'Nuestros favoritos', dishIds: [] },
   })
 
   const [editing, setEditing] = useState<EditingState>(defaultEditing)
@@ -214,14 +199,14 @@ export default function AppearancePage() {
       detailsCardStyle: tenant.branding.detailsCardStyle ?? 'glass',
       detailsCardOptionStyle: tenant.branding.detailsCardOptionStyle ?? 'list',
       detailsCardShowImage: tenant.branding.detailsCardShowImage ?? true,
-      announcement: tenant.branding.announcement,
-      socials: tenant.branding.socials,
-      infoFooter: tenant.branding.infoFooter,
-      orderButton: tenant.branding.orderButton,
-      orderingEnabled: tenant.features.orderingEnabled,
-      reservation: tenant.branding.reservation,
-      promo: tenant.branding.promo,
-      featuredSection: tenant.branding.featuredSection,
+      announcement: { ...tenant.branding.announcement, enabled: true },
+      socials: { ...tenant.branding.socials, enabled: true },
+      infoFooter: { ...tenant.branding.infoFooter, enabled: true },
+      orderButton: { ...tenant.branding.orderButton, enabled: true },
+      orderingEnabled: true,
+      reservation: { ...tenant.branding.reservation, enabled: true },
+      promo: { ...tenant.branding.promo, enabled: true },
+      featuredSection: { ...tenant.branding.featuredSection, enabled: true },
     })
   }
 
@@ -248,7 +233,7 @@ export default function AppearancePage() {
     )
   }
 
-  const previewTenant: Tenant | null = tenant
+  const previewTenant: Tenant | null = useMemo<Tenant | null>(() => tenant
     ? {
         ...tenant,
         name: editing.restaurantName.trim() || tenant.name,
@@ -284,7 +269,7 @@ export default function AppearancePage() {
         },
         features: { ...tenant.features, orderingEnabled: editing.orderingEnabled },
       }
-    : null
+    : null, [tenant, editing])
 
   const previewMenu: Menu = menus?.[0] ?? {
     id:            'preview',
@@ -302,7 +287,7 @@ export default function AppearancePage() {
   const TemplatePreview = useMemo(() => getTemplateComponent(editing.templateId), [editing.templateId])
   const menuPreviewUrl = `/${tenantId}/menu`
 
-  const [previewMode, setPreviewMode] = useState<'full' | 'mobile'>('full')
+  const [previewMode, setPreviewMode] = useState<'full' | 'mobile'>('mobile')
   const [activeTab, setActiveTab] = useState<'sections' | 'theme'>('sections')
   const [openSection, setOpenSection] = useState<string | null>('hero')
 
@@ -514,7 +499,7 @@ export default function AppearancePage() {
             variant="secondary"
             size="sm"
             onClick={() => setIsPreviewCollapsed((c) => !c)}
-            className="rounded-xl shadow-sm hidden md:inline-flex"
+            className="rounded-xl shadow-sm inline-flex"
           >
             {isPreviewCollapsed ? <Eye size={13} className="mr-1.5" /> : <EyeOff size={13} className="mr-1.5" />}
             {isPreviewCollapsed ? 'Mostrar preview' : 'Ocultar preview'}
@@ -534,7 +519,7 @@ export default function AppearancePage() {
         {/* ── Left panel ── */}
         <div className={cn(
           "flex flex-col border-r border-surface-100 bg-surface-0 h-full min-h-0 transition-all duration-300 ease-in-out",
-          isPreviewCollapsed ? "flex-1 w-full" : "w-full md:w-[380px] lg:w-[420px] shrink-0"
+          isPreviewCollapsed ? "flex-1 w-full" : "hidden md:flex md:w-[380px] lg:w-[420px] shrink-0"
         )}>
 
           {/* Tab nav — Shopify-style */}
@@ -622,60 +607,129 @@ export default function AppearancePage() {
         {/* ── Right panel: live preview ── */}
         {previewMode === 'full' ? (
           <div className={cn(
-            "overflow-y-auto flex flex-col h-full rounded-r-xl border-l-0 border border-surface-200 shadow-sm transition-all duration-300 ease-in-out",
-            isPreviewCollapsed ? "w-0 opacity-0 overflow-hidden border-0 shrink-0" : "flex-1"
-          )} style={{ backgroundColor: editing.backgroundColor }}>
-            {realGroups.length === 0 && (
-              <div className="flex shrink-0 items-center justify-center gap-1.5 py-2 text-xs bg-amber-50 border-b border-amber-100">
-                <span className="text-amber-600">Vista de ejemplo —</span>
-                <Link to={ROUTES.admin.menu.list} className="text-amber-700 font-medium hover:underline">agrega tu menú</Link>
-              </div>
-            )}
-            <div className="flex-1">
-              {previewTenant ? (
-                <Suspense fallback={<div className="flex h-64 items-center justify-center" style={{ backgroundColor: editing.backgroundColor }}><Spinner size="sm" /></div>}>
-                  <TemplatePreview tenant={previewTenant} menu={previewMenu} table={PREVIEW_TABLE} groups={previewGroups} tenantId={tenantId} />
-                </Suspense>
-              ) : (
-                <div className="flex h-64 items-center justify-center"><Spinner size="sm" /></div>
+            "flex flex-col h-full rounded-r-xl border-l-0 border border-surface-200 shadow-sm transition-all duration-300 ease-in-out relative overflow-hidden",
+            isPreviewCollapsed ? "w-0 opacity-0 border-0 shrink-0" : "flex-1 w-full"
+          )} style={{ backgroundColor: editing.backgroundColor, transform: 'translateZ(0)' }}>
+            <div className="flex-1 overflow-y-auto relative flex flex-col">
+              {realGroups.length === 0 && (
+                <div className="flex shrink-0 items-center justify-center gap-1.5 py-2 text-xs bg-amber-50 border-b border-amber-100">
+                  <span className="text-amber-600">Vista de ejemplo —</span>
+                  <Link to={ROUTES.admin.menu.list} className="text-amber-700 font-medium hover:underline">agrega tu menú</Link>
+                </div>
               )}
+              <div className="flex-1 relative">
+                {previewTenant ? (
+                  <Suspense fallback={<div className="flex h-64 items-center justify-center" style={{ backgroundColor: editing.backgroundColor }}><Spinner size="sm" /></div>}>
+                    <TemplatePreview tenant={previewTenant} menu={previewMenu} table={PREVIEW_TABLE} groups={previewGroups} tenantId={tenantId} />
+                    
+                    {/* Mock Cart Button for preview */}
+                    {previewTenant.features.orderingEnabled && (
+                      <div
+                        className="fixed bottom-4 left-4 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-xl pointer-events-none"
+                        style={{
+                          background: `linear-gradient(135deg, ${previewTenant.branding.primaryColor} 0%, ${previewTenant.branding.primaryColor}cc 100%)`,
+                          boxShadow: `0 8px 24px ${previewTenant.branding.primaryColor}55`,
+                          zIndex: 9999,
+                        }}
+                      >
+                        <ShoppingBag size={22} />
+                      </div>
+                    )}
+                  </Suspense>
+                ) : (
+                  <div className="flex h-64 items-center justify-center"><Spinner size="sm" /></div>
+                )}
+              </div>
             </div>
           </div>
         ) : (
           <div ref={phoneAreaRef} className={cn(
-            "bg-surface-100 flex flex-col items-center justify-center py-2 px-4 gap-2 h-full rounded-r-xl border-l-0 border border-surface-200 shadow-sm overflow-hidden transition-all duration-300 ease-in-out",
+            "bg-surface-50 flex flex-col items-center justify-center py-6 px-4 gap-4 h-full rounded-r-xl border-l-0 border border-surface-200 shadow-[inset_4px_0_12px_rgba(0,0,0,0.02)] overflow-hidden transition-all duration-300 ease-in-out relative",
             isPreviewCollapsed ? "w-0 opacity-0 overflow-hidden border-0 shrink-0" : "flex-1"
           )}>
-            <div className="flex items-center gap-1 text-[11px] text-surface-400">
-              <Smartphone size={11} />Vista móvil
-            </div>
+            {/* Elegant Phone Frame */}
             <div
-              className="relative overflow-hidden shadow-2xl shrink-0"
-              style={{ width: Math.round(390 * phoneScale), height: Math.round(863 * phoneScale), borderRadius: 36 * phoneScale, border: `${Math.max(4, Math.round(7 * phoneScale))}px solid #1f2937`, background: '#0f172a' }}
+              className="relative shrink-0 flex items-center justify-center drop-shadow-2xl"
+              style={{ 
+                width: Math.round(390 * phoneScale) + (12 * phoneScale), 
+                height: Math.round(863 * phoneScale) + (12 * phoneScale),
+              }}
             >
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 z-50 rounded-b-lg" style={{ width: Math.round(64 * phoneScale), height: Math.round(18 * phoneScale), backgroundColor: '#1f2937' }} />
-              <iframe
-                src={`${menuPreviewUrl}?preview=true`}
-                title="Vista previa móvil"
-                className="border-0 phone-preview-scroll"
-                style={{
-                  width: 390,
-                  height: 863,
-                  transform: `scale(${phoneScale})`,
-                  transformOrigin: 'top left',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  background: editing.backgroundColor,
+              {/* Outer metallic bezel */}
+              <div 
+                className="absolute inset-0 rounded-[44px] shadow-[0_20px_40px_-10px_rgba(0,0,0,0.15)] ring-1 ring-black/5"
+                style={{ 
+                  borderRadius: 44 * phoneScale,
+                  background: 'linear-gradient(135deg, #d1d5db 0%, #9ca3af 20%, #4b5563 80%, #1f2937 100%)',
+                  padding: 3 * phoneScale 
                 }}
-              />
+              >
+                {/* Inner black bezel */}
+                <div 
+                  className="h-full w-full rounded-[40px] bg-black overflow-hidden relative"
+                  style={{ 
+                    borderRadius: 40 * phoneScale,
+                    border: `${Math.max(4, Math.round(6 * phoneScale))}px solid #000` 
+                  }}
+                >
+                  {/* Dynamic Island */}
+                  <div 
+                    className="absolute top-2 left-1/2 -translate-x-1/2 z-50 bg-black rounded-full shadow-[inset_0_-1px_1px_rgba(255,255,255,0.1)] flex items-center justify-around px-2"
+                    style={{ 
+                      width: Math.round(110 * phoneScale), 
+                      height: Math.round(30 * phoneScale),
+                    }}
+                  >
+                    {/* Camera lens reflection */}
+                    <div className="h-1.5 w-1.5 rounded-full bg-blue-900/40 shadow-[0_0_2px_rgba(255,255,255,0.2)] ml-auto mr-1" />
+                  </div>
+                  
+                  {/* Screen Content */}
+                  <div className="h-full w-full bg-surface-0 relative rounded-[32px] overflow-hidden" style={{ borderRadius: 32 * phoneScale }}>
+                    <iframe
+                      src={`${menuPreviewUrl}?preview=true`}
+                      title="Vista previa móvil"
+                      className="border-0 phone-preview-scroll w-full h-full"
+                      style={{
+                        width: 390,
+                        height: 863,
+                        transform: `scale(${phoneScale})`,
+                        transformOrigin: 'top left',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        background: editing.backgroundColor,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Hardware buttons */}
+              {/* Silent switch */}
+              <div className="absolute left-0 top-[18%] bg-gradient-to-r from-surface-300 to-surface-400 rounded-l-md" style={{ width: 3 * phoneScale, height: 26 * phoneScale, left: -2 * phoneScale }} />
+              {/* Vol up */}
+              <div className="absolute left-0 top-[26%] bg-gradient-to-r from-surface-300 to-surface-400 rounded-l-md" style={{ width: 3 * phoneScale, height: 50 * phoneScale, left: -2 * phoneScale }} />
+              {/* Vol down */}
+              <div className="absolute left-0 top-[35%] bg-gradient-to-r from-surface-300 to-surface-400 rounded-l-md" style={{ width: 3 * phoneScale, height: 50 * phoneScale, left: -2 * phoneScale }} />
+              {/* Power */}
+              <div className="absolute right-0 top-[28%] bg-gradient-to-l from-surface-300 to-surface-400 rounded-r-md" style={{ width: 3 * phoneScale, height: 80 * phoneScale, right: -2 * phoneScale }} />
             </div>
-            {realGroups.length === 0 && (
-              <p className="text-[10px] text-surface-400 text-center max-w-[180px]">
-                Ejemplo. Agrega tu menú en{' '}
-                <Link to={ROUTES.admin.menu.list} className="text-brand-600 hover:underline">Menús</Link>.
-              </p>
-            )}
+            
+            <div className="absolute bottom-4 flex items-center justify-center w-full">
+              {realGroups.length === 0 ? (
+                <div className="bg-white/80 backdrop-blur-md border border-surface-200 px-4 py-2 rounded-full shadow-sm">
+                  <p className="text-[10px] font-medium text-surface-500">
+                    Ejemplo. Agrega tu menú en <Link to={ROUTES.admin.menu.list} className="text-brand-600 hover:text-brand-700 font-bold">Menús</Link>
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-white/80 backdrop-blur-md border border-surface-200 px-4 py-1.5 rounded-full shadow-sm flex items-center gap-2 text-[10px] text-surface-500 font-medium">
+                  <Smartphone size={12} className="text-surface-400" />
+                  Previsualización Móvil
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -754,7 +808,7 @@ function SectionsPanel({
             : 'Mensaje en la parte superior del menú'}
           isOpen={openSection === 'announcement'}
           onToggle={() => toggleSection('announcement')}
-          enableToggle
+          locked
           enabled={editing.announcement.enabled}
           onEnable={(v) => set('announcement', { ...editing.announcement, enabled: v })}
         >
@@ -797,7 +851,7 @@ function SectionsPanel({
             : 'Botón flotante para ordenar por WhatsApp'}
           isOpen={openSection === 'orderButton'}
           onToggle={() => toggleSection('orderButton')}
-          enableToggle
+          locked
           enabled={editing.orderButton.enabled}
           onEnable={(v) => set('orderButton', { ...editing.orderButton, enabled: v })}
         >
@@ -855,7 +909,7 @@ function SectionsPanel({
             : 'Sección para reservar mesa en línea'}
           isOpen={openSection === 'reservation'}
           onToggle={() => toggleSection('reservation')}
-          enableToggle
+          locked
           enabled={editing.reservation.enabled}
           onEnable={(v) => set('reservation', { ...editing.reservation, enabled: v })}
         >
@@ -881,7 +935,7 @@ function SectionsPanel({
             : 'Banner con descuentos o eventos'}
           isOpen={openSection === 'promo'}
           onToggle={() => toggleSection('promo')}
-          enableToggle
+          locked
           enabled={editing.promo.enabled}
           onEnable={(v) => set('promo', { ...editing.promo, enabled: v })}
         >
@@ -995,7 +1049,7 @@ function SectionsPanel({
             : 'Carrusel horizontal de tus mejores platos'}
           isOpen={openSection === 'featured'}
           onToggle={() => toggleSection('featured')}
-          enableToggle
+          locked
           enabled={editing.featuredSection.enabled}
           onEnable={(v) => set('featuredSection', { ...editing.featuredSection, enabled: v })}
         >
@@ -1024,7 +1078,7 @@ function SectionsPanel({
             : 'Instagram, TikTok, Facebook, WhatsApp'}
           isOpen={openSection === 'socials'}
           onToggle={() => toggleSection('socials')}
-          enableToggle
+          locked
           enabled={editing.socials.enabled}
           onEnable={(v) => set('socials', { ...editing.socials, enabled: v })}
         >
@@ -1042,13 +1096,15 @@ function SectionsPanel({
             : 'Horarios, dirección y teléfono'}
           isOpen={openSection === 'infoFooter'}
           onToggle={() => toggleSection('infoFooter')}
-          enableToggle
+          locked
           enabled={editing.infoFooter.enabled}
           onEnable={(v) => set('infoFooter', { ...editing.infoFooter, enabled: v })}
         >
           <TextInput label="Horarios"  value={editing.infoFooter.hours}    onChange={(v) => set('infoFooter', { ...editing.infoFooter, hours:   v })} placeholder="Lun–Dom: 11am – 10pm" />
           <TextInput label="Dirección" value={editing.infoFooter.address}  onChange={(v) => set('infoFooter', { ...editing.infoFooter, address: v })} placeholder="Calle 5, San José" />
           <TextInput label="Teléfono"  value={editing.infoFooter.phone}    onChange={(v) => set('infoFooter', { ...editing.infoFooter, phone:   v })} placeholder="+506 2222 2222" />
+          <TextInput label="Link de Waze" value={editing.infoFooter.wazeUrl} onChange={(v) => set('infoFooter', { ...editing.infoFooter, wazeUrl: v })} placeholder="https://waze.com/ul/..." />
+          <TextInput label="Link de Google Maps" value={editing.infoFooter.googleMapsUrl} onChange={(v) => set('infoFooter', { ...editing.infoFooter, googleMapsUrl: v })} placeholder="https://maps.app.goo.gl/..." />
         </SectionCard>
 
       </SectionGroup>
@@ -1072,38 +1128,41 @@ function AppearanceTemplateTrigger({
 
   return (
     <>
-      {/* Current template preview */}
-      {current && (
-        <div
-          className="flex items-center gap-3 rounded-xl border border-surface-150 bg-surface-0 p-2.5"
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        className="group relative flex w-full flex-col overflow-hidden rounded-2xl border border-surface-200 bg-white text-left transition-all duration-300 hover:border-brand-300 hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+      >
+        {/* Banner with gradient or current template colors */}
+        <div 
+          className="h-16 w-full relative transition-transform duration-500 group-hover:scale-105"
+          style={{ backgroundColor: current?.previewBg ?? '#1e293b' }}
         >
-          <div
-            className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-surface-100"
-            style={{ backgroundColor: current.previewBg }}
-          >
-            <div
-              className="absolute bottom-1 left-1 right-1 h-1.5 rounded-full"
+          {current && (
+            <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/30 to-transparent" />
+          )}
+          {current && (
+            <div 
+              className="absolute -bottom-3 left-4 h-6 w-14 rounded-full border-[3px] border-white shadow-sm transition-transform duration-300 group-hover:scale-110"
               style={{ backgroundColor: current.previewAccent }}
             />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-surface-800 truncate">{current.name}</p>
-            <p className="text-[10px] text-surface-400 truncate">{current.tags.join(' · ')}</p>
-          </div>
-          <CheckCircle2 size={14} className="text-brand-500 shrink-0" />
+          )}
         </div>
-      )}
-
-      {/* Open modal button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className="flex w-full items-center justify-center gap-2 rounded-xl border border-surface-200 bg-surface-0 py-2.5 text-[11px] font-semibold text-surface-600 transition-all hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600"
-      >
-        <LayoutGrid size={12} />
-        Cambiar plantilla ({templates.length} disponibles)
+        
+        {/* Card Body */}
+        <div className="flex items-center justify-between px-4 pb-4 pt-5">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[9px] font-extrabold tracking-widest text-brand-500 uppercase">Plantilla Activa</span>
+            <span className="text-[15px] font-bold text-surface-900 leading-none mt-1">{current?.name ?? 'Seleccionar plantilla'}</span>
+            {current && <span className="text-[10px] text-surface-500 mt-1 font-medium">{current.tags.join(' • ')}</span>}
+          </div>
+          <div className="flex shrink-0 items-center justify-center h-8 px-3.5 rounded-lg bg-surface-100/80 text-[11px] font-bold text-surface-700 transition-colors group-hover:bg-brand-50 group-hover:text-brand-700 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]">
+            Cambiar ({templates.length})
+          </div>
+        </div>
       </button>
 
-      <p className="text-[10px] text-surface-400">Cambiar plantilla aplica sus colores por defecto.</p>
+      <p className="text-[10px] text-surface-400 mt-0.5 px-1">Cambiar la plantilla sobrescribirá los colores por defecto.</p>
 
       {/* Full-screen modal */}
       {isOpen && (
@@ -1148,49 +1207,49 @@ function AppearanceTemplateModal({
   return (
     <div
       className="fixed inset-0 z-[200] flex flex-col"
-      style={{ background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(12px)' }}
+      style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(16px)' }}
     >
       {/* Header */}
-      <div className="flex shrink-0 items-center gap-4 border-b border-zinc-200 bg-white px-6 py-4 shadow-sm">
+      <div className="flex shrink-0 items-center gap-6 border-b border-surface-200 bg-white px-8 py-5 shadow-sm relative z-20">
         <div className="flex-1">
-          <h2 className="text-sm font-bold text-zinc-900">Elegir plantilla</h2>
-          <p className="mt-0.5 text-[10px] text-zinc-400">{templates.length} plantillas disponibles</p>
+          <h2 className="text-xl font-black text-surface-900 tracking-tight">Galería de plantillas</h2>
+          <p className="mt-1 text-[12px] font-medium text-surface-500">{templates.length} diseños listos para usar</p>
         </div>
         <div className="relative flex items-center">
-          <Search size={12} className="pointer-events-none absolute left-3 text-zinc-400" />
+          <Search size={14} className="pointer-events-none absolute left-3.5 text-surface-400" />
           <input
             autoFocus
             type="text"
-            placeholder="Buscar..."
+            placeholder="Buscar plantilla..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="h-8 w-52 rounded-lg border border-zinc-200 bg-zinc-50 pl-8 pr-3 text-xs text-zinc-800 placeholder-zinc-400 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+            className="h-10 w-64 rounded-xl border border-surface-200 bg-surface-50 pl-9 pr-4 text-sm text-surface-800 placeholder-surface-400 outline-none transition-all focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/10"
           />
         </div>
         <button
           onClick={onClose}
           title="Cerrar (Esc)"
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-800"
+          className="flex h-10 w-10 items-center justify-center rounded-xl text-surface-400 transition-colors hover:bg-surface-100 hover:text-surface-800"
         >
-          <X size={16} />
+          <X size={20} strokeWidth={2.5} />
         </button>
       </div>
 
       {/* Grid */}
-      <div className="flex-1 overflow-y-auto bg-zinc-50 p-6">
+      <div className="flex-1 overflow-y-auto bg-surface-50 p-8">
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-20 text-zinc-400">
-            <Search size={28} strokeWidth={1} />
-            <p className="text-sm">Sin resultados</p>
+          <div className="flex flex-col items-center gap-4 py-32 text-surface-400">
+            <Search size={40} strokeWidth={1.5} className="text-surface-300" />
+            <p className="text-base font-medium">Sin resultados para "{query}"</p>
             <button
               onClick={() => setQuery('')}
-              className="text-xs text-zinc-400 underline hover:text-zinc-600"
+              className="mt-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-surface-700 shadow-sm border border-surface-200 hover:bg-surface-50 hover:text-surface-900"
             >
               Limpiar búsqueda
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 max-w-[1600px] mx-auto w-full">
             {filtered.map((tmpl) => {
               const isActive = tmpl.id === currentTemplateId
               return (
@@ -1198,37 +1257,40 @@ function AppearanceTemplateModal({
                   key={tmpl.id}
                   onClick={() => onSelect(tmpl.id as TemplateId)}
                   className={cn(
-                    'group relative flex flex-col overflow-hidden rounded-xl border text-left transition-all duration-150 hover:shadow-md',
+                    'group relative flex flex-col overflow-hidden rounded-2xl border text-left transition-all duration-300',
                     isActive
-                      ? 'border-brand-400 ring-2 ring-brand-200 shadow-md'
-                      : 'border-zinc-200 bg-white hover:border-brand-300',
+                      ? 'border-brand-500 ring-2 ring-brand-500/20 shadow-lg scale-[1.02] z-10'
+                      : 'border-surface-200 bg-white hover:border-brand-300 hover:shadow-xl hover:-translate-y-1',
                   )}
                 >
                   {/* Color preview thumbnail */}
                   <div
-                    className="relative h-20 w-full"
+                    className="relative h-32 w-full transition-transform duration-500 group-hover:scale-105"
                     style={{ backgroundColor: tmpl.previewBg }}
                   >
-                    {/* Simulated menu rows */}
-                    <div className="absolute inset-0 flex flex-col justify-end gap-1 p-2">
-                      <div className="h-1 w-2/3 rounded-full opacity-60" style={{ backgroundColor: tmpl.previewAccent }} />
-                      <div className="h-1 w-1/2 rounded-full opacity-30" style={{ backgroundColor: tmpl.previewAccent }} />
-                      <div className="h-2 w-3/4 rounded-full" style={{ backgroundColor: tmpl.previewAccent }} />
+                    {/* Simulated elegant menu skeleton */}
+                    <div className="absolute inset-x-0 bottom-0 flex flex-col justify-end gap-2 p-4 bg-gradient-to-t from-black/40 to-transparent h-full">
+                      <div className="h-2 w-1/3 rounded-full shadow-sm" style={{ backgroundColor: tmpl.previewAccent }} />
+                      <div className="h-1.5 w-3/4 rounded-full opacity-70" style={{ backgroundColor: tmpl.previewAccent }} />
+                      <div className="flex gap-2 mt-1">
+                        <div className="h-1.5 w-1/4 rounded-full opacity-40" style={{ backgroundColor: tmpl.previewAccent }} />
+                        <div className="h-1.5 w-1/4 rounded-full opacity-40" style={{ backgroundColor: tmpl.previewAccent }} />
+                      </div>
                     </div>
                     {isActive && (
-                      <div className="absolute right-1.5 top-1.5 flex items-center gap-0.5 rounded-full bg-brand-500 px-1.5 py-0.5 text-[9px] font-bold text-white shadow">
-                        <CheckCircle2 size={8} />
+                      <div className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full bg-brand-500 px-2.5 py-1 text-[10px] font-bold text-white shadow-md">
+                        <CheckCircle2 size={12} strokeWidth={3} />
                         Activa
                       </div>
                     )}
                   </div>
 
                   {/* Name + tags */}
-                  <div className="flex flex-col gap-0.5 bg-white p-2">
-                    <p className={cn('text-[11px] font-bold leading-tight truncate', isActive ? 'text-brand-700' : 'text-zinc-800')}>
+                  <div className="flex flex-col gap-1 bg-white p-4 relative z-10">
+                    <p className={cn('text-[13px] font-bold leading-tight truncate', isActive ? 'text-brand-700' : 'text-surface-900')}>
                       {tmpl.name}
                     </p>
-                    <p className="text-[9px] text-zinc-400 truncate">{tmpl.tags.join(' · ')}</p>
+                    <p className="text-[10px] text-surface-500 font-medium truncate">{tmpl.tags.join(' • ')}</p>
                   </div>
                 </button>
               )
@@ -1270,25 +1332,36 @@ function ThemePanel({
         <SectionLabel icon={<Palette size={12} />}>Colores</SectionLabel>
 
         {/* Palette presets */}
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2.5">
           <label className="text-xs font-medium text-surface-700">Paletas prediseñadas</label>
-          <div className="grid grid-cols-5 gap-1.5">
+          <div className="grid grid-cols-5 gap-2.5">
             {COLOR_PALETTES.map((p) => {
               const isActive = editing.primaryColor === p.primary && editing.backgroundColor === p.bg
               return (
                 <button
+                  type="button"
                   key={p.name}
                   title={p.name}
                   onClick={() => { set('primaryColor', p.primary); set('backgroundColor', p.bg) }}
-                  className={cn('relative h-9 w-full rounded-xl overflow-hidden transition-all', isActive ? 'ring-2 ring-brand-500 ring-offset-1' : 'hover:scale-105')}
-                  style={{ backgroundColor: p.bg }}
+                  className={cn(
+                    'group relative flex flex-col h-14 w-full rounded-xl overflow-hidden transition-all duration-200 border', 
+                    isActive 
+                      ? 'border-brand-500 ring-2 ring-brand-500/20 shadow-md scale-110 z-10' 
+                      : 'border-surface-200 hover:border-brand-300 hover:shadow-sm'
+                  )}
                 >
-                  <div className="absolute bottom-1 left-1 right-1 h-1.5 rounded-full" style={{ backgroundColor: p.primary }} />
+                  <div className="flex-1 w-full transition-transform duration-300 group-hover:scale-105" style={{ backgroundColor: p.bg }} />
+                  <div className="h-3.5 w-full flex-shrink-0 shadow-[0_-1px_2px_rgba(0,0,0,0.1)]" style={{ backgroundColor: p.primary }} />
+                  {isActive && (
+                    <div className="absolute top-1 right-1 h-3.5 w-3.5 bg-white rounded-full flex items-center justify-center shadow-sm">
+                      <CheckCircle2 size={10} className="text-brand-600" strokeWidth={3} />
+                    </div>
+                  )}
                 </button>
               )
             })}
           </div>
-          <p className="text-[10px] text-surface-400">Click para aplicar. Luego ajusta a tu gusto.</p>
+          <p className="text-[10px] text-surface-400 px-1">Click para aplicar. Luego ajusta a tu gusto abajo.</p>
         </div>
 
         <ColorField label="Color de acento" hint="Botones y destacados" value={editing.primaryColor} onChange={(v) => set('primaryColor', v)} />
@@ -1331,72 +1404,74 @@ function ThemePanel({
       </section>
 
       {/* Typography */}
-      <section className="flex flex-col gap-3">
-        <SectionLabel icon={<Type size={12} />}>Tipografía</SectionLabel>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-surface-700">Fuente</label>
-          <select
-            value={editing.fontFamily}
-            onChange={(e) => set('fontFamily', e.target.value)}
-            className="w-full rounded-xl border border-surface-200 bg-surface-0 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
-            style={{ fontFamily: editing.fontFamily }}
-          >
-            {FONT_OPTIONS.map((f) => (
-              <option key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</option>
-            ))}
-          </select>
+      <section className="flex flex-col gap-4 mt-2">
+        <SectionLabel icon={<Type size={14} className="text-brand-500" />}>Tipografía</SectionLabel>
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-semibold text-surface-800">Fuente tipográfica</label>
+          <div className="relative">
+            <select
+              value={editing.fontFamily}
+              onChange={(e) => set('fontFamily', e.target.value)}
+              className="w-full appearance-none rounded-xl border border-surface-200 bg-white px-4 py-3.5 text-sm font-semibold text-surface-900 shadow-sm transition-all hover:border-brand-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 cursor-pointer"
+              style={{ fontFamily: editing.fontFamily, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 16px center', backgroundRepeat: 'no-repeat', backgroundSize: '16px' }}
+            >
+              {FONT_OPTIONS.map((f) => (
+                <option key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</option>
+              ))}
+            </select>
+          </div>
         </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-surface-700">Tamaño base</label>
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-semibold text-surface-800">Tamaño base de la letra</label>
           <TriPicker
             value={editing.textScale}
             onChange={(v) => set('textScale', v as 'sm' | 'md' | 'lg')}
             options={[
-              { value: 'sm', label: 'Pequeño', preview: <span className="text-[10px] font-bold text-surface-600">Aa</span> },
-              { value: 'md', label: 'Normal', preview: <span className="text-sm font-bold text-surface-600">Aa</span> },
-              { value: 'lg', label: 'Grande', preview: <span className="text-lg font-bold text-surface-600">Aa</span> },
+              { value: 'sm', label: 'Pequeño', preview: <span className="text-xs font-black">Aa</span> },
+              { value: 'md', label: 'Normal', preview: <span className="text-base font-black">Aa</span> },
+              { value: 'lg', label: 'Grande', preview: <span className="text-xl font-black">Aa</span> },
             ]}
           />
         </div>
       </section>
 
       {/* Style */}
-      <section className="flex flex-col gap-3">
-        <SectionLabel icon={<LayoutGrid size={12} />}>Estilo</SectionLabel>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-surface-700">Forma de tarjetas</label>
+      <section className="flex flex-col gap-4 mt-4">
+        <SectionLabel icon={<LayoutGrid size={14} className="text-brand-500" />}>Estilo de componentes</SectionLabel>
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-semibold text-surface-800">Bordes de tarjetas</label>
           <TriPicker
             value={editing.cardStyle}
             onChange={(v) => set('cardStyle', v as 'sharp' | 'rounded' | 'pill')}
             options={[
-              { value: 'sharp', label: 'Recto', preview: <div className="h-5 w-full bg-surface-200" style={{ borderRadius: '4px' }} /> },
-              { value: 'rounded', label: 'Redondo', preview: <div className="h-5 w-full bg-surface-200" style={{ borderRadius: '10px' }} /> },
-              { value: 'pill', label: 'Cápsula', preview: <div className="h-5 w-full bg-surface-200" style={{ borderRadius: '20px' }} /> },
+              { value: 'sharp', label: 'Recto', preview: <div className="h-8 w-12 border-[2.5px] border-current" style={{ borderRadius: '4px' }} /> },
+              { value: 'rounded', label: 'Redondo', preview: <div className="h-8 w-12 border-[2.5px] border-current" style={{ borderRadius: '12px' }} /> },
+              { value: 'pill', label: 'Cápsula', preview: <div className="h-8 w-12 border-[2.5px] border-current" style={{ borderRadius: '24px' }} /> },
             ]}
           />
         </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-surface-700">Sombras</label>
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-semibold text-surface-800">Profundidad (Sombras)</label>
           <TriPicker
             value={editing.shadowDepth}
             onChange={(v) => set('shadowDepth', v as 'flat' | 'soft' | 'deep')}
             options={[
-              { value: 'flat', label: 'Sin sombra', preview: <div className="h-5 w-full rounded-md bg-surface-200" style={{ boxShadow: 'none' }} /> },
-              { value: 'soft', label: 'Suave', preview: <div className="h-5 w-full rounded-md bg-surface-200" style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.14)' }} /> },
-              { value: 'deep', label: 'Profunda', preview: <div className="h-5 w-full rounded-md bg-surface-200" style={{ boxShadow: '0 6px 18px rgba(0,0,0,0.26)' }} /> },
+              { value: 'flat', label: 'Plano', preview: <div className="h-8 w-12 rounded-lg bg-surface-100 border border-surface-200" style={{ boxShadow: 'none' }} /> },
+              { value: 'soft', label: 'Suave', preview: <div className="h-8 w-12 rounded-lg bg-white border border-surface-100" style={{ boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} /> },
+              { value: 'deep', label: 'Intenso', preview: <div className="h-8 w-12 rounded-lg bg-white" style={{ boxShadow: '0 10px 25px -5px rgba(0,0,0,0.2), 0 8px 10px -6px rgba(0,0,0,0.1)' }} /> },
             ]}
           />
         </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-surface-700">Redondeo de imágenes</label>
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-semibold text-surface-800">Imágenes y fotos</label>
           <QuadPicker
             value={editing.imageRounding}
             onChange={(v) => set('imageRounding', v as ImageRounding)}
             options={[
-              { value: 'none', label: 'Recto', preview: <div className="h-5 w-full bg-surface-200" style={{ borderRadius: '0px' }} /> },
-              { value: 'sm', label: 'Leve', preview: <div className="h-5 w-full bg-surface-200" style={{ borderRadius: '6px' }} /> },
-              { value: 'lg', label: 'Redondo', preview: <div className="h-5 w-full bg-surface-200" style={{ borderRadius: '16px' }} /> },
-              { value: 'xl', label: 'Máximo', preview: <div className="h-5 w-full bg-surface-200" style={{ borderRadius: '24px' }} /> },
+              { value: 'none', label: 'Recto', preview: <div className="h-8 w-8 bg-current" style={{ borderRadius: '0px' }} /> },
+              { value: 'sm', label: 'Leve', preview: <div className="h-8 w-8 bg-current" style={{ borderRadius: '6px' }} /> },
+              { value: 'lg', label: 'Redondo', preview: <div className="h-8 w-8 bg-current" style={{ borderRadius: '16px' }} /> },
+              { value: 'xl', label: 'Círculo', preview: <div className="h-8 w-8 bg-current" style={{ borderRadius: '24px' }} /> },
             ]}
           />
         </div>
@@ -1429,6 +1504,7 @@ function SectionCard({
   icon, iconBg, title, preview,
   isOpen, onToggle,
   enableToggle, enabled, onEnable,
+  locked,
   children,
 }: {
   icon: string
@@ -1440,15 +1516,24 @@ function SectionCard({
   enableToggle?: boolean
   enabled?: boolean
   onEnable?: (v: boolean) => void
+  locked?: boolean
   children: ReactNode
 }) {
+  const isOff = (enableToggle && !enabled && !locked) || (locked && !enabled)
+  const isSwitchOn = enabled || locked
+  
+  useEffect(() => {
+    if (locked && !enabled && onEnable) onEnable(true)
+  }, [locked, enabled, onEnable])
+
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-xl border transition-all duration-150',
+        'group overflow-hidden rounded-2xl border bg-white transition-all duration-300 relative',
         isOpen
-          ? 'border-brand-300 shadow-[0_2px_10px_rgba(0,0,0,0.07)]'
-          : 'border-surface-150 hover:border-surface-250 hover:shadow-sm',
+          ? 'border-brand-400 ring-4 ring-brand-500/10 shadow-lg scale-[1.01] z-10'
+          : 'border-surface-200 hover:border-brand-300 hover:shadow-md hover:-translate-y-0.5',
+        (enableToggle || locked) && !isSwitchOn && !isOpen && 'opacity-75 bg-surface-50'
       )}
     >
       {/* Header */}
@@ -1458,13 +1543,17 @@ function SectionCard({
         onClick={onToggle}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle() } }}
         className={cn(
-          'flex w-full cursor-pointer select-none items-center gap-2.5 px-3.5 py-3 outline-none transition-colors',
-          isOpen ? 'bg-brand-50/70' : 'bg-white hover:bg-surface-50',
+          'flex w-full cursor-pointer select-none items-center gap-4 px-4 py-3.5 outline-none transition-colors duration-300',
+          isOpen ? 'bg-brand-50/40' : 'bg-transparent'
         )}
       >
         {/* Emoji icon bubble */}
         <div
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm leading-none"
+          className={cn(
+            "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-lg shadow-sm transition-transform duration-300", 
+            !isOff && "group-hover:scale-110",
+            isOff && 'grayscale-[0.5] opacity-80'
+          )}
           style={{ background: iconBg }}
         >
           {icon}
@@ -1473,8 +1562,9 @@ function SectionCard({
         {/* Title + preview */}
         <div className="min-w-0 flex-1">
           <p className={cn(
-            'text-[12px] font-semibold leading-tight',
-            isOpen ? 'text-brand-700' : 'text-surface-800',
+            'text-[13px] font-bold leading-tight transition-colors',
+            isOpen ? 'text-brand-700' : 'text-surface-900',
+            isOff && !isOpen && 'text-surface-500'
           )}>
             {title}
           </p>
@@ -1485,34 +1575,56 @@ function SectionCard({
           )}
         </div>
 
-        {/* Enabled/disabled pill */}
-        {enableToggle && onEnable && (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onEnable(!enabled) }}
+        {/* Enabled/disabled toggle */}
+        {(enableToggle || locked) && onEnable && (
+          <div
+            role="button"
+            tabIndex={locked ? -1 : 0}
+            onClick={(e) => { 
+              e.stopPropagation()
+              if (locked) return
+              onEnable(!enabled) 
+            }}
             className={cn(
-              'shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-bold transition-all',
-              enabled
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                : 'border-surface-200 bg-surface-50 text-surface-400 hover:bg-surface-100',
+              'relative shrink-0 h-[26px] w-[46px] rounded-full transition-colors duration-300 shadow-[inset_0_1px_4px_rgba(0,0,0,0.1)] mr-1 flex items-center justify-center',
+              isSwitchOn ? 'bg-brand-500' : 'bg-surface-200 hover:bg-surface-300',
+              locked && 'opacity-80 cursor-not-allowed hover:bg-brand-500'
             )}
+            title={locked ? "Módulo Premium incluido gratuitamente" : ""}
           >
-            {enabled ? '● Activa' : '○ Inactiva'}
-          </button>
+            {locked && <span className="absolute inset-0 flex items-center justify-center text-[10px] pr-[18px]">💎</span>}
+            <div className={cn(
+              'absolute top-[3px] h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.3)] transition-transform duration-300 flex items-center justify-center',
+              isSwitchOn ? 'translate-x-[23px]' : 'translate-x-[3px]',
+              locked && 'opacity-90'
+            )}>
+              {locked && <span className="text-[10px] leading-none mb-[1px]">🔒</span>}
+            </div>
+          </div>
         )}
 
         <ChevronDown
-          size={13}
+          size={14}
+          strokeWidth={2.5}
           className={cn(
             'shrink-0 transition-transform duration-200',
-            isOpen ? 'rotate-180 text-brand-400' : 'text-surface-350',
+            isOpen ? 'rotate-180 text-brand-400' : 'text-surface-300',
           )}
         />
       </div>
 
       {/* Body */}
       {isOpen && (
-        <div className="border-t border-surface-100 bg-white px-4 py-4">
+        <div className={cn(
+          "border-t border-surface-100 bg-white px-4 py-4 transition-opacity duration-300",
+          isOff && 'opacity-40 pointer-events-none select-none bg-surface-50'
+        )}>
+          {isOff && (
+            <div className="mb-4 flex items-center gap-2 rounded-lg bg-surface-200/50 p-2.5 text-surface-600">
+              <span className="text-[16px]">💡</span>
+              <p className="text-[11px] font-bold">Sección desactivada. Enciéndela para configurar.</p>
+            </div>
+          )}
           <div className="flex flex-col gap-3.5">{children}</div>
         </div>
       )}
@@ -1528,20 +1640,30 @@ function TriPicker({ value, onChange, options }: {
   options: { value: string; label: string; preview: ReactNode }[]
 }) {
   return (
-    <div className="grid grid-cols-3 gap-1.5">
+    <div className="grid grid-cols-3 gap-3">
       {options.map((opt) => {
         const isActive = value === opt.value
         return (
           <button
+            type="button"
             key={opt.value}
             onClick={() => onChange(opt.value)}
             className={cn(
-              'flex flex-col items-center gap-2 rounded-xl border p-2.5 transition-all',
-              isActive ? 'border-brand-400 bg-brand-50' : 'border-surface-150 hover:border-surface-300',
+              'group relative flex flex-col items-center gap-3 rounded-2xl border p-3 transition-all duration-300',
+              isActive 
+                ? 'border-brand-500 bg-brand-50/60 ring-4 ring-brand-500/10 shadow-sm scale-[1.02] z-10' 
+                : 'border-surface-200 bg-white hover:border-brand-300 hover:bg-surface-50 hover:shadow-md hover:-translate-y-0.5'
             )}
           >
-            {opt.preview}
-            <span className={cn('text-[9px] font-semibold leading-none', isActive ? 'text-brand-600' : 'text-surface-400')}>{opt.label}</span>
+            <div className={cn("w-full flex items-center justify-center transition-transform duration-300 group-hover:scale-105", isActive ? "text-brand-500" : "text-surface-300 group-hover:text-surface-400")}>
+               {opt.preview}
+            </div>
+            <span className={cn('text-[11px] font-bold leading-none transition-colors mt-1', isActive ? 'text-brand-700' : 'text-surface-500 group-hover:text-surface-700')}>{opt.label}</span>
+            {isActive && (
+              <div className="absolute -top-1.5 -right-1.5 h-4 w-4 bg-brand-500 rounded-full flex items-center justify-center shadow-sm text-white">
+                <CheckCircle2 size={10} strokeWidth={3.5} />
+              </div>
+            )}
           </button>
         )
       })}
@@ -1557,20 +1679,30 @@ function QuadPicker({ value, onChange, options }: {
   options: { value: string; label: string; preview: ReactNode }[]
 }) {
   return (
-    <div className="grid grid-cols-4 gap-1.5">
+    <div className="grid grid-cols-4 gap-2">
       {options.map((opt) => {
         const isActive = value === opt.value
         return (
           <button
+            type="button"
             key={opt.value}
             onClick={() => onChange(opt.value)}
             className={cn(
-              'flex flex-col items-center gap-2 rounded-xl border p-2 transition-all',
-              isActive ? 'border-brand-400 bg-brand-50' : 'border-surface-150 hover:border-surface-300',
+              'group relative flex flex-col items-center gap-2 rounded-2xl border p-2 transition-all duration-300',
+              isActive 
+                ? 'border-brand-500 bg-brand-50/60 ring-2 ring-brand-500/20 shadow-sm scale-[1.02] z-10' 
+                : 'border-surface-200 bg-white hover:border-brand-300 hover:bg-surface-50 hover:shadow-md hover:-translate-y-0.5'
             )}
           >
-            {opt.preview}
-            <span className={cn('text-[9px] font-semibold leading-none text-center', isActive ? 'text-brand-600' : 'text-surface-400')}>{opt.label}</span>
+            <div className={cn("w-full flex items-center justify-center transition-transform duration-300 group-hover:scale-105", isActive ? "text-brand-500" : "text-surface-300 group-hover:text-surface-400")}>
+               {opt.preview}
+            </div>
+            <span className={cn('text-[10px] font-bold leading-none text-center transition-colors', isActive ? 'text-brand-700' : 'text-surface-500 group-hover:text-surface-700')}>{opt.label}</span>
+            {isActive && (
+              <div className="absolute -top-1.5 -right-1.5 h-4 w-4 bg-brand-500 rounded-full flex items-center justify-center shadow-sm text-white">
+                <CheckCircle2 size={10} strokeWidth={3.5} />
+              </div>
+            )}
           </button>
         )
       })}
@@ -1626,19 +1758,26 @@ function ToggleRow({ label, description, checked, onChange }: {
   label: string; description: string; checked: boolean; onChange: (v: boolean) => void
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-surface-150 px-3 py-2.5">
-      <div className="flex flex-col gap-0.5 min-w-0">
-        <span className="text-xs font-medium text-surface-700">{label}</span>
-        <span className="text-[10px] text-surface-400">{description}</span>
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className={cn(
+        "w-full flex items-center justify-between gap-3 rounded-xl border px-3 py-3 text-left transition-all duration-200",
+        checked 
+          ? "border-brand-300 bg-brand-50 hover:bg-brand-100/50 shadow-[0_2px_8px_rgba(0,0,0,0.04)]" 
+          : "border-surface-200 bg-surface-50 hover:bg-surface-100 hover:border-surface-300"
+      )}
+    >
+      <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+        <span className={cn("text-[13px] font-bold", checked ? "text-brand-900" : "text-surface-800")}>{label}</span>
+        <span className={cn("text-[11px] leading-relaxed", checked ? "text-brand-700/80" : "text-surface-500")}>{description}</span>
       </div>
-      <button
-        type="button"
-        onClick={() => onChange(!checked)}
-        className={cn('relative shrink-0 h-5 w-9 rounded-full transition-all duration-200', checked ? 'bg-brand-500' : 'bg-surface-300')}
+      <div
+        className={cn('relative shrink-0 h-6 w-11 rounded-full transition-all duration-300 shadow-inner', checked ? 'bg-brand-500' : 'bg-surface-300')}
       >
-        <div className={cn('absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200', checked ? 'translate-x-4' : 'translate-x-0.5')} />
-      </button>
-    </div>
+        <div className={cn('absolute top-[2px] h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.3)] transition-transform duration-300 ease-out', checked ? 'translate-x-[22px]' : 'translate-x-[2px]')} />
+      </div>
+    </button>
   )
 }
 

@@ -3,6 +3,7 @@ import { FirestoreCustomerRepository } from '@infrastructure/repositories/Firest
 import { CreateOrderUseCase } from '@core/use-cases/order/CreateOrderUseCase'
 import { ListActiveOrdersUseCase } from '@core/use-cases/order/ListActiveOrdersUseCase'
 import { ListOrdersByDateUseCase } from '@core/use-cases/order/ListOrdersByDateUseCase'
+import { ListOrdersBetweenUseCase } from '@core/use-cases/order/ListOrdersBetweenUseCase'
 import { UpdateOrderStatusUseCase } from '@core/use-cases/order/UpdateOrderStatusUseCase'
 
 /**
@@ -17,5 +18,6 @@ export const OrderService = {
   createOrder: new CreateOrderUseCase(orderRepository, customerRepository),
   listActiveOrders: new ListActiveOrdersUseCase(orderRepository),
   listOrdersByDate: new ListOrdersByDateUseCase(orderRepository),
+  listOrdersBetween: new ListOrdersBetweenUseCase(orderRepository),
   updateOrderStatus: new UpdateOrderStatusUseCase(orderRepository),
 } as const

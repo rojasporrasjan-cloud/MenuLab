@@ -57,12 +57,10 @@ export function useKitchenOrders(tenantId: string): KitchenOrdersState {
     error: null,
   })
   const knownIncomingIds = useRef<Set<string> | null>(null)
+  const enabled = Boolean(tenantId) && isFirebaseConfigured
 
   useEffect(() => {
-    if (!tenantId || !isFirebaseConfigured) {
-      setState({ board: EMPTY_BOARD, isLoading: false, error: null })
-      return
-    }
+    if (!enabled) return
 
     knownIncomingIds.current = null
 
@@ -87,7 +85,9 @@ export function useKitchenOrders(tenantId: string): KitchenOrdersState {
     )
 
     return () => unsubscribe()
-  }, [tenantId])
+  }, [tenantId, enabled])
 
+  // Sin tenant o sin Firebase: tablero vacío derivado (sin setState en el efecto).
+  if (!enabled) return { board: EMPTY_BOARD, isLoading: false, error: null }
   return state
 }

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/static-components */
 import { Suspense, useEffect, useMemo, memo, useState } from 'react'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { useTenantContext } from '@app/providers/TenantProvider'
@@ -127,32 +128,7 @@ function buildDataLayerContext(
 
 // ─── Powered-by badge ─────────────────────────────────────────────────────────
 
-/**
- * A subtle floating badge that appears on every public menu.
- * It's the viral loop: every customer who sees a beautiful menu has a path
- * to sign up for the platform.
- */
-const PoweredByBadge = memo(function PoweredByBadge({ tenantId }: { tenantId: string }) {
-  return (
-    <a
-      href={`/?utm_source=menu_badge&utm_medium=organic&utm_content=${tenantId}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label="Creá tu menú digital gratis con Soda La Rústica"
-      className="fixed bottom-4 right-4 z-50 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold backdrop-blur-md transition-all hover:scale-105 active:scale-95 select-none"
-      style={{
-        background:  'rgba(0,0,0,0.55)',
-        border:      '1px solid rgba(255,255,255,0.12)',
-        color:       'rgba(255,255,255,0.85)',
-        boxShadow:   '0 4px 16px rgba(0,0,0,0.3)',
-        letterSpacing: '0.01em',
-      }}
-    >
-      <span style={{ color: '#e99a0e' }}>⚡</span>
-      Menú por Soda La Rústica
-    </a>
-  )
-})
+// Badge removed per user request
 
 // ─── Reservation link (floating pill) ─────────────────────────────────────────
 
@@ -237,6 +213,40 @@ const LivePreviewIndicator = memo(function LivePreviewIndicator({ connected }: {
   )
 })
 
+// ─── Table Indicator (Static Banner) ──────────────────────────────────────────
+
+const TableIndicator = memo(function TableIndicator({
+  tableNumber,
+  tableLabel,
+  accentColor,
+}: {
+  tableNumber: string
+  tableLabel: string | null
+  accentColor: string
+}) {
+  return (
+    <div
+      className="w-full py-2 px-4 flex flex-col items-center justify-center text-center shadow-sm select-none"
+      style={{
+        backgroundColor: accentColor,
+        color: '#ffffff',
+      }}
+    >
+      <p className="text-[11px] font-bold uppercase tracking-widest opacity-90 mb-0.5">
+        Estás en
+      </p>
+      <p className="text-base font-black tracking-tight leading-none">
+        Mesa {tableNumber}
+      </p>
+      {tableLabel && tableLabel !== tableNumber && (
+        <p className="text-[11px] font-medium opacity-80 mt-1">
+          {tableLabel}
+        </p>
+      )}
+    </div>
+  )
+})
+
 // ─── Ordering overlay (FAB + drawer) ──────────────────────────────────────────
 
 /**
@@ -246,12 +256,14 @@ const LivePreviewIndicator = memo(function LivePreviewIndicator({ connected }: {
 function OrderingOverlay({
   tenantId,
   whatsappPhone,
+  sinpeNumber,
   tableId,
   tableLabel,
   accentColor,
 }: {
   tenantId: string
   whatsappPhone: string
+  sinpeNumber: string | null
   tableId: string | null
   tableLabel: string | null
   accentColor: string
@@ -262,6 +274,7 @@ function OrderingOverlay({
       <CartDrawer
         tenantId={tenantId}
         whatsappPhone={whatsappPhone}
+        sinpeNumber={sinpeNumber}
         tableId={tableId}
         tableLabel={tableLabel}
         accentColor={accentColor}
@@ -284,7 +297,7 @@ function MenuPageContent() {
   const { tenantId, menuId, dishId } = useParams<{ tenantId: string; menuId?: string; dishId?: string }>()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const tableId = searchParams.get('table') ?? undefined
+  const tableId = searchParams.get('tableId') ?? searchParams.get('table') ?? undefined
   const isPreview = searchParams.get('preview') === 'true'
 
   const { tenant: baseTenant, isLoading: isTenantLoading } = useTenantContext()
@@ -321,23 +334,25 @@ function MenuPageContent() {
       .catch((err) => console.error("Error notifying PC of scan:", err))
   }, [tenantId, isPreview])
 
-  const tenant = (isPreview && previewTenant && baseTenant)
-    ? {
-        ...baseTenant,
-        name: previewTenant.name,
-        templateId: previewTenant.templateId,
-        branding: {
-          ...baseTenant.branding,
-          ...previewTenant.branding,
-        },
-        // El preview en vivo también lleva los feature flags (p. ej. carrito),
-        // para que activarlos en Apariencia se refleje al instante en el menú.
-        features: {
-          ...baseTenant.features,
-          ...previewTenant.features,
-        },
-      }
-    : (previewTenant || baseTenant)
+  const tenant = useMemo(() => {
+    return (isPreview && previewTenant && baseTenant)
+      ? {
+          ...baseTenant,
+          name: previewTenant.name,
+          templateId: previewTenant.templateId,
+          branding: {
+            ...baseTenant.branding,
+            ...previewTenant.branding,
+          },
+          // El preview en vivo también lleva los feature flags (p. ej. carrito),
+          // para que activarlos en Apariencia se refleje al instante en el menú.
+          features: {
+            ...baseTenant.features,
+            ...previewTenant.features,
+          },
+        }
+      : (previewTenant || baseTenant)
+  }, [isPreview, previewTenant, baseTenant])
   const { data: tableMenu } = useTableMenu(tenantId ?? '', tableId ?? '')
   const { data: menus } = useAdminMenus(tenantId ?? '')
   const firstMenuId = menus?.[0]?.id ?? ''
@@ -401,6 +416,7 @@ function MenuPageContent() {
     tenant?.branding.orderButton.whatsapp ||
     tenant?.branding.socials.whatsapp ||
     ''
+  const sinpeNumber = tenant?.branding.infoFooter.sinpeNumber?.trim() || null
   const resolvedTableId = tableMenu?.table?.id ?? tableId ?? null
   const resolvedTableLabel = tableMenu?.table?.label ?? tableMenu?.table?.number ?? null
 
@@ -470,6 +486,13 @@ function MenuPageContent() {
   return (
     <Suspense fallback={<MenuSkeleton />}>
       {isPreview && <LivePreviewIndicator connected={isLiveConnected} />}
+      {tableMenu?.table && tableMenu.table.id !== 'walk-in' && !isPreview && (
+        <TableIndicator
+          tableNumber={tableMenu.table.number}
+          tableLabel={tableMenu.table.label ?? null}
+          accentColor={tenant.branding.primaryColor}
+        />
+      )}
       {editorDoc ? (
         <DataLayerRenderer canvaTemplate={editorDoc.canvaTemplate} layers={editorDoc.dataLayers} context={dataLayerCtx} />
       ) : (
@@ -502,6 +525,7 @@ function MenuPageContent() {
         <OrderingOverlay
           tenantId={tenantId}
           whatsappPhone={orderingPhone}
+          sinpeNumber={sinpeNumber}
           tableId={resolvedTableId}
           tableLabel={resolvedTableLabel}
           accentColor={tenant.branding.primaryColor}
@@ -510,7 +534,6 @@ function MenuPageContent() {
       {(tenant.features?.reservationsEnabled ?? false) && !isPreview && (
         <ReservationLink tenantId={tenantId} accentColor={tenant.branding.primaryColor} />
       )}
-      {tenantId && <PoweredByBadge tenantId={tenantId} />}
     </Suspense>
   )
 }

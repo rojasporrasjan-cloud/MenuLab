@@ -35,6 +35,16 @@ export function ProfileForm({
     name: tenant.name,
     timezone: tenant.timezone,
     locale: tenant.locale,
+    whatsapp: tenant.branding.orderButton.whatsapp,
+    sinpeNumber: tenant.branding.infoFooter.sinpeNumber ?? '',
+    wazeUrl: tenant.branding.infoFooter.wazeUrl ?? '',
+    googleMapsUrl: tenant.branding.infoFooter.googleMapsUrl ?? '',
+    hours: tenant.branding.infoFooter.hours,
+    address: tenant.branding.infoFooter.address,
+    phone: tenant.branding.infoFooter.phone,
+    instagram: tenant.branding.socials.instagram,
+    facebook: tenant.branding.socials.facebook,
+    tiktok: tenant.branding.socials.tiktok,
   })
   const [fieldErrors, setFieldErrors] = useState<
     Partial<Record<keyof ProfileFormValues, string>>
@@ -45,7 +55,19 @@ export function ProfileForm({
   const [syncedTenant, setSyncedTenant] = useState(tenant)
   if (tenant !== syncedTenant) {
     setSyncedTenant(tenant)
-    setValues({ name: tenant.name, timezone: tenant.timezone, locale: tenant.locale })
+    setValues({ 
+      name: tenant.name, timezone: tenant.timezone, locale: tenant.locale,
+      whatsapp: tenant.branding.orderButton.whatsapp,
+      sinpeNumber: tenant.branding.infoFooter.sinpeNumber ?? '',
+      wazeUrl: tenant.branding.infoFooter.wazeUrl ?? '',
+      googleMapsUrl: tenant.branding.infoFooter.googleMapsUrl ?? '',
+      hours: tenant.branding.infoFooter.hours,
+      address: tenant.branding.infoFooter.address,
+      phone: tenant.branding.infoFooter.phone,
+      instagram: tenant.branding.socials.instagram,
+      facebook: tenant.branding.socials.facebook,
+      tiktok: tenant.branding.socials.tiktok,
+    })
   }
 
   const set = <K extends keyof ProfileFormValues>(key: K, value: ProfileFormValues[K]) => {
@@ -126,6 +148,68 @@ export function ProfileForm({
             <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
         </select>
+      </div>
+
+      <div className="h-px bg-surface-200 w-full my-2" />
+      <h3 className="text-sm font-bold text-surface-900">Datos de Contacto y Ubicación</h3>
+      
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-surface-700">WhatsApp para pedidos</label>
+          <input type="text" value={values.whatsapp ?? ''} onChange={e => set('whatsapp', e.target.value)} placeholder="Ej: +506 8888-8888" className={inputClass(!!fieldErrors.whatsapp)} />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-surface-700">Número SINPE Móvil</label>
+          <input type="text" value={values.sinpeNumber ?? ''} onChange={e => set('sinpeNumber', e.target.value)} placeholder="Ej: 8888-8888" className={inputClass(!!fieldErrors.sinpeNumber)} />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-surface-700">Teléfono local</label>
+          <input type="text" value={values.phone ?? ''} onChange={e => set('phone', e.target.value)} placeholder="Ej: 2222-2222" className={inputClass(!!fieldErrors.phone)} />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-surface-700">Horario de atención</label>
+          <input type="text" value={values.hours ?? ''} onChange={e => set('hours', e.target.value)} placeholder="Ej: Lunes a Sábado, 11am - 9pm" className={inputClass(!!fieldErrors.hours)} />
+        </div>
+
+        <div className="flex flex-col gap-1.5 sm:col-span-2">
+          <label className="text-xs font-medium text-surface-700">Dirección física</label>
+          <input type="text" value={values.address ?? ''} onChange={e => set('address', e.target.value)} placeholder="Ej: 100m norte de la iglesia..." className={inputClass(!!fieldErrors.address)} />
+        </div>
+
+        <div className="flex flex-col gap-1.5 sm:col-span-1">
+          <label className="text-xs font-medium text-surface-700">Enlace de Waze</label>
+          <input type="url" value={values.wazeUrl ?? ''} onChange={e => set('wazeUrl', e.target.value)} placeholder="https://waze.com/ul/..." className={inputClass(!!fieldErrors.wazeUrl)} />
+          {fieldErrors.wazeUrl && <p className="text-xs text-red-600">{fieldErrors.wazeUrl}</p>}
+        </div>
+
+        <div className="flex flex-col gap-1.5 sm:col-span-1">
+          <label className="text-xs font-medium text-surface-700">Enlace de Google Maps</label>
+          <input type="url" value={values.googleMapsUrl ?? ''} onChange={e => set('googleMapsUrl', e.target.value)} placeholder="https://maps.app.goo.gl/..." className={inputClass(!!fieldErrors.googleMapsUrl)} />
+          {fieldErrors.googleMapsUrl && <p className="text-xs text-red-600">{fieldErrors.googleMapsUrl}</p>}
+        </div>
+      </div>
+
+      <div className="h-px bg-surface-200 w-full my-2" />
+      <h3 className="text-sm font-bold text-surface-900">Redes Sociales</h3>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-surface-700">Instagram</label>
+          <input type="text" value={values.instagram ?? ''} onChange={e => set('instagram', e.target.value)} placeholder="@turustica" className={inputClass(!!fieldErrors.instagram)} />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-surface-700">Facebook</label>
+          <input type="text" value={values.facebook ?? ''} onChange={e => set('facebook', e.target.value)} placeholder="sodalirustica" className={inputClass(!!fieldErrors.facebook)} />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-surface-700">TikTok</label>
+          <input type="text" value={values.tiktok ?? ''} onChange={e => set('tiktok', e.target.value)} placeholder="@turustica" className={inputClass(!!fieldErrors.tiktok)} />
+        </div>
       </div>
 
       {/* Feedback */}

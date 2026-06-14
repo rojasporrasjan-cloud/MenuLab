@@ -19,19 +19,19 @@ export function useActiveOrders(tenantId: string): ActiveOrdersState {
     isLoading: true,
     error: null,
   })
+  const enabled = Boolean(tenantId) && isFirebaseConfigured
 
   useEffect(() => {
-    if (!tenantId || !isFirebaseConfigured) {
-      setState({ orders: [], isLoading: false, error: null })
-      return
-    }
+    if (!enabled) return
     const unsubscribe = OrderRealtimeService.subscribeActiveOrders(
       tenantId,
       (orders) => setState({ orders, isLoading: false, error: null }),
       (error) => setState({ orders: [], isLoading: false, error }),
     )
     return () => unsubscribe()
-  }, [tenantId])
+  }, [tenantId, enabled])
 
+  // Sin tenant o sin Firebase: estado vacío derivado (sin setState en el efecto).
+  if (!enabled) return { orders: [], isLoading: false, error: null }
   return state
 }

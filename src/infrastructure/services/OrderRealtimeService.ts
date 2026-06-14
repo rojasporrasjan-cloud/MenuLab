@@ -3,7 +3,6 @@ import {
   onSnapshot,
   query,
   where,
-  orderBy,
   type Unsubscribe,
 } from 'firebase/firestore'
 import { db } from '@infrastructure/firebase/firestore'
@@ -26,12 +25,15 @@ export const OrderRealtimeService = {
   ): Unsubscribe {
     const q = query(
       collection(db, firestorePaths.orders(tenantId)),
-      where('status', 'in', [...ACTIVE_ORDER_STATUSES]),
-      orderBy('createdAt', 'desc'),
+      where('status', 'in', [...ACTIVE_ORDER_STATUSES])
     )
     return onSnapshot(
       q,
-      (snap) => onOrders(snap.docs.map((d) => OrderMapper.toDomain(d, tenantId))),
+      (snap) => {
+        const orders = snap.docs.map((d) => OrderMapper.toDomain(d, tenantId))
+        orders.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()) // desc
+        onOrders(orders)
+      },
       (error) => onError?.(error),
     )
   },
@@ -45,12 +47,15 @@ export const OrderRealtimeService = {
   ): Unsubscribe {
     const q = query(
       collection(db, firestorePaths.orders(tenantId)),
-      where('status', 'in', [...statuses]),
-      orderBy('createdAt', 'asc'),
+      where('status', 'in', [...statuses])
     )
     return onSnapshot(
       q,
-      (snap) => onOrders(snap.docs.map((d) => OrderMapper.toDomain(d, tenantId))),
+      (snap) => {
+        const orders = snap.docs.map((d) => OrderMapper.toDomain(d, tenantId))
+        orders.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()) // asc
+        onOrders(orders)
+      },
       (error) => onError?.(error),
     )
   },

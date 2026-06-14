@@ -576,7 +576,7 @@ export default function EditorPage() {
             <span>IA</span>
           </button>
 
-          <ExportPDFButton />
+          <ExportPDFButton compact />
 
           {/* Guardar */}
           <button

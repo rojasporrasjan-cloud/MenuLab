@@ -45,13 +45,13 @@ export default function DishListPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
+          <p className="text-[11px] font-black uppercase tracking-[0.22em] text-brand-600">
             Carta digital
           </p>
-          <h1 className="text-[26px] font-bold tracking-[-0.02em] text-zinc-900">
+          <h1 className="text-[22px] font-black leading-tight tracking-tight text-surface-900">
             Platos
           </h1>
-          <p className="text-[13px] text-zinc-500">
+          <p className="text-[13px] text-surface-500">
             Administra los platos de tu menú digital.
           </p>
         </div>
@@ -62,6 +62,23 @@ export default function DishListPage() {
           </Link>
         </Button>
       </div>
+
+      {/* Banner explicativo */}
+      {menus && menus.length > 0 && (
+        <div className="flex items-start gap-3 rounded-2xl bg-amber-50/80 px-4 py-3.5 border border-amber-200/60 shadow-sm">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+            <span className="text-[16px]">💡</span>
+          </div>
+          <div className="flex flex-col mt-0.5">
+            <p className="text-[13px] font-bold text-amber-900">
+              Consejo para aumentar ventas
+            </p>
+            <p className="text-[13px] text-amber-800/80 leading-relaxed">
+              Estos son los platos que verán tus clientes. Sube buenas fotos y redacta descripciones apetitosas.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Menu tabs */}
       {menus && menus.length > 1 && (
@@ -74,9 +91,9 @@ export default function DishListPage() {
                 type="button"
                 onClick={() => setActiveMenuId(menu.id)}
                 className={cn(
-                  "shrink-0 border-b-2 px-4 py-2.5 text-[13px] font-medium transition-all outline-none",
+                  "shrink-0 border-b-2 px-4 py-2.5 text-[14px] font-bold transition-all outline-none",
                   isActive
-                    ? "border-amber-600 text-amber-700"
+                    ? "border-amber-500 text-amber-700"
                     : "border-transparent text-zinc-500 hover:text-zinc-800"
                 )}
               >
@@ -109,24 +126,30 @@ export default function DishListPage() {
       {/* No menus yet */}
       {!isLoading && !menus?.length && (
         <EmptyState
-          icon={<ChefHat size={24} strokeWidth={1.5} />}
-          title="Sin menús"
-          description="Primero crea un menú antes de agregar platos."
-          action={<Button asChild className="rounded-xl shadow-sm"><Link to={ROUTES.admin.menu.list}>Crear menú</Link></Button>}
+          icon={<ChefHat size={32} strokeWidth={1.5} />}
+          title="Primero debes crear un menú"
+          description="Aún no tienes ningún menú creado. Ve a la sección de Menús para crear uno."
+          action={
+            <Button asChild className="mt-6 shadow-sm bg-amber-500 hover:bg-amber-600 rounded-xl font-bold">
+              <Link to={ROUTES.admin.menu.list}>
+                Crear menú
+              </Link>
+            </Button>
+          }
         />
       )}
 
       {/* Empty dishes */}
       {!isLoading && menus?.length && !dishes?.length && (
         <EmptyState
-          icon={<ChefHat size={24} strokeWidth={1.5} />}
-          title="Sin platos en este menú"
-          description="Agrega tu primer plato para que aparezca en el menú digital."
+          icon={<ChefHat size={32} strokeWidth={1.5} />}
+          title="Tu menú está vacío"
+          description="Agrega tu primer plato para que comience a aparecer en el menú digital de tus clientes."
           action={
-            <Button asChild className="rounded-xl shadow-sm">
+            <Button asChild className="mt-6 shadow-sm bg-amber-500 hover:bg-amber-600 rounded-xl font-bold">
               <Link to={newDishUrl}>
-                <PlusCircle size={15} className="mr-2" />
-                Agregar plato
+                <PlusCircle size={16} className="mr-2" />
+                Agregar mi primer plato
               </Link>
             </Button>
           }
@@ -135,7 +158,7 @@ export default function DishListPage() {
 
       {/* Dishes grid */}
       {!isLoading && dishes && dishes.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {dishes.map((dish, idx) => (
             <AdminDishCard
               key={dish.id}
@@ -170,12 +193,17 @@ function EmptyState({
   action: React.ReactNode
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-200 bg-white px-6 py-12 text-center gap-4">
-      <div className="text-zinc-300">{icon}</div>
-      <div className="flex flex-col gap-1">
-        <p className="font-medium text-zinc-700">{title}</p>
-        <p className="text-zinc-400 text-sm">{description}</p>
+    <div className="flex flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-zinc-200 bg-zinc-50/50 px-6 py-16 text-center">
+      <div className="relative mb-4">
+        <div className="absolute -inset-4 rounded-full bg-amber-100/50 blur-xl" />
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm border border-amber-100 text-amber-500">
+          {icon}
+        </div>
       </div>
+      <p className="text-[18px] font-bold text-zinc-800">{title}</p>
+      <p className="mt-2 text-[14px] text-zinc-500 max-w-[320px] leading-relaxed">
+        {description}
+      </p>
       {action}
     </div>
   )

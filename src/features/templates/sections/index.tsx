@@ -1,4 +1,3 @@
-import type { ComponentType } from 'react'
 import { Clock, MapPin, Phone, Calendar, Star, ExternalLink } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import type { TenantBranding } from '@core/domain/entities/Tenant'
@@ -55,79 +54,195 @@ function FacebookIcon({ size = 16 }: { size?: number }) {
 
 // ── Socials Bar ───────────────────────────────────────────────────────────────
 
-export function SocialsBar({ branding, tc }: { branding: TenantBranding; tc: ThemeColors }) {
-  if (!branding.socials.enabled) return null
-
-  const links = [
-    branding.socials.instagram && {
-      key: 'instagram',
-      Icon: InstagramIcon,
-      href: `https://instagram.com/${branding.socials.instagram.replace('@', '')}`,
-    },
-    branding.socials.facebook && {
-      key: 'facebook',
-      Icon: FacebookIcon,
-      href: branding.socials.facebook.startsWith('http') ? branding.socials.facebook : `https://facebook.com/${branding.socials.facebook}`,
-    },
-    branding.socials.tiktok && {
-      key: 'tiktok',
-      Icon: TikTokIcon,
-      href: `https://tiktok.com/@${branding.socials.tiktok.replace('@', '')}`,
-    },
-    branding.socials.whatsapp && {
-      key: 'whatsapp',
-      Icon: WhatsAppIcon,
-      href: `https://wa.me/${branding.socials.whatsapp.replace(/\D/g, '')}`,
-    },
-  ].filter(Boolean) as { key: string; Icon: ComponentType<{ size?: number }>; href: string }[]
-
-  if (links.length === 0) return null
-
-  return (
-    <div
-      className="shrink-0 flex items-center justify-center gap-3 px-5 py-5"
-      style={{ borderTop: `1px solid ${tc.border}` }}
-    >
-      {links.map(({ key, Icon, href }) => (
-        <a
-          key={key}
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center h-10 w-10 rounded-full transition-all hover:scale-110 active:scale-95"
-          style={{ backgroundColor: tc.surface, border: `1px solid ${tc.border}`, color: tc.textMuted }}
-        >
-          <Icon size={16} />
-        </a>
-      ))}
-    </div>
-  )
+export function SocialsBar(_props: { branding: TenantBranding; tc: ThemeColors }) {
+  // Las redes ahora están integradas dentro de InfoFooter.
+  return null
 }
 
-// ── Info Footer ───────────────────────────────────────────────────────────────
+// ── Info Footer (Premium Card Design) ───────────────────────────────────────
 
 export function InfoFooter({ branding, tc }: { branding: TenantBranding; tc: ThemeColors }) {
   if (!branding.infoFooter.enabled) return null
+  const info = branding.infoFooter
+  const socials = branding.socials
 
-  const rows = [
-    branding.infoFooter.hours && { Icon: Clock, text: branding.infoFooter.hours },
-    branding.infoFooter.address && { Icon: MapPin, text: branding.infoFooter.address },
-    branding.infoFooter.phone && { Icon: Phone, text: branding.infoFooter.phone },
-  ].filter(Boolean) as { Icon: typeof Clock; text: string }[]
+  // Generar URL del mapa a partir de la dirección
+  const mapEmbedUrl = info.address
+    ? `https://www.google.com/maps?q=${encodeURIComponent(info.address)}&output=embed`
+    : null
 
-  if (rows.length === 0) return null
+  const hasContactLinks = info.phone || socials.whatsapp || socials.instagram || socials.facebook || socials.tiktok
 
   return (
     <div
-      className="shrink-0 flex flex-col gap-3 px-5 py-5"
-      style={{ backgroundColor: tc.surface, borderTop: `1px solid ${tc.border}` }}
+      className="shrink-0 flex flex-col items-center px-4 py-10"
+      style={{ borderTop: `1px solid ${tc.border}` }}
     >
-      {rows.map(({ Icon, text }, i) => (
-        <div key={i} className="flex items-start gap-3">
-          <Icon size={14} className="mt-0.5 shrink-0" style={{ color: tc.primary }} />
-          <span className="text-xs leading-relaxed" style={{ color: tc.textMuted }}>{text}</span>
+      {/* Título de la sección */}
+      <div className="flex flex-col items-center mb-6">
+        <div className="flex items-center justify-center h-8 w-8 rounded-full mb-2" style={{ backgroundColor: `${tc.primary}15`, border: `1px solid ${tc.primary}30` }}>
+          <MapPin size={14} style={{ color: tc.primary }} />
         </div>
-      ))}
+        <h2 className="text-2xl font-bold" style={{ color: tc.primary, fontFamily: 'serif', fontStyle: 'italic' }}>
+          Encuéntranos
+        </h2>
+      </div>
+
+      {/* Tarjeta de Información Principal */}
+      <div
+        className="w-full max-w-lg rounded-2xl overflow-hidden shadow-xl flex flex-col"
+        style={{
+          backgroundColor: tc.surface,
+          border: `1px solid ${tc.border}`,
+          boxShadow: `0 10px 30px rgba(0,0,0,0.08)`,
+        }}
+      >
+        {/* Mapa Incrustado */}
+        {mapEmbedUrl && (
+          <div className="w-full h-40 bg-zinc-100 relative">
+            <iframe
+              src={mapEmbedUrl}
+              width="100%"
+              height="100%"
+              style={{ border: 0 }}
+              allowFullScreen={false}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              title="Ubicación en el mapa"
+            />
+          </div>
+        )}
+
+        <div className="p-5 flex flex-col gap-6">
+          {/* Dirección */}
+          {info.address && (
+            <div className="flex items-start gap-4">
+              <div className="mt-1 flex items-center justify-center h-8 w-8 rounded-full shrink-0" style={{ backgroundColor: `${tc.text}08` }}>
+                <MapPin size={14} style={{ color: tc.primary }} />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: tc.textMuted }}>Dirección</span>
+                <span className="text-sm font-semibold leading-snug" style={{ color: tc.text }}>{info.address}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Horario */}
+          {info.hours && (
+            <div className="flex items-start gap-4">
+              <div className="mt-1 flex items-center justify-center h-8 w-8 rounded-full shrink-0" style={{ backgroundColor: `${tc.text}08` }}>
+                <Clock size={14} style={{ color: tc.textMuted }} />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: tc.textMuted }}>Horario de Atención</span>
+                <span className="text-sm font-semibold leading-snug" style={{ color: tc.text }}>{info.hours}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Contacto & Redes (Píldoras) */}
+          {hasContactLinks && (
+            <div className="flex items-start gap-4">
+              <div className="mt-1 flex items-center justify-center h-8 w-8 rounded-full shrink-0" style={{ backgroundColor: `${tc.text}08` }}>
+                <Phone size={14} style={{ color: tc.textMuted }} />
+              </div>
+              <div className="flex flex-col w-full">
+                <span className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: tc.textMuted }}>Contacto</span>
+                {info.phone && <span className="text-sm font-bold leading-snug mb-3" style={{ color: tc.text }}>{info.phone}</span>}
+                
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {socials.whatsapp && (
+                    <a
+                      href={`https://wa.me/${socials.whatsapp.replace(/\D/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all active:scale-95"
+                      style={{ backgroundColor: 'rgba(37, 211, 102, 0.1)', color: '#25D366', border: '1px solid rgba(37, 211, 102, 0.2)' }}
+                    >
+                      <WhatsAppIcon size={12} /> WhatsApp
+                    </a>
+                  )}
+                  {info.phone && (
+                    <a
+                      href={`tel:${info.phone.replace(/\s/g, '')}`}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all active:scale-95"
+                      style={{ backgroundColor: `${tc.primary}15`, color: tc.primary, border: `1px solid ${tc.primary}30` }}
+                    >
+                      <Phone size={12} /> Llamar
+                    </a>
+                  )}
+                  {socials.instagram && (
+                    <a
+                      href={`https://instagram.com/${socials.instagram.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all active:scale-95"
+                      style={{ backgroundColor: 'rgba(225, 48, 108, 0.1)', color: '#E1306C', border: '1px solid rgba(225, 48, 108, 0.2)' }}
+                    >
+                      <InstagramIcon size={12} /> Instagram
+                    </a>
+                  )}
+                  {socials.facebook && (
+                    <a
+                      href={socials.facebook.startsWith('http') ? socials.facebook : `https://facebook.com/${socials.facebook}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all active:scale-95"
+                      style={{ backgroundColor: 'rgba(24, 119, 242, 0.1)', color: '#1877F2', border: '1px solid rgba(24, 119, 242, 0.2)' }}
+                    >
+                      <FacebookIcon size={12} /> Facebook
+                    </a>
+                  )}
+                  {socials.tiktok && (
+                    <a
+                      href={`https://tiktok.com/@${socials.tiktok.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all active:scale-95"
+                      style={{ backgroundColor: 'rgba(0, 0, 0, 0.1)', color: tc.text, border: `1px solid ${tc.border}` }}
+                    >
+                      <TikTokIcon size={12} /> TikTok
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Botones Flotantes de Navegación debajo de la tarjeta */}
+      {(info.wazeUrl || info.googleMapsUrl) && (
+        <div className="w-full max-w-lg mt-8 flex flex-col items-center">
+          <p className="text-xs font-medium text-center mb-4 px-6" style={{ color: tc.textMuted }}>
+            {info.address}
+          </p>
+          <div className="flex gap-3 w-full">
+            {info.googleMapsUrl && (
+              <a
+                href={info.googleMapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-bold transition-all active:scale-95 shadow-md"
+                style={{ backgroundColor: '#4285F4', color: '#ffffff', borderRadius: '14px' }}
+              >
+                <MapPin size={16} /> Google Maps
+              </a>
+            )}
+            {info.wazeUrl && (
+              <a
+                href={info.wazeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-bold transition-all active:scale-95 shadow-md"
+                style={{ backgroundColor: '#00c3ff', color: '#ffffff', borderRadius: '14px' }}
+              >
+                <MapPin size={16} /> Waze
+              </a>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -314,7 +429,7 @@ export function OrderButton({ branding, tc }: { branding: TenantBranding; tc: Th
       rel="noopener noreferrer"
       aria-label={label}
       className={cn(
-        'fixed bottom-20 right-4 z-50 flex items-center justify-center text-white transition-all active:scale-95 hover:opacity-90',
+        'fixed bottom-4 right-4 z-50 flex items-center justify-center text-white transition-all active:scale-95 hover:opacity-90',
         iconOnly ? 'h-14 w-14 rounded-full' : 'gap-2 px-5 py-3 rounded-full font-bold text-sm',
       )}
       style={{

@@ -8,6 +8,7 @@ interface ActivityFeedProps {
   error:     string | null
 }
 
+// Paleta semántica por tipo de evento (categórica, intencionalmente variada).
 const EVENT_META: Record<AnalyticsEventType, { label: string; icon: typeof QrCode; iconBg: string; iconColor: string }> = {
   qr_scan:   { label: 'Escaneo de QR',  icon: QrCode,       iconBg: 'rgba(59,130,246,0.1)',   iconColor: '#2563eb' },
   menu_view: { label: 'Vista de menú',  icon: Eye,          iconBg: 'rgba(233,154,14,0.1)',   iconColor: '#cc7809' },
@@ -42,16 +43,16 @@ function EventRow({ event }: { event: AnalyticsEvent }) {
         <Icon size={13} strokeWidth={1.8} style={{ color: meta.iconColor }} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-medium" style={{ color: '#3d3b38' }}>
+        <p className="truncate text-[13px] font-medium text-surface-700">
           {meta.label}
         </p>
         {event.tableId && (
-          <p className="text-[11px]" style={{ color: '#a8a49d' }}>
+          <p className="text-[11px] text-surface-400">
             Mesa {event.tableId}
           </p>
         )}
       </div>
-      <span className="shrink-0 text-[11px] tabular-nums" style={{ color: '#bfbbb4' }}>
+      <span className="shrink-0 text-[11px] tabular-nums text-surface-300">
         {formatRelativeTime(event.timestamp)}
       </span>
     </div>
@@ -60,24 +61,14 @@ function EventRow({ event }: { event: AnalyticsEvent }) {
 
 export function ActivityFeed({ events, isLoading, error }: ActivityFeedProps) {
   return (
-    <div
-      className="rounded-2xl p-5"
-      style={{
-        background: '#ffffff',
-        border:     '1px solid #efede9',
-        boxShadow:  '0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)',
-      }}
-    >
+    <div className="rounded-2xl border border-surface-150 bg-white p-5 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-[13px] font-semibold" style={{ color: '#17150f' }}>
+        <h3 className="text-[11px] font-black uppercase tracking-[0.18em] text-brand-600">
           Actividad reciente
         </h3>
         <div className="flex items-center gap-1.5">
-          <span
-            className="h-1.5 w-1.5 animate-pulse rounded-full"
-            style={{ background: '#10b981' }}
-          />
-          <span className="text-[11px]" style={{ color: '#a8a49d' }}>En vivo</span>
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+          <span className="text-[11px] text-surface-400">En vivo</span>
         </div>
       </div>
 
@@ -88,35 +79,27 @@ export function ActivityFeed({ events, isLoading, error }: ActivityFeedProps) {
       )}
 
       {error && !isLoading && (
-        <p className="py-4 text-center text-[12px]" style={{ color: '#a8a49d' }}>{error}</p>
+        <p className="py-4 text-center text-[12px] text-surface-400">{error}</p>
       )}
 
       {!isLoading && !error && events.length === 0 && (
         <div className="flex flex-col items-center justify-center gap-2 py-10">
-          <div
-            className="flex h-9 w-9 items-center justify-center rounded-xl"
-            style={{ background: '#faf9f7' }}
-          >
-            <Activity size={17} strokeWidth={1.5} style={{ color: '#bfbbb4' }} />
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface-50">
+            <Activity size={17} strokeWidth={1.5} className="text-surface-300" />
           </div>
-          <p className="text-[13px] font-medium" style={{ color: '#908c85' }}>
+          <p className="text-[13px] font-medium text-surface-400">
             Sin actividad reciente
           </p>
-          <p className="text-center text-[11px]" style={{ color: '#bfbbb4' }}>
+          <p className="text-center text-[11px] text-surface-300">
             Los eventos aparecen aquí en tiempo real.
           </p>
         </div>
       )}
 
       {!isLoading && !error && events.length > 0 && (
-        <div style={{ borderTop: '1px solid #faf9f7' }}>
-          {events.map((event, i) => (
-            <div
-              key={event.id}
-              style={i > 0 ? { borderTop: '1px solid #faf9f7' } : undefined}
-            >
-              <EventRow event={event} />
-            </div>
+        <div className="divide-y divide-surface-100 border-t border-surface-100">
+          {events.map((event) => (
+            <EventRow key={event.id} event={event} />
           ))}
         </div>
       )}

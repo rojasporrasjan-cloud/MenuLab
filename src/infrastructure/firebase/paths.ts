@@ -126,6 +126,20 @@ export const firestorePaths = {
   payment: (tenantId: string, paymentId: string) =>
     `tenants/${tenantId}/payments/${paymentId}`,
 
+  // ── Cash sessions (cierre de caja / arqueo) ───────────────────────────────
+  cashSessions: (tenantId: string) =>
+    `tenants/${tenantId}/cashSessions`,
+
+  cashSession: (tenantId: string, sessionId: string) =>
+    `tenants/${tenantId}/cashSessions/${sessionId}`,
+
+  // ── Facturas electrónicas (Hacienda CR) ───────────────────────────────────
+  invoices: (tenantId: string) =>
+    `tenants/${tenantId}/invoices`,
+
+  invoice: (tenantId: string, invoiceId: string) =>
+    `tenants/${tenantId}/invoices/${invoiceId}`,
+
   // ── Employees ─────────────────────────────────────────────────────────────
   employees: (tenantId: string) =>
     `tenants/${tenantId}/employees`,

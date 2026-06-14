@@ -25,7 +25,7 @@ export function ProfileStep({ tenant, tenantId, onNext, onBack }: ProfileStepPro
       <div className="text-center">
         <h2 className="text-xl font-bold text-surface-900">Datos de tu restaurante</h2>
         <p className="mt-1 text-sm text-surface-500">
-          Confirma el nombre y la configuración regional.
+          Agrega tu información de contacto y enlaces de redes sociales.
         </p>
       </div>
 

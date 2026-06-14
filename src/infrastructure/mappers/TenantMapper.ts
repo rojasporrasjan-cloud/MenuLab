@@ -14,6 +14,8 @@ export class TenantMapper {
       id: doc.id,
       slug: data['slug'] as string,
       name: data['name'] as string,
+      ownerId: (data['ownerId'] as string | null) ?? null,
+      ownerEmail: (data['ownerEmail'] as string | null) ?? null,
       plan: data['plan'] as TenantPlan,
       status: data['status'] as TenantStatus,
       templateId: (data['templateId'] as TemplateId) ?? 'dark-modern',
@@ -36,7 +38,7 @@ export class TenantMapper {
         bgGradient: data['branding']?.bgGradient ?? { enabled: false, from: '#0B0B0C', to: '#1a1a2e', direction: '180deg' as GradientDirection },
         announcement: data['branding']?.announcement ?? { enabled: false, text: '¡Bienvenidos! Descubre nuestro menú', emoji: '🎉', bgColor: null },
         socials: data['branding']?.socials ?? { enabled: false, instagram: '', facebook: '', tiktok: '', whatsapp: '' },
-        infoFooter: data['branding']?.infoFooter ?? { enabled: false, hours: '', address: '', phone: '' },
+        infoFooter: data['branding']?.infoFooter ?? { enabled: false, hours: '', address: '', phone: '', wazeUrl: '', googleMapsUrl: '', sinpeNumber: '' },
         orderButton: data['branding']?.orderButton ?? { enabled: false, whatsapp: '', label: 'Ordenar ahora' },
         reservation: data['branding']?.reservation ?? { enabled: false, title: 'Reserva tu mesa', phone: '', bookingUrl: '', buttonLabel: 'Reservar ahora' },
         promo: data['branding']?.promo ?? { enabled: false, title: '', description: '', imageUrl: null, ctaLabel: 'Ver más', ctaLink: '' },
@@ -65,6 +67,7 @@ export class TenantMapper {
       onboardingCompletedAt:
         onboarding && typeof onboarding.toDate === 'function' ? (onboarding.toDate() as Date) : null,
       employeePinHash: (data['employeePinHash'] as string | null) ?? null,
+      lockedModules: (data['lockedModules'] as string[]) ?? [],
       createdAt: data['createdAt'].toDate() as Date,
       updatedAt: data['updatedAt'].toDate() as Date,
     }

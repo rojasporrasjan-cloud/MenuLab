@@ -1,4 +1,4 @@
-import { Timer, StickyNote } from 'lucide-react'
+import { Timer, StickyNote, UtensilsCrossed, ShoppingBag, ArrowRight } from 'lucide-react'
 
 import type { Order } from '@core/domain/entities/Order'
 import { ORDER_STATUS } from '@core/domain/entities/Order'
@@ -16,10 +16,34 @@ const ORDER_NUMBER_CHARS = 4
 
 type TicketUrgency = 'fresh' | 'warning' | 'danger'
 
-const URGENCY_STYLES: Record<TicketUrgency, { border: string; badge: string; badgeText: string }> = {
-  fresh: { border: 'rgba(34,197,94,0.55)', badge: 'rgba(34,197,94,0.15)', badgeText: '#4ade80' },
-  warning: { border: 'rgba(234,179,8,0.6)', badge: 'rgba(234,179,8,0.15)', badgeText: '#facc15' },
-  danger: { border: 'rgba(239,68,68,0.7)', badge: 'rgba(239,68,68,0.18)', badgeText: '#f87171' },
+const URGENCY_STYLES: Record<TicketUrgency, { 
+  border: string; 
+  bg: string;
+  badge: string; 
+  badgeText: string;
+  glow: string;
+}> = {
+  fresh: { 
+    border: 'rgba(52,211,153,0.3)', // emerald-400
+    bg: 'rgba(52,211,153,0.03)',
+    badge: 'rgba(52,211,153,0.15)', 
+    badgeText: '#34d399',
+    glow: 'rgba(52,211,153,0.05)',
+  },
+  warning: { 
+    border: 'rgba(250,204,21,0.5)', // yellow-400
+    bg: 'rgba(250,204,21,0.05)',
+    badge: 'rgba(250,204,21,0.2)', 
+    badgeText: '#facc15',
+    glow: 'rgba(250,204,21,0.1)',
+  },
+  danger: { 
+    border: 'rgba(248,113,113,0.6)', // red-400
+    bg: 'rgba(248,113,113,0.08)',
+    badge: 'rgba(248,113,113,0.25)', 
+    badgeText: '#f87171',
+    glow: 'rgba(248,113,113,0.15)',
+  },
 }
 
 function urgencyFor(elapsedMin: number): TicketUrgency {
@@ -40,7 +64,9 @@ export function KitchenTicket({ order, now, onAdvance, isUpdating }: KitchenTick
   const urgency = urgencyFor(elapsedMin)
   const styles = URGENCY_STYLES[urgency]
   const orderNumber = order.id.slice(-ORDER_NUMBER_CHARS).toUpperCase()
-  const origin = order.tableLabel ? COPY.table.label(order.tableLabel) : COPY.kds.pickup
+  
+  const isTable = !!order.tableLabel
+  const origin = isTable ? COPY.table.label(order.tableLabel) : COPY.kds.pickup
   const actionLabel = actionLabelFor(order)
 
   function handleAdvance() {
@@ -49,52 +75,63 @@ export function KitchenTicket({ order, now, onAdvance, isUpdating }: KitchenTick
 
   return (
     <article
-      className="flex flex-col gap-3 rounded-2xl p-4"
+      className="group relative flex flex-col gap-4 rounded-3xl p-5 transition-all duration-300 hover:-translate-y-1"
       style={{
-        background: 'rgba(255,255,255,0.04)',
-        border: `2px solid ${styles.border}`,
+        background: `linear-gradient(180deg, rgba(255,255,255,0.06) 0%, ${styles.bg} 100%)`,
+        border: `1px solid ${styles.border}`,
+        boxShadow: `0 8px 32px -8px ${styles.glow}`,
       }}
     >
       {/* Header: número + edad */}
-      <div className="flex items-center justify-between">
-        <span className="text-lg font-black tabular-nums text-white">
-          {COPY.kds.orderNumber(orderNumber)}
-        </span>
-        <span
-          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-black tabular-nums"
-          style={{ background: styles.badge, color: styles.badgeText }}
+      <div className="flex items-center justify-between border-b border-white/10 pb-3">
+        <div className="flex items-center gap-2">
+          <span className="text-[18px] font-black tabular-nums tracking-wider text-white drop-shadow-sm">
+            #{orderNumber}
+          </span>
+        </div>
+        <div
+          className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 shadow-inner"
+          style={{ background: styles.badge, border: `1px solid ${styles.border}` }}
         >
-          <Timer size={12} strokeWidth={2.4} />
-          {COPY.kds.elapsed(elapsedMin)}
-        </span>
+          <Timer size={14} strokeWidth={2.5} style={{ color: styles.badgeText }} />
+          <span className="text-[13.5px] font-black tabular-nums" style={{ color: styles.badgeText }}>
+            {COPY.kds.elapsed(elapsedMin)}
+          </span>
+        </div>
       </div>
 
       {/* Origen */}
-      <p className="text-[13px] font-bold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.55)' }}>
-        {origin}
-      </p>
+      <div className="flex items-center gap-2">
+        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10">
+          {isTable ? <UtensilsCrossed size={14} className="text-white/70" /> : <ShoppingBag size={14} className="text-white/70" />}
+        </div>
+        <p className="text-[14px] font-bold uppercase tracking-[0.1em] text-white/70">
+          {origin}
+        </p>
+      </div>
 
-      {/* Items con cantidad grande */}
-      <ul className="flex flex-col gap-2">
+      {/* Items */}
+      <ul className="mt-1 flex flex-col gap-3">
         {order.items.map((item, idx) => (
-          <li key={`${item.dishId}-${idx}`} className="flex items-start gap-3">
-            <span
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-base font-black tabular-nums"
-              style={{ background: 'rgba(255,255,255,0.09)', color: '#fff' }}
+          <li key={`${item.dishId}-${idx}`} className="flex items-start gap-3 rounded-2xl bg-black/20 p-3">
+            <div
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[16px] font-black tabular-nums shadow-inner"
+              style={{ background: 'rgba(255,255,255,0.12)', color: '#fff' }}
             >
               {item.quantity}
-            </span>
-            <div className="min-w-0 flex-1 pt-1">
-              <p className="text-[15px] font-bold leading-tight text-white">{item.dishName}</p>
+            </div>
+            <div className="min-w-0 flex-1 pt-0.5">
+              <p className="text-[16px] font-bold leading-tight text-white/90">{item.dishName}</p>
               {item.variantLabel && (
-                <p className="text-[12px]" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                <p className="mt-1 text-[13px] font-medium text-white/50">
                   {item.variantLabel}
                 </p>
               )}
               {item.note && (
-                <p className="mt-0.5 inline-flex items-center gap-1 text-[12px]" style={{ color: '#facc15' }}>
-                  <StickyNote size={11} /> {item.note}
-                </p>
+                <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-500/10 p-2 text-[12.5px] font-medium text-amber-300">
+                  <StickyNote size={13} className="shrink-0 mt-0.5" /> 
+                  <span>{item.note}</span>
+                </div>
               )}
             </div>
           </li>
@@ -103,12 +140,14 @@ export function KitchenTicket({ order, now, onAdvance, isUpdating }: KitchenTick
 
       {/* Nota general */}
       {order.note && (
-        <p
-          className="rounded-xl px-3 py-2 text-[12.5px] font-semibold"
-          style={{ background: 'rgba(250,204,21,0.08)', color: '#fde047', border: '1px solid rgba(250,204,21,0.2)' }}
+        <div
+          className="mt-1 rounded-2xl p-3 shadow-inner"
+          style={{ background: 'rgba(250,204,21,0.08)', border: '1px solid rgba(250,204,21,0.2)' }}
         >
-          📝 {order.note}
-        </p>
+          <p className="flex items-start gap-2 text-[13.5px] font-medium text-amber-200">
+            <span className="shrink-0 text-amber-400">📝</span> {order.note}
+          </p>
+        </div>
       )}
 
       {/* Acción */}
@@ -117,10 +156,14 @@ export function KitchenTicket({ order, now, onAdvance, isUpdating }: KitchenTick
           type="button"
           disabled={isUpdating}
           onClick={handleAdvance}
-          className="w-full rounded-xl py-3 text-[14px] font-black text-white transition-all active:scale-95 disabled:opacity-40"
-          style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.14)' }}
+          className="group mt-2 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[14.5px] font-black text-white shadow-lg transition-all active:scale-95 disabled:opacity-40"
+          style={{ 
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.08) 100%)', 
+            border: '1px solid rgba(255,255,255,0.2)' 
+          }}
         >
           {actionLabel}
+          <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
         </button>
       )}
     </article>

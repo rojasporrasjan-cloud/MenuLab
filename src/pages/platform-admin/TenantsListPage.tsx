@@ -1,4 +1,6 @@
+import { useNavigate } from 'react-router-dom'
 import { usePlatformTenants } from '@features/platform-admin'
+import { ROUTES } from '@shared/constants/routes'
 import type { Tenant, TenantPlan, TenantStatus } from '@core/domain/entities/Tenant'
 
 // ── Badge helpers ─────────────────────────────────────────────────────────────
@@ -79,8 +81,13 @@ function DaysAgo({ date }: { readonly date: Date }) {
 // ── Table row ─────────────────────────────────────────────────────────────────
 
 function TenantRow({ tenant }: { readonly tenant: Tenant }) {
+  const navigate = useNavigate()
   return (
-    <tr className="border-b" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+    <tr
+      onClick={() => navigate(ROUTES.platformAdmin.tenant(tenant.id))}
+      className="cursor-pointer border-b transition-colors hover:bg-white/[0.025]"
+      style={{ borderColor: 'rgba(255,255,255,0.05)' }}
+    >
       <td className="py-3.5 pr-4 pl-5">
         <div className="flex items-center gap-3">
           <div
@@ -92,9 +99,11 @@ function TenantRow({ tenant }: { readonly tenant: Tenant }) {
           >
             {tenant.name.charAt(0).toUpperCase()}
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-sm font-medium text-white leading-tight">{tenant.name}</p>
-            <p className="text-xs mt-0.5" style={{ color: '#52525b' }}>{tenant.slug}</p>
+            <p className="truncate text-xs mt-0.5" style={{ color: '#52525b' }}>
+              {tenant.ownerEmail ?? `/${tenant.slug}`}
+            </p>
           </div>
         </div>
       </td>

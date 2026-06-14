@@ -58,7 +58,7 @@ export function useDigitalizeMenu(tenantId: string, menuId: string | null) {
     setStatus({ phase: 'extracting' })
 
     try {
-      const payload = await GeminiApiService.analyzeMenuImage(imageBase64, mimeType)
+      const payload = await GeminiApiService.analyzeMenuImages([{ base64: imageBase64, mimeType }])
       setStatus({ phase: 'preview', payload })
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error desconocido al analizar la imagen.'

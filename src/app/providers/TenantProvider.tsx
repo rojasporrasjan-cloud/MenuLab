@@ -6,6 +6,8 @@ import { TenantMapper } from '@infrastructure/mappers/TenantMapper'
 import { UserAccountService } from '@infrastructure/services/UserAccountService'
 import { isFirebaseConfigured } from '@infrastructure/firebase/config'
 import { useAuthContext } from '@app/providers/AuthProvider'
+import { isPlatformAdminUser } from '@shared/config/platformAdmin'
+import { getImpersonatedTenantId } from '@features/platform-admin'
 import type { Tenant } from '@core/domain/entities/Tenant'
 
 interface TenantContextValue {
@@ -47,6 +49,8 @@ function mockTenant(tenantId: string): Tenant {
     id: tenantId,
     slug: tenantId,
     name: 'Soda La Rústica',
+    ownerId: null,
+    ownerEmail: null,
     plan: 'pro',
     status: 'active',
     templateId: 'dark-modern',
@@ -69,7 +73,7 @@ function mockTenant(tenantId: string): Tenant {
       bgGradient: { enabled: false, from: '#0B0B0C', to: '#1a1a2e', direction: '180deg' as const },
       announcement: { enabled: false, text: '¡Bienvenidos! Descubre nuestro menú', emoji: '🎉', bgColor: null },
       socials: { enabled: false, instagram: '', facebook: '', tiktok: '', whatsapp: '' },
-      infoFooter: { enabled: false, hours: '', address: '', phone: '' },
+      infoFooter: { enabled: false, hours: '', address: '', phone: '', wazeUrl: '', googleMapsUrl: '', sinpeNumber: '' },
       orderButton: { enabled: false, whatsapp: '', label: 'Ordenar ahora' },
       reservation: { enabled: false, title: 'Reserva tu mesa', phone: '', bookingUrl: '', buttonLabel: 'Reservar ahora' },
       promo: { enabled: false, title: '', description: '', imageUrl: null, ctaLabel: 'Ver más', ctaLink: '' },
@@ -87,6 +91,7 @@ function mockTenant(tenantId: string): Tenant {
     timezone: 'America/Costa_Rica',
     locale: 'es-CR',
     employeePinHash: null,
+    lockedModules: [],
     loyaltyConfig: {
       stampsForReward: 10,
       rewardDescription: 'Café gratis',
@@ -109,8 +114,15 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   const { firebaseUser, isLoading: authLoading } = useAuthContext()
   const pathTenantId = resolveTenantIdFromPath()
 
+  // "Ver como": si el usuario es superadmin y eligió inspeccionar un restaurante,
+  // resolvemos ESE tenant en lugar del suyo. Sin permiso, se ignora.
+  const canImpersonate = isPlatformAdminUser(
+    firebaseUser ? { uid: firebaseUser.uid, email: firebaseUser.email } : null,
+  )
+  const impersonatedTenantId = canImpersonate ? getImpersonatedTenantId() : null
+
   const { data, isLoading, error } = useQuery({
-    queryKey: ['tenant-context', pathTenantId, firebaseUser?.uid ?? null],
+    queryKey: ['tenant-context', pathTenantId, firebaseUser?.uid ?? null, impersonatedTenantId],
     // Espera a que el estado de auth se resuelva antes de elegir estrategia.
     enabled: !authLoading,
     staleTime: Infinity,
@@ -118,6 +130,11 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       // 1. Ruta pública de menú → tenant del param de URL.
       if (pathTenantId) {
         return { tenant: await loadTenant(pathTenantId), tenantId: pathTenantId, role: null }
+      }
+
+      // 1.5. Superadmin "viendo como" otro restaurante (impersonación).
+      if (impersonatedTenantId) {
+        return { tenant: await loadTenant(impersonatedTenantId), tenantId: impersonatedTenantId, role: 'owner' }
       }
 
       // 2. Usuario autenticado → su propio restaurante (mapping users/{uid}).

@@ -1,7 +1,14 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, NavLink } from 'react-router-dom'
+import { LayoutDashboard, Users } from 'lucide-react'
 import { useAuthContext } from '@app/providers/AuthProvider'
+import { ROUTES } from '@shared/constants/routes'
 import { auth } from '@infrastructure/firebase/auth'
 import { signOut } from 'firebase/auth'
+
+const NAV = [
+  { label: 'Dashboard', to: ROUTES.platformAdmin.dashboard, icon: LayoutDashboard },
+  { label: 'Clientes',  to: ROUTES.platformAdmin.tenants,   icon: Users },
+] as const
 
 export function PlatformAdminLayout() {
   const { firebaseUser } = useAuthContext()
@@ -48,6 +55,28 @@ export function PlatformAdminLayout() {
           </button>
         </div>
       </header>
+
+      {/* Navegación del panel de plataforma */}
+      <nav className="flex items-center gap-1 border-b px-6" style={{ borderColor: 'rgba(255,255,255,0.06)', background: '#141416' }}>
+        {NAV.map(({ label, to, icon: Icon }) => (
+          <NavLink
+            key={to}
+            to={to}
+            className="relative flex items-center gap-2 px-3 py-3 text-sm font-medium transition-colors"
+            style={({ isActive }) => ({ color: isActive ? '#ffffff' : '#71717a' })}
+          >
+            {({ isActive }) => (
+              <>
+                <Icon size={15} />
+                {label}
+                {isActive && (
+                  <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full" style={{ background: '#f5b520' }} />
+                )}
+              </>
+            )}
+          </NavLink>
+        ))}
+      </nav>
 
       <main className="p-6 lg:p-8 mx-auto max-w-7xl">
         <Outlet />

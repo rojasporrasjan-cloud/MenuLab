@@ -85,6 +85,7 @@ export const TenantProvisioningService = {
       status: 'active',
       plan,
       ownerId: user.uid,
+      ownerEmail: user.email ?? null,
       templateId: input.branding.templateId,
       timezone,
       locale,
