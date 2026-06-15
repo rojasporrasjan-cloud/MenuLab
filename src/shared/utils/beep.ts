@@ -3,10 +3,10 @@
  * Usado por KDS, dashboard y notificaciones cuando llega un evento nuevo.
  */
 
-const BEEP_VOLUME = 0.18
-const BEEP_DURATION_MS = 140
-const BEEP_GAP_MS = 90
-const BEEP_FREQUENCIES = [880, 1175] as const
+const BEEP_VOLUME = 0.8
+const BEEP_DURATION_MS = 350
+const BEEP_GAP_MS = 200
+const BEEP_FREQUENCIES = [880, 1175, 1760] as const
 
 let sharedContext: AudioContext | null = null
 
@@ -25,7 +25,7 @@ function getContext(): AudioContext | null {
 function playTone(ctx: AudioContext, frequency: number, startAt: number, durationMs: number): void {
   const oscillator = ctx.createOscillator()
   const gain = ctx.createGain()
-  oscillator.type = 'sine'
+  oscillator.type = 'triangle'
   oscillator.frequency.value = frequency
   gain.gain.setValueAtTime(0, startAt)
   gain.gain.linearRampToValueAtTime(BEEP_VOLUME, startAt + 0.01)
