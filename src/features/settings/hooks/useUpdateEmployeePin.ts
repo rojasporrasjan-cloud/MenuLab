@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { SettingsService } from '../services/SettingsService'
 
 interface UseUpdateEmployeePinReturn {
@@ -9,6 +10,7 @@ interface UseUpdateEmployeePinReturn {
 }
 
 export function useUpdateEmployeePin(tenantId: string): UseUpdateEmployeePinReturn {
+  const queryClient = useQueryClient()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -19,6 +21,7 @@ export function useUpdateEmployeePin(tenantId: string): UseUpdateEmployeePinRetu
     setSuccess(false)
     try {
       await SettingsService.updateEmployeePin(tenantId, pinHash)
+      await queryClient.invalidateQueries({ queryKey: ['tenant-context'] })
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
     } catch {

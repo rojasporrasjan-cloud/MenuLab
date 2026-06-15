@@ -23,7 +23,7 @@ export function useUpdateProfile(tenantId: string): UseUpdateProfileReturn {
     try {
       await SettingsService.updateProfile(tenantId, values)
       // Invalidate the tenant cache so Sidebar + TenantProvider reflect changes
-      await queryClient.invalidateQueries({ queryKey: ['tenant', tenantId] })
+      await queryClient.invalidateQueries({ queryKey: ['tenant-context'] })
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
     } catch {

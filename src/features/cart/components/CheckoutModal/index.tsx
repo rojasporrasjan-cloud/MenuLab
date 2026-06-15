@@ -187,16 +187,18 @@ export function CheckoutModal({
       mode,
     })
 
+    let orderFailed = false
     try {
       await createOrder.mutateAsync(newOrder)
       track({ type: 'order_created', tableId: isTableOrder ? tableId : null })
     } catch {
       // Si Firestore falla (p. ej. modo demo sin Firebase) el pedido igual
       // se envía por WhatsApp — el restaurante no pierde la venta.
+      orderFailed = true
       setValidationMessage(null)
     }
 
-    if (whatsappPhone) {
+    if (whatsappPhone && (!isTableOrder || orderFailed)) {
       window.open(buildWhatsAppUrl(whatsappPhone, message), '_blank', 'noopener,noreferrer')
     }
 
