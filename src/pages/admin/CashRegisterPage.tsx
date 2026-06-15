@@ -20,13 +20,14 @@ import {
   X,
 } from 'lucide-react'
 import { useTenantContext } from '@app/providers/TenantProvider'
-import { useAuthContext } from '@app/providers/AuthProvider'
+// import { useAuthContext } from '@app/providers/AuthProvider'
 import {
   useCurrentCashSession,
   useCashHistory,
   useOpenCashSession,
   useCloseCashSession,
 } from '@features/cash'
+import { sha256 } from '@shared/utils/sha256'
 import { Spinner } from '@shared/ui/components/Spinner'
 import { formatCurrency } from '@shared/utils/formatCurrency'
 import { currencyForLocale, currencySymbol } from '@shared/utils/currency'
@@ -177,8 +178,6 @@ function StatCard({ label, value, sub, accent }: { label: string; value: string;
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function CashRegisterPage() {
   const { tenant, tenantId } = useTenantContext()
-  const { firebaseUser } = useAuthContext()
-  const operator = firebaseUser?.email ?? 'Caja'
 
   const locale = tenant?.locale ?? DEFAULT_LOCALE
   const currency = currencyForLocale(locale)
@@ -194,42 +193,83 @@ export default function CashRegisterPage() {
   const [countedCash, setCountedCash] = useState('')
   const [closeNote, setCloseNote] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [showTips, setShowTips] = useState(true)
+  
+  // Verificación de Empleado
+  const [verifyingAction, setVerifyingAction] = useState<'open' | 'close' | null>(null)
+  const [operatorName, setOperatorName] = useState('')
+  const [operatorPin, setOperatorPin] = useState('')
+  const [isVerifying, setIsVerifying] = useState(false)
 
-  const handleOpen = async () => {
+  const handleActionRequest = (action: 'open' | 'close') => {
     setError(null)
-    const amount = Number(openingAmount)
-    if (!Number.isFinite(amount) || amount < 0) {
-      setError('Escribe un fondo de caja válido (un número positivo).')
+    if (action === 'open') {
+      const amount = Number(openingAmount)
+      if (!Number.isFinite(amount) || amount < 0) {
+        setError('Escribe un fondo de caja válido (un número positivo).')
+        return
+      }
+    } else {
+      const counted = Number(countedCash)
+      if (!Number.isFinite(counted) || counted < 0) {
+        setError('Escribe el efectivo contado (un número positivo).')
+        return
+      }
+    }
+    setVerifyingAction(action)
+  }
+
+  const handleConfirmAction = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!operatorName.trim()) {
+      setError('Escribe tu nombre.')
       return
     }
+    if (!operatorPin) {
+      setError('Ingresa tu PIN.')
+      return
+    }
+
+    setIsVerifying(true)
+    setError(null)
+
     try {
-      await openMutation.mutateAsync({ tenantId, openingAmount: amount, openedBy: operator })
-      setOpeningAmount('')
+      const pinHash = await sha256(operatorPin)
+      if (pinHash !== tenant?.employeePinHash) {
+        throw new Error('PIN incorrecto.')
+      }
+
+      const finalOperator = operatorName.trim()
+
+      if (verifyingAction === 'open') {
+        const amount = Number(openingAmount)
+        await openMutation.mutateAsync({ tenantId, openingAmount: amount, openedBy: finalOperator })
+        setOpeningAmount('')
+      } else if (verifyingAction === 'close') {
+        const counted = Number(countedCash)
+        await closeMutation.mutateAsync({
+          tenantId,
+          closedBy: finalOperator,
+          countedCash: counted,
+          note: closeNote.trim() || null,
+        })
+        setCountedCash('')
+        setCloseNote('')
+      }
+      
+      setVerifyingAction(null)
+      setOperatorName('')
+      setOperatorPin('')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo abrir la caja.')
+      setError(err instanceof Error ? err.message : 'Error al procesar la caja.')
+    } finally {
+      setIsVerifying(false)
     }
   }
 
-  const handleClose = async () => {
+  const cancelAction = () => {
+    setVerifyingAction(null)
+    setOperatorPin('')
     setError(null)
-    const counted = Number(countedCash)
-    if (!Number.isFinite(counted) || counted < 0) {
-      setError('Escribe el efectivo contado (un número positivo).')
-      return
-    }
-    try {
-      await closeMutation.mutateAsync({
-        tenantId,
-        closedBy: operator,
-        countedCash: counted,
-        note: closeNote.trim() || null,
-      })
-      setCountedCash('')
-      setCloseNote('')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo cerrar la caja.')
-    }
   }
 
   const closedSessions = history.filter((s) => s.status === 'closed')
@@ -245,6 +285,96 @@ export default function CashRegisterPage() {
           <h1 className="text-xl font-black text-surface-900">Caja</h1>
           <p className="text-[13px] text-surface-500">Abre tu caja con un fondo y ciérrala con el arqueo del turno.</p>
         </div>
+        
+        {/* ── Error and Verification Modals ──────────────────────────────────────────────────────── */}
+      {error && !verifyingAction && (
+        <div className="flex items-center gap-3 rounded-2xl bg-red-50 p-4 text-red-600 ring-1 ring-red-500/20">
+          <AlertCircle size={20} className="shrink-0" />
+          <p className="text-sm font-medium">{error}</p>
+        </div>
+      )}
+
+      {verifyingAction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-surface-900/40 p-4 backdrop-blur-sm">
+          <form 
+            onSubmit={handleConfirmAction}
+            className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-100">
+                <Lock size={18} className="text-surface-600" />
+              </div>
+              <div>
+                <h3 className="text-[15px] font-black text-surface-900">
+                  {verifyingAction === 'open' ? 'Autorizar Apertura' : 'Autorizar Arqueo'}
+                </h3>
+                <p className="text-[12px] text-surface-500">Ingresa tus datos para registrar la acción.</p>
+              </div>
+            </div>
+
+            {error && (
+              <div className="mb-4 flex items-center gap-2 rounded-xl bg-red-50 p-3 text-red-600 ring-1 ring-red-500/20">
+                <AlertCircle size={16} className="shrink-0" />
+                <p className="text-[13px] font-medium">{error}</p>
+              </div>
+            )}
+
+            <div className="flex flex-col gap-4">
+              <div>
+                <label className="block text-[13px] font-bold text-surface-700 mb-1.5" htmlFor="operatorName">
+                  Nombre de Empleado
+                </label>
+                <input
+                  id="operatorName"
+                  type="text"
+                  value={operatorName}
+                  onChange={(e) => setOperatorName(e.target.value)}
+                  placeholder="Ej: María P."
+                  autoFocus
+                  className="w-full rounded-xl border-2 border-surface-200 bg-surface-50 px-4 py-3 text-sm font-bold text-surface-900 outline-none transition-colors focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-400/10"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[13px] font-bold text-surface-700 mb-1.5" htmlFor="operatorPin">
+                  PIN de Seguridad
+                </label>
+                <input
+                  id="operatorPin"
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={4}
+                  value={operatorPin}
+                  onChange={(e) => setOperatorPin(e.target.value.replace(/[^\d]/g, ''))}
+                  placeholder="••••"
+                  className="w-full rounded-xl border-2 border-surface-200 bg-surface-50 px-4 py-3 text-center text-xl font-black tracking-widest text-surface-900 outline-none transition-colors focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-400/10"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                onClick={cancelAction}
+                disabled={isVerifying}
+                className="flex-1 rounded-xl bg-surface-100 py-3.5 text-sm font-bold text-surface-600 transition-colors hover:bg-surface-200"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={isVerifying || !operatorName.trim() || operatorPin.length < 4}
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-brand-500 py-3.5 text-sm font-black text-white shadow-lg shadow-brand-500/20 transition-transform active:scale-95 disabled:opacity-50 disabled:shadow-none"
+              >
+                {isVerifying ? <Spinner size="sm" /> : <CheckCircle2 size={16} />}
+                Confirmar
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* ── Content ───────────────────────────────────────────────────────────── */}
         {openSession && (
           <div className="flex items-center gap-2 rounded-full bg-emerald-50 px-3.5 py-1.5 ring-1 ring-emerald-200">
             <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
@@ -255,17 +385,6 @@ export default function CashRegisterPage() {
 
       {/* ── Tips de uso ──────────────────────────────────────────────────── */}
       {showTips && !openSession && <TipsBanner onDismiss={() => setShowTips(false)} />}
-
-      {/* ── Error ──────────────────────────────────────────────────────── */}
-      {error && (
-        <div className="flex items-center gap-2.5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700 shadow-sm">
-          <AlertCircle size={16} className="shrink-0" />
-          <span className="font-medium">{error}</span>
-          <button type="button" onClick={() => setError(null)} className="ml-auto rounded-full p-1 hover:bg-red-100">
-            <X size={12} />
-          </button>
-        </div>
-      )}
 
       {/* ── Main Content ──────────────────────────────────────────────── */}
       {isLoading ? (
@@ -282,8 +401,8 @@ export default function CashRegisterPage() {
           onCountedChange={setCountedCash}
           note={closeNote}
           onNoteChange={setCloseNote}
-          onClose={() => void handleClose()}
-          isClosing={closeMutation.isPending}
+          onClose={() => handleActionRequest('close')}
+          isClosing={closeMutation.isPending || (verifyingAction === 'close')}
           money={money}
           sym={sym}
           locale={locale}
@@ -292,8 +411,8 @@ export default function CashRegisterPage() {
         <OpenCashForm
           openingAmount={openingAmount}
           onAmountChange={setOpeningAmount}
-          onOpen={() => void handleOpen()}
-          isOpening={openMutation.isPending}
+          onOpen={() => handleActionRequest('open')}
+          isOpening={openMutation.isPending || (verifyingAction === 'open')}
           sym={sym}
         />
       )}
