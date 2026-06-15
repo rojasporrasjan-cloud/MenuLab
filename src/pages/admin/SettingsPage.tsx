@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useRef, useEffect } from 'react'
 import { CreditCard, Users, Eye, EyeOff, CheckCircle2, AlertCircle, UserCircle, Smartphone, Lock } from 'lucide-react'
 import { PageHeader } from '@shared/ui/components/PageHeader'
@@ -105,15 +104,19 @@ function EmployeePinSection({
     setLocalLocked(lockedModules)
   }, [lockedModules])
 
-  const handleToggleModule = async (moduleId: string) => {
-    const isLocked = localLocked.includes(moduleId)
-    const newLocked = isLocked
-      ? localLocked.filter(id => id !== moduleId)
-      : [...localLocked, moduleId]
-    
-    setLocalLocked(newLocked)
-    await updateLockedModules(newLocked)
+  const handleToggleModule = (moduleId: string) => {
+    setLocalLocked(prev => 
+      prev.includes(moduleId) ? prev.filter(id => id !== moduleId) : [...prev, moduleId]
+    )
   }
+
+  const { updateLockedModules, isLoading: isUpdatingModules, success: modulesSuccess } = useUpdateLockedModules(tenantId)
+
+  const handleSaveModules = async () => {
+    await updateLockedModules(localLocked)
+  }
+
+  const hasModuleChanges = JSON.stringify([...localLocked].sort()) !== JSON.stringify([...lockedModules].sort())
 
   const displayError = localError ?? error
 
@@ -126,6 +129,10 @@ function EmployeePinSection({
          <div>
             <h2 className="text-lg font-black text-neutral-900 tracking-tight">PIN de Empleados (POS)</h2>
             <p className="text-[13.5px] text-neutral-500 mt-1">Este PIN identifica a cada empleado en el comandero POS y bloquea áreas sensibles.</p>
+            <div className="mt-3 inline-flex items-start gap-2 rounded-xl bg-amber-50/50 border border-amber-100/50 p-3 text-[13px] text-amber-800">
+              <Lock size={16} className="shrink-0 mt-0.5" />
+              <p><strong>Dato útil:</strong> Este mismo PIN Maestro se usa para <strong>desbloquear las pantallas</strong> cuando usas el Modo Terminal (ej. fijar la tablet en Cocina o en Caja).</p>
+            </div>
          </div>
       </div>
 
@@ -244,7 +251,7 @@ function EmployeePinSection({
                    <input
                      type="checkbox"
                      checked={isLocked}
-                     onChange={() => { void handleToggleModule(module.id) }}
+                     onChange={() => handleToggleModule(module.id)}
                      className="peer sr-only"
                    />
                    <div className={cn(
@@ -260,6 +267,22 @@ function EmployeePinSection({
               </label>
             )
           })}
+        </div>
+
+        <div className="mt-6 flex items-center gap-4 border-t border-black/[0.04] pt-6">
+          <button
+            type="button"
+            onClick={() => { void handleSaveModules() }}
+            disabled={!hasModuleChanges || isUpdatingModules}
+            className="rounded-2xl bg-black px-8 py-3 text-[14px] font-black text-white transition-all hover:bg-neutral-800 hover:shadow-lg active:scale-95 disabled:pointer-events-none disabled:opacity-30"
+          >
+            {isUpdatingModules ? <Spinner size="sm" /> : 'Guardar Pantallas'}
+          </button>
+          {modulesSuccess && (
+            <span className="flex items-center gap-2 text-[13px] font-bold text-emerald-600">
+              <CheckCircle2 size={16} /> Guardado
+            </span>
+          )}
         </div>
       </div>
     </div>
