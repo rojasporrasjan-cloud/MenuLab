@@ -490,7 +490,7 @@ function MenuPageContent() {
           dishes={featuredDishes}
           accentColor={tenant.branding.primaryColor}
           orderingEnabled={orderingEnabled}
-          showPrices={tenant.features?.showPrices ?? true}
+          showPrices={tenant.branding.showPrices}
           onSelect={handleFeaturedSelect}
           onAdd={handleFeaturedAdd}
           onView={handleFeaturedView}
