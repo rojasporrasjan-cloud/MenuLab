@@ -3,8 +3,10 @@ import { useTenantContext } from '@app/providers/TenantProvider'
 import { PinLockScreen } from '@shared/ui/components/PinLockScreen'
 
 interface RequirePinProps {
-  moduleId: string
-  children: React.ReactNode
+  moduleId?: string
+  children?: React.ReactNode
+  onSuccess?: () => void
+  onCancel?: () => void
 }
 
 const UNLOCKED_KEY = 'unlocked_modules'
@@ -32,27 +34,29 @@ function persistUnlockedModule(moduleId: string): void {
   }
 }
 
-export function RequirePin({ moduleId, children }: RequirePinProps) {
+export function RequirePin({ moduleId, children, onSuccess, onCancel }: RequirePinProps) {
   const { tenant } = useTenantContext()
-  // Estado inicial derivado de sessionStorage (lazy init — sin useEffect).
-  const [isUnlocked, setIsUnlocked] = useState(() => readUnlockedModules(moduleId))
+  const [isUnlocked, setIsUnlocked] = useState(() => {
+    return moduleId ? readUnlockedModules(moduleId) : false
+  })
 
   if (!tenant) return <>{children}</>
 
-  const isModuleLocked = tenant.lockedModules?.includes(moduleId)
+  const isModuleLocked = moduleId ? tenant.lockedModules?.includes(moduleId) : true
   const hasPinSet = Boolean(tenant.employeePinHash)
+
+  const handleUnlock = () => {
+    if (moduleId) {
+      persistUnlockedModule(moduleId)
+    }
+    setIsUnlocked(true)
+    if (onSuccess) onSuccess()
+  }
 
   // Si el módulo no está bloqueado, no hay PIN, o ya se desbloqueó en esta sesión.
   if (!isModuleLocked || !hasPinSet || isUnlocked) {
     return <>{children}</>
   }
 
-  return (
-    <PinLockScreen
-      onUnlock={() => {
-        setIsUnlocked(true)
-        persistUnlockedModule(moduleId)
-      }}
-    />
-  )
+  return <PinLockScreen onUnlock={handleUnlock} onCancel={onCancel} />
 }

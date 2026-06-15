@@ -7,6 +7,7 @@ import type { Order } from '@core/domain/entities/Order'
 import { nextOrderStatus } from '@core/domain/entities/Order'
 import { useNow } from '@shared/hooks/useNow'
 import { COPY } from '@shared/copy/ui.copy'
+import { TerminalLockButton } from '@shared/ui/components/TerminalLockButton'
 
 const COLUMN_ACCENTS = {
   incoming: '#3b82f6', // blue-500
@@ -80,12 +81,14 @@ function KDSPageContent() {
             <p className="text-[14px] font-medium text-neutral-400">Cocina en tiempo real</p>
           </div>
         </div>
-        
-        <div className="flex items-start gap-3 rounded-2xl border border-blue-500/20 bg-blue-500/10 px-4 py-3 sm:items-center">
-          <Info size={18} className="mt-0.5 shrink-0 text-blue-400 sm:mt-0" />
-          <p className="text-[13px] font-medium leading-tight text-blue-100">
-            <strong className="font-bold text-white">Tip:</strong> Toca el botón inferior de cada ticket para avanzarlo a la siguiente columna. Los tickets cambian de color según el tiempo de espera.
-          </p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <TerminalLockButton modeToSet="kds" />
+          <div className="flex items-start gap-3 rounded-2xl border border-blue-500/20 bg-blue-500/10 px-4 py-3 sm:items-center">
+            <Info size={18} className="mt-0.5 shrink-0 text-blue-400 sm:mt-0" />
+            <p className="text-[13px] font-medium leading-tight text-blue-100">
+              <strong className="font-bold text-white">Tip:</strong> Toca el botón inferior de cada ticket para avanzarlo a la siguiente columna. Los tickets cambian de color según el tiempo de espera.
+            </p>
+          </div>
         </div>
       </header>
 

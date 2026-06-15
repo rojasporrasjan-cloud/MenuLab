@@ -7,9 +7,10 @@ import { Button } from '../Button'
 
 interface PinLockScreenProps {
   onUnlock: () => void
+  onCancel?: () => void
 }
 
-export function PinLockScreen({ onUnlock }: PinLockScreenProps) {
+export function PinLockScreen({ onUnlock, onCancel }: PinLockScreenProps) {
   const { tenant } = useTenantContext()
   const [pin, setPin] = useState('')
   const [showPin, setShowPin] = useState(false)
@@ -87,13 +88,26 @@ export function PinLockScreen({ onUnlock }: PinLockScreenProps) {
             </div>
           )}
 
-          <Button
-            type="submit"
-            disabled={isLoading || pin.length < 4}
-            className="w-full h-[46px] rounded-xl font-semibold shadow-sm"
-          >
-            {isLoading ? <Spinner size="sm" /> : 'Desbloquear'}
-          </Button>
+          <div className="mt-8 flex gap-3">
+            {onCancel && (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full flex-1 border-white/10 text-neutral-400 hover:bg-white/5 hover:text-white"
+                onClick={onCancel}
+                disabled={isLoading}
+              >
+                Cancelar
+              </Button>
+            )}
+            <Button
+              type="submit"
+              className="w-full flex-1 bg-white text-black hover:bg-neutral-200"
+              disabled={isLoading || pin.length < 4}
+            >
+              {isLoading ? <Spinner size="sm" className="text-black" /> : 'Desbloquear'}
+            </Button>
+          </div>
         </form>
       </div>
     </div>

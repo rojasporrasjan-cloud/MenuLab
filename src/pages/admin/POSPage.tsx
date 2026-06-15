@@ -20,6 +20,7 @@ import type { POSCartLine } from '@features/pos'
 import { TableGrid } from '@features/pos/components/TableGrid'
 import { DigitalOrderGrid } from '@features/pos/components/DigitalOrderGrid'
 import { POSMenu } from '@features/pos/components/POSMenu'
+import { TerminalLockButton } from '@shared/ui/components/TerminalLockButton'
 import { useCreateOrder } from '@features/cart'
 import { useTables } from '@features/qr'
 import { useAdminMenus, useAdminDishes, useAdminCategories } from '@features/dishes'
@@ -223,16 +224,19 @@ function POSWorkspace({ tenantId, employeeName, createdBy, onLock }: POSWorkspac
           </div>
           
           <div className="flex flex-col gap-3 sm:items-end">
-            <button
-              type="button"
-              onClick={onLock}
-              className="group inline-flex w-fit items-center gap-2 rounded-xl bg-white/5 px-4 py-2.5 text-[13px] font-bold text-white transition-all hover:bg-white/10 ring-1 ring-white/10 hover:ring-white/20"
-            >
-              <Lock size={14} className="text-neutral-400 group-hover:text-white transition-colors" />
-              <span>{COPY.pos.pin.lock}</span>
-              <span className="text-neutral-500">·</span>
-              <span className="text-indigo-300">{employeeName}</span>
-            </button>
+            <div className="flex items-center gap-3">
+              <TerminalLockButton modeToSet="pos" />
+              <button
+                type="button"
+                onClick={onLock}
+                className="group inline-flex w-fit items-center gap-2 rounded-xl bg-white/5 px-4 py-2.5 text-[13px] font-bold text-white transition-all hover:bg-white/10 ring-1 ring-white/10 hover:ring-white/20"
+              >
+                <Lock size={14} className="text-neutral-400 group-hover:text-white transition-colors" />
+                <span>{COPY.pos.pin.lock}</span>
+                <span className="text-neutral-500">·</span>
+                <span className="text-indigo-300">{employeeName}</span>
+              </button>
+            </div>
             <div className="flex items-center gap-2 text-[12px] font-medium text-neutral-400">
               <Info size={14} className="text-indigo-400/70" />
               <p>Selecciona una mesa para tomar la orden o cobrarla.</p>

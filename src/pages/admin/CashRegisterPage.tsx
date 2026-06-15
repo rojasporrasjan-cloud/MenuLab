@@ -31,6 +31,7 @@ import { sha256 } from '@shared/utils/sha256'
 import { Spinner } from '@shared/ui/components/Spinner'
 import { formatCurrency } from '@shared/utils/formatCurrency'
 import { currencyForLocale, currencySymbol } from '@shared/utils/currency'
+import { TerminalLockButton } from '@shared/ui/components/TerminalLockButton'
 import { cn } from '@shared/utils/cn'
 import type { CashSession, PaymentTotals } from '@core/domain/entities/CashSession'
 
@@ -281,9 +282,12 @@ export default function CashRegisterPage() {
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 shadow-lg shadow-brand-500/20">
           <Wallet size={22} className="text-white" />
         </div>
-        <div className="flex-1">
-          <h1 className="text-xl font-black text-surface-900">Caja</h1>
-          <p className="text-[13px] text-surface-500">Abre tu caja con un fondo y ciérrala con el arqueo del turno.</p>
+        <div className="flex flex-1 items-center justify-between">
+          <div>
+            <h1 className="text-xl font-black text-surface-900">Caja</h1>
+            <p className="text-[13px] text-surface-500">Abre tu caja con un fondo y ciérrala con el arqueo del turno.</p>
+          </div>
+          <TerminalLockButton modeToSet="cash" />
         </div>
         
         {/* ── Error and Verification Modals ──────────────────────────────────────────────────────── */}

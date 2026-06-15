@@ -8,6 +8,7 @@ import { useAuthContext } from '@app/providers/AuthProvider'
 import { isPlatformAdminUser } from '@shared/config/platformAdmin'
 import { getImpersonatedTenantId, clearImpersonatedTenantId } from '@features/platform-admin'
 import { ROUTES } from '@shared/constants/routes'
+import { useTerminalMode } from '@shared/hooks/useTerminalMode'
 
 const PAGE_TITLES: Record<string, string> = {
   [ROUTES.admin.dashboard]:    'Dashboard',
@@ -42,6 +43,9 @@ export function AdminLayout() {
   )
   const isImpersonating = adminUser && getImpersonatedTenantId() !== null
 
+  const { mode: terminalMode } = useTerminalMode()
+  const isTerminalActive = terminalMode !== 'none'
+
   function handleExitImpersonation(): void {
     clearImpersonatedTenantId()
     window.location.href = ROUTES.platformAdmin.tenants
@@ -68,20 +72,32 @@ export function AdminLayout() {
   }
 
   // Superadmin sin restaurante propio y sin "ver como" → su panel de plataforma
-  // (evita mandarlo al asistente de creación de restaurante).
   if (adminUser && !isImpersonating && !isLoading && !tenant) {
     return <Navigate to={ROUTES.platformAdmin.root} replace />
   }
 
+  // Redirecciones forzosas en Modo Terminal
+  if (terminalMode === 'pos' && location.pathname !== ROUTES.admin.pos) {
+    return <Navigate to={ROUTES.admin.pos} replace />
+  }
+  if (terminalMode === 'kds' && location.pathname !== ROUTES.admin.kds) {
+    return <Navigate to={ROUTES.admin.kds} replace />
+  }
+  if (terminalMode === 'cash' && location.pathname !== ROUTES.admin.cash) {
+    return <Navigate to={ROUTES.admin.cash} replace />
+  }
+
   return (
     <div className="flex h-svh overflow-hidden print:h-auto print:overflow-visible print:bg-white" style={{ background: '#faf9f7' }}>
-      <div className="print:hidden">
-        <Sidebar
-          isOpen={isSidebarOpen}
-          onClose={() => setIsSidebarOpen(false)}
-          isCollapsed={isSidebarCollapsed}
-        />
-      </div>
+      {!isTerminalActive && (
+        <div className="print:hidden">
+          <Sidebar
+            isOpen={isSidebarOpen}
+            onClose={() => setIsSidebarOpen(false)}
+            isCollapsed={isSidebarCollapsed}
+          />
+        </div>
+      )}
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden print:overflow-visible">
         {isImpersonating && (
@@ -101,15 +117,18 @@ export function AdminLayout() {
             </button>
           </div>
         )}
-        <div className="print:hidden">
-          <Topbar
-            title={pageTitle}
-            onMenuToggle={handleMenuToggle}
-          />
-        </div>
+        
+        {!isTerminalActive && (
+          <div className="print:hidden">
+            <Topbar
+              title={pageTitle}
+              onMenuToggle={handleMenuToggle}
+            />
+          </div>
+        )}
 
         <main className={`flex-1 min-h-0 ${isAppearancePage ? 'p-0 flex flex-col' : 'overflow-y-auto p-5 lg:p-7'} print:overflow-visible print:p-0`}>
-          <div className={isAppearancePage ? 'w-full h-full flex flex-col min-h-0 print:h-auto print:min-h-0' : 'mx-auto max-w-6xl'}>
+          <div className={isAppearancePage || isTerminalActive ? 'w-full h-full flex flex-col min-h-0 print:h-auto print:min-h-0' : 'mx-auto max-w-6xl'}>
             <Outlet />
           </div>
         </main>
