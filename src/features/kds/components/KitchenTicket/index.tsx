@@ -66,7 +66,11 @@ export function KitchenTicket({ order, now, onAdvance, isUpdating }: KitchenTick
   const orderNumber = order.id.slice(-ORDER_NUMBER_CHARS).toUpperCase()
   
   const isTable = !!order.tableLabel
-  const origin = isTable ? COPY.table.label(order.tableLabel) : COPY.kds.pickup
+  const origin = isTable 
+    ? COPY.table.label(order.tableLabel || '') 
+    : order.type === 'delivery'
+      ? COPY.cart.delivery.delivery
+      : COPY.kds.pickup
   const actionLabel = actionLabelFor(order)
 
   function handleAdvance() {
