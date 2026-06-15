@@ -169,12 +169,16 @@ export default function AppearancePage() {
   const [isQrDialogOpen, setIsQrDialogOpen] = useState(false)
   const [isPreviewCollapsed, setIsPreviewCollapsed] = useState(false)
 
-  // Re-inicializa la edición cuando llega (o cambia) el tenant.
-  // Patrón React "adjust state during render": se compara contra el último
-  // tenant sincronizado; ediciones locales sobreviven a refetches del mismo tenant.
+  // Re-inicializa la edición cuando llega (o cambia) el tenant, o si el tenant se actualiza
+  // desde afuera (ej. al terminar el Onboarding).
   const [syncedTenantId, setSyncedTenantId] = useState<string | null>(null)
-  if (tenant && tenant.id !== syncedTenantId) {
+  const [syncedUpdatedAt, setSyncedUpdatedAt] = useState<number>(0)
+
+  const incomingUpdatedAt = tenant?.updatedAt?.getTime() ?? 0
+
+  if (tenant && (tenant.id !== syncedTenantId || incomingUpdatedAt !== syncedUpdatedAt)) {
     setSyncedTenantId(tenant.id)
+    setSyncedUpdatedAt(incomingUpdatedAt)
     setEditing({
       templateId: tenant.templateId,
       primaryColor: tenant.branding.primaryColor,
