@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { ArrowLeft, Lock, Info, MonitorSpeaker } from 'lucide-react'
 
+import type { Order } from '@core/domain/entities/Order'
 import type { Dish } from '@core/domain/entities/Dish'
 import type { Table } from '@core/domain/entities/Table'
 import type { NewOrder } from '@core/domain/entities/Order'
@@ -12,12 +13,13 @@ import {
   usePOSOrders,
   useCloseCheck,
   EmployeePINModal,
-  TableGrid,
-  POSMenu,
   POSCart,
   CheckCloser,
 } from '@features/pos'
 import type { POSCartLine } from '@features/pos'
+import { TableGrid } from '@features/pos/components/TableGrid'
+import { DigitalOrderGrid } from '@features/pos/components/DigitalOrderGrid'
+import { POSMenu } from '@features/pos/components/POSMenu'
 import { useCreateOrder } from '@features/cart'
 import { useTables } from '@features/qr'
 import { useAdminMenus, useAdminDishes, useAdminCategories } from '@features/dishes'
@@ -73,24 +75,27 @@ interface POSWorkspaceProps {
 
 function POSWorkspace({ tenantId, employeeName, createdBy, onLock }: POSWorkspaceProps) {
   const { data: tables = [] } = useTables(tenantId)
-  const { ordersByTable, tableState } = usePOSOrders(tenantId)
+  const { ordersByTable, digitalOrders, tableState } = usePOSOrders(tenantId)
 
   const { data: menus = [] } = useAdminMenus(tenantId)
   const menuId = menus[0]?.id ?? null
   const { data: dishes = [] } = useAdminDishes(tenantId, menuId)
   const { data: categories = [] } = useAdminCategories(tenantId, menuId)
 
+  const [viewMode, setViewMode] = useState<'tables' | 'digital'>('tables')
   const [selectedTable, setSelectedTable] = useState<Table | null>(null)
+  const [selectedDigitalOrder, setSelectedDigitalOrder] = useState<Order | null>(null)
   const [cartLines, setCartLines] = useState<POSCartLine[]>([])
   const [isClosingCheck, setIsClosingCheck] = useState(false)
 
   const createOrder = useCreateOrder()
   const closeCheck = useCloseCheck()
 
-  const tableOrders = useMemo(
-    () => (selectedTable ? ordersByTable.get(selectedTable.id) ?? [] : []),
-    [selectedTable, ordersByTable],
-  )
+  const tableOrders = useMemo(() => {
+    if (selectedDigitalOrder) return [selectedDigitalOrder]
+    if (selectedTable) return ordersByTable.get(selectedTable.id) ?? []
+    return []
+  }, [selectedTable, selectedDigitalOrder, ordersByTable])
 
   function handleAddDish(dish: Dish) {
     setCartLines((prev) => {
@@ -170,11 +175,14 @@ function POSWorkspace({ tenantId, employeeName, createdBy, onLock }: POSWorkspac
   function handleCloseCheckModal() {
     setIsClosingCheck(false)
     closeCheck.reset()
-    if (closeCheck.isSuccess) setSelectedTable(null)
+    if (closeCheck.isSuccess) {
+      setSelectedTable(null)
+      setSelectedDigitalOrder(null)
+    }
   }
 
-  // ── Vista: grid de mesas ──
-  if (!selectedTable) {
+  // ── Vista: grid de mesas o digital ──
+  if (!selectedTable && !selectedDigitalOrder) {
     return (
       <div className="flex h-full flex-col gap-6 overflow-y-auto pb-6">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-3xl bg-neutral-900/50 p-6 ring-1 ring-white/5 shadow-xl">
@@ -184,7 +192,33 @@ function POSWorkspace({ tenantId, employeeName, createdBy, onLock }: POSWorkspac
             </div>
             <div>
               <h1 className="text-2xl font-black tracking-tight text-white">{COPY.pos.tables.title}</h1>
-              <p className="text-[14px] font-medium text-neutral-400">Punto de Venta · Salón</p>
+              <div className="mt-1 flex items-center rounded-full bg-neutral-950/50 p-1 ring-1 ring-white/10 w-fit">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('tables')}
+                  className={cn(
+                    "rounded-full px-4 py-1.5 text-[12px] font-bold transition-all",
+                    viewMode === 'tables' ? "bg-indigo-500 text-white shadow-md" : "text-neutral-400 hover:text-white"
+                  )}
+                >
+                  🍽️ Salón
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('digital')}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[12px] font-bold transition-all",
+                    viewMode === 'digital' ? "bg-indigo-500 text-white shadow-md" : "text-neutral-400 hover:text-white"
+                  )}
+                >
+                  🛵 Mostrador / Delivery
+                  {digitalOrders.length > 0 && (
+                    <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-black text-white">
+                      {digitalOrders.length}
+                    </span>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
           
@@ -206,17 +240,24 @@ function POSWorkspace({ tenantId, employeeName, createdBy, onLock }: POSWorkspac
           </div>
         </header>
 
-        <TableGrid
-          tables={tables}
-          stateOf={tableState}
-          accountSizeOf={(tableId) => ordersByTable.get(tableId)?.length ?? 0}
-          onSelect={setSelectedTable}
-        />
+        {viewMode === 'tables' ? (
+          <TableGrid
+            tables={tables}
+            stateOf={tableState}
+            accountSizeOf={(tableId) => ordersByTable.get(tableId)?.length ?? 0}
+            onSelect={setSelectedTable}
+          />
+        ) : (
+          <DigitalOrderGrid
+            orders={digitalOrders}
+            onSelect={setSelectedDigitalOrder}
+          />
+        )}
       </div>
     )
   }
 
-  // ── Vista: menú + comanda de la mesa ──
+  // ── Vista: menú + comanda de la mesa / pedido ──
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
       <div className="flex shrink-0 items-center justify-between rounded-2xl bg-neutral-900/40 p-4 ring-1 ring-white/5 backdrop-blur-md">
@@ -225,6 +266,7 @@ function POSWorkspace({ tenantId, employeeName, createdBy, onLock }: POSWorkspac
             type="button"
             onClick={() => {
               setSelectedTable(null)
+              setSelectedDigitalOrder(null)
               setCartLines([])
             }}
             className="group flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 transition-all hover:bg-white/10 ring-1 ring-white/10"
@@ -233,7 +275,12 @@ function POSWorkspace({ tenantId, employeeName, createdBy, onLock }: POSWorkspac
           </button>
           <div>
             <h1 className="text-xl font-black text-white tracking-tight">
-              {selectedTable.label ?? COPY.table.label(selectedTable.number)}
+              {selectedTable 
+                ? (selectedTable.label ?? COPY.table.label(selectedTable.number))
+                : selectedDigitalOrder?.customerName 
+                  ? `Delivery: ${selectedDigitalOrder.customerName}`
+                  : 'Pedido de Mostrador'
+              }
             </h1>
             <p className="text-[12px] font-medium text-neutral-400">Atendido por <span className="text-indigo-300">{employeeName}</span></p>
           </div>

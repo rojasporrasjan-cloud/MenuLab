@@ -10,6 +10,7 @@ import { POS_TABLE_STATE } from '../types/pos.types'
 interface POSOrdersResult {
   readonly orders: Order[]
   readonly ordersByTable: Map<string, Order[]>
+  readonly digitalOrders: Order[]
   readonly tableState: (tableId: string) => POSTableState
   readonly isLoading: boolean
 }
@@ -32,6 +33,10 @@ export function usePOSOrders(tenantId: string): POSOrdersResult {
     return map
   }, [orders])
 
+  const digitalOrders = useMemo(() => {
+    return orders.filter(o => o.type !== 'table' && !o.tableId)
+  }, [orders])
+
   function tableState(tableId: string): POSTableState {
     const tableOrders = ordersByTable.get(tableId)
     if (!tableOrders || tableOrders.length === 0) return POS_TABLE_STATE.free
@@ -41,5 +46,5 @@ export function usePOSOrders(tenantId: string): POSOrdersResult {
     return POS_TABLE_STATE.occupied
   }
 
-  return { orders, ordersByTable, tableState, isLoading }
+  return { orders, ordersByTable, digitalOrders, tableState, isLoading }
 }
