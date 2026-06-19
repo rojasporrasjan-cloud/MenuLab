@@ -66,7 +66,7 @@ export function PinRecovery({ onRecovered, onBack }: PinRecoveryProps) {
   }
 
   return (
-    <div className="flex h-full min-h-[60vh] flex-col items-center justify-center p-6 bg-zinc-50/50">
+    <div className="flex h-full min-h-[60vh] flex-col items-center justify-center p-6">
       <div className="w-full max-w-[360px] bg-white rounded-3xl shadow-sm border border-zinc-200/80 p-8 flex flex-col items-center text-center">
         <div className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center mb-5 border border-amber-100">
           <ShieldCheck className="text-amber-500" size={24} />

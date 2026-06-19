@@ -1,4 +1,4 @@
-import { NavLink, useLocation, Link } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
   BookOpen,
@@ -10,7 +10,6 @@ import {
   UtensilsCrossed,
   LogOut,
   X,
-  Sparkles,
   ChevronRight,
   ShoppingBag,
   CookingPot,
@@ -211,45 +210,6 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) 
             </div>
           ))}
         </nav>
-
-        {/* ── AI assistant card ─────────────────────────────────────────────── */}
-        <div className="mx-3 mb-3">
-          <Link
-            to={`${ROUTES.admin.editor}?openDigitalize=1`}
-            onClick={onClose}
-            className="relative block overflow-hidden rounded-xl p-3 transition-all duration-150 hover:brightness-125 active:scale-[0.97]"
-            style={{
-              background: 'linear-gradient(135deg, rgba(124,58,237,0.18) 0%, rgba(139,92,246,0.08) 100%)',
-              border: '1px solid rgba(139,92,246,0.22)',
-            }}
-          >
-            {/* Glow dot */}
-            <div
-              className="absolute -right-3 -top-3 h-12 w-12 rounded-full opacity-40"
-              style={{ background: 'radial-gradient(circle, rgba(167,139,250,0.6) 0%, transparent 70%)' }}
-            />
-            <div className="flex items-center gap-2 mb-1">
-              <div
-                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md"
-                style={{ background: 'rgba(139,92,246,0.3)' }}
-              >
-                <Sparkles size={10} className="text-violet-300" />
-              </div>
-              <p className="text-[11.5px] font-semibold" style={{ color: 'rgba(221,214,254,0.9)' }}>
-                Asistente IA
-              </p>
-            </div>
-            <p className="text-[10px] leading-relaxed" style={{ color: 'rgba(196,181,253,0.6)' }}>
-              Digitaliza tu menú físico con una foto.
-            </p>
-            <div className="mt-1.5 flex items-center gap-1">
-              <span className="text-[9.5px] font-semibold" style={{ color: 'rgba(196,181,253,0.75)' }}>
-                Abrir digitalizador
-              </span>
-              <ChevronRight size={9} style={{ color: 'rgba(196,181,253,0.5)' }} />
-            </div>
-          </Link>
-        </div>
 
         {/* ── User footer ───────────────────────────────────────────────────── */}
         <div
