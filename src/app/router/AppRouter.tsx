@@ -12,6 +12,8 @@ import { PublicLayout } from '@app/layouts/PublicLayout'
 import { MarketingLayout } from '@app/layouts/MarketingLayout'
 import { PlatformAdminLayout } from '@app/layouts/PlatformAdminLayout'
 import { RequirePin } from '@app/router/RequirePin'
+import { FullscreenTerminal } from '@shared/ui/components/FullscreenTerminal'
+import { COPY } from '@shared/copy/ui.copy'
 
 import {
   LandingPage,
@@ -114,8 +116,8 @@ export function AppRouter() {
                 <Route path={ROUTES.admin.analytics} element={<RequirePin moduleId="analytics"><AnalyticsPage /></RequirePin>} />
                 <Route path={ROUTES.admin.settings} element={<RequirePin moduleId="settings"><SettingsPage /></RequirePin>} />
                 <Route path={ROUTES.admin.orders} element={<RequirePin moduleId="orders"><OrdersPage /></RequirePin>} />
-                <Route path={ROUTES.admin.pos} element={<RequirePin moduleId="orders"><POSPage /></RequirePin>} />
-                <Route path={ROUTES.admin.kds} element={<RequirePin moduleId="kds"><KDSPage /></RequirePin>} />
+                <Route path={ROUTES.admin.pos} element={<RequirePin moduleId="orders"><FullscreenTerminal label={COPY.pos.title}><POSPage /></FullscreenTerminal></RequirePin>} />
+                <Route path={ROUTES.admin.kds} element={<RequirePin moduleId="kds"><FullscreenTerminal label={COPY.kds.title}><KDSPage /></FullscreenTerminal></RequirePin>} />
                 <Route path={ROUTES.admin.cash} element={<RequirePin moduleId="cash"><CashRegisterPage /></RequirePin>} />
                 <Route path={ROUTES.admin.reservations} element={<RequirePin moduleId="reservations"><AdminReservationsPage /></RequirePin>} />
                 <Route path={ROUTES.admin.plan} element={<PlanPage />} />
