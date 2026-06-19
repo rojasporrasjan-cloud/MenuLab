@@ -70,12 +70,30 @@ body {
   min-height: 100svh;
   background: #faf9f7;
   color: #27251f;
+  /* Red de seguridad: ningún elemento ancho debería empujar la página de lado.
+     `clip` evita el scroll horizontal sin crear un contenedor de scroll (a
+     diferencia de `hidden`), por lo que NO rompe los headers position:sticky. */
+  overflow-x: clip;
 }
 
 #root {
   min-height: 100svh;
   display: flex;
   flex-direction: column;
+}
+
+/* ─── Móvil: evitar el auto-zoom de iOS al enfocar inputs ──────────────────────
+   Safari iOS hace zoom automático cuando enfocas un campo con fuente < 16px y
+   no vuelve a alejar → todo queda "zoomeado". Forzamos 16px en los controles de
+   formulario en pantallas pequeñas. Mantiene el pinch-zoom (útil para ver fotos
+   del menú). El selector `[class]` sube la especificidad por encima de las
+   utilidades text-* de Tailwind sin recurrir a !important. */
+@media (max-width: 640px) {
+  input[class]:not([type='checkbox']):not([type='radio']):not([type='range']),
+  select[class],
+  textarea[class] {
+    font-size: 16px;
+  }
 }
 
 /* ─── Premium scrollbar ──────────────────────────────────────────────────── */
