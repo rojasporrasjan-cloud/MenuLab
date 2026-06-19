@@ -8,8 +8,6 @@ import { PlatformAdminGuard } from './guards/PlatformAdminGuard'
 import RootLayout from '@app/layouts/RootLayout'
 import { AdminLayout } from '@app/layouts/AdminLayout'
 import { StaffLayout } from '@app/layouts/StaffLayout'
-import { KDSLayout } from '@app/layouts/KDSLayout'
-import { POSLayout } from '@app/layouts/POSLayout'
 import { PublicLayout } from '@app/layouts/PublicLayout'
 import { MarketingLayout } from '@app/layouts/MarketingLayout'
 import { PlatformAdminLayout } from '@app/layouts/PlatformAdminLayout'
@@ -100,16 +98,9 @@ export function AppRouter() {
               {/* Editor is full-screen standalone — has its own topbar/left-rail, no admin shell */}
               <Route path={ROUTES.admin.editor} element={<EditorPage />} />
 
-              {/* KDS — pantalla fullscreen para tablet de cocina, sin admin shell */}
-              <Route element={<RequirePin moduleId="kds"><KDSLayout /></RequirePin>}>
-                <Route path={ROUTES.admin.kds} element={<KDSPage />} />
-              </Route>
-
-              {/* POS — comandero fullscreen para tablet de salón, sin admin shell */}
-              <Route element={<RequirePin moduleId="orders"><POSLayout /></RequirePin>}>
-                <Route path={ROUTES.admin.pos} element={<POSPage />} />
-              </Route>
-
+              {/* POS y Cocina viven dentro del AdminLayout (igual que Caja): el sidebar
+                  queda visible durante el PIN, y al "Fijar Terminal" el AdminLayout
+                  oculta el shell para el modo kiosko a pantalla completa. */}
               <Route element={<AdminLayout />}>
                 <Route path={ROUTES.admin.root} element={<Navigate to={ROUTES.admin.dashboard} replace />} />
                 <Route path={ROUTES.admin.dashboard} element={<RequirePin moduleId="dashboard"><DashboardPage /></RequirePin>} />
@@ -123,6 +114,8 @@ export function AppRouter() {
                 <Route path={ROUTES.admin.analytics} element={<RequirePin moduleId="analytics"><AnalyticsPage /></RequirePin>} />
                 <Route path={ROUTES.admin.settings} element={<RequirePin moduleId="settings"><SettingsPage /></RequirePin>} />
                 <Route path={ROUTES.admin.orders} element={<RequirePin moduleId="orders"><OrdersPage /></RequirePin>} />
+                <Route path={ROUTES.admin.pos} element={<RequirePin moduleId="orders"><POSPage /></RequirePin>} />
+                <Route path={ROUTES.admin.kds} element={<RequirePin moduleId="kds"><KDSPage /></RequirePin>} />
                 <Route path={ROUTES.admin.cash} element={<RequirePin moduleId="cash"><CashRegisterPage /></RequirePin>} />
                 <Route path={ROUTES.admin.reservations} element={<RequirePin moduleId="reservations"><AdminReservationsPage /></RequirePin>} />
                 <Route path={ROUTES.admin.plan} element={<PlanPage />} />

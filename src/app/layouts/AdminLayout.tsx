@@ -20,6 +20,8 @@ const PAGE_TITLES: Record<string, string> = {
   [ROUTES.admin.settings]:     'Configuración',
   [ROUTES.admin.appearance]:   'Apariencia',
   [ROUTES.admin.orders]:       'Pedidos',
+  [ROUTES.admin.pos]:          'POS',
+  [ROUTES.admin.kds]:          'Cocina',
   [ROUTES.admin.cash]:         'Caja',
   [ROUTES.admin.reservations]: 'Reservaciones',
   [ROUTES.admin.plan]:         'Mi Plan',
@@ -65,6 +67,9 @@ export function AdminLayout() {
   }
 
   const isAppearancePage = location.pathname === ROUTES.admin.appearance
+  // POS y Cocina: área de trabajo oscura a sangre completa (sin el contenedor
+  // claro centrado). El sidebar sigue visible salvo en modo terminal (kiosko).
+  const isTerminalPage = location.pathname === ROUTES.admin.pos || location.pathname === ROUTES.admin.kds
 
   // El staff no entra al admin del dueño — se le manda a su panel.
   if (role === 'staff' && tenantId) {
@@ -127,8 +132,17 @@ export function AdminLayout() {
           </div>
         )}
 
-        <main className={`flex-1 min-h-0 ${isAppearancePage ? 'p-0 flex flex-col' : 'overflow-y-auto p-5 lg:p-7'} print:overflow-visible print:p-0`}>
-          <div className={isAppearancePage || isTerminalActive ? 'w-full h-full flex flex-col min-h-0 print:h-auto print:min-h-0' : 'mx-auto max-w-6xl'}>
+        <main
+          className={`flex-1 min-h-0 print:overflow-visible print:p-0 ${
+            isAppearancePage
+              ? 'p-0 flex flex-col'
+              : isTerminalPage
+                ? 'overflow-hidden p-4 flex flex-col'
+                : 'overflow-y-auto p-5 lg:p-7'
+          }`}
+          style={isTerminalPage ? { background: '#0c0c0b' } : undefined}
+        >
+          <div className={isAppearancePage || isTerminalPage || isTerminalActive ? 'w-full h-full flex flex-col min-h-0 print:h-auto print:min-h-0' : 'mx-auto max-w-6xl'}>
             <Outlet />
           </div>
         </main>
