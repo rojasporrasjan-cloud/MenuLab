@@ -24,7 +24,8 @@ export function useUpdateEmployeePin(tenantId: string): UseUpdateEmployeePinRetu
       await queryClient.invalidateQueries({ queryKey: ['tenant-context'] })
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
-    } catch {
+    } catch (err) {
+      console.error('Failed to save employee PIN', err)
       setError('No se pudo guardar el PIN. Intenta de nuevo.')
     } finally {
       setIsLoading(false)

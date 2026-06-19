@@ -4,6 +4,7 @@ export { BrandingForm } from './components/BrandingForm'
 export { PlanInfo } from './components/PlanInfo'
 export { ColorPicker } from './components/ColorPicker'
 export { TenantAssetUpload } from './components/TenantAssetUpload'
+export { PinRecovery } from './components/PinRecovery'
 
 // Hooks
 export { useUpdateProfile } from './hooks/useUpdateProfile'

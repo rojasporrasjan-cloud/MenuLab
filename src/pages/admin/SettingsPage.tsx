@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { CreditCard, Users, Eye, EyeOff, CheckCircle2, AlertCircle, UserCircle, Smartphone, Lock } from 'lucide-react'
 import { PageHeader } from '@shared/ui/components/PageHeader'
 import { useTenantContext } from '@app/providers/TenantProvider'
@@ -58,6 +58,7 @@ const MODULES = [
   { id: 'qr', label: 'Códigos QR' },
   { id: 'loyalty', label: 'Programa de Lealtad' },
   { id: 'analytics', label: 'Reportes y Métricas' },
+  { id: 'settings', label: 'Configuración (esta pantalla)' },
 ]
 
 function EmployeePinSection({
@@ -70,7 +71,6 @@ function EmployeePinSection({
   lockedModules: string[]
 }) {
   const { updatePin, isLoading, error, success } = useUpdateEmployeePin(tenantId)
-  const { updateLockedModules } = useUpdateLockedModules(tenantId)
   
   const [pin, setPin] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -99,10 +99,14 @@ function EmployeePinSection({
   }
 
   const [localLocked, setLocalLocked] = useState<string[]>(lockedModules)
-
-  useEffect(() => {
+  // Resincroniza la selección local cuando el tenant cambia (ej. tras guardar y
+  // refetch). Patrón oficial de React: ajustar estado durante el render en vez
+  // de un useEffect, que dispararía renders en cascada.
+  const [syncedLocked, setSyncedLocked] = useState<string[]>(lockedModules)
+  if (syncedLocked !== lockedModules) {
+    setSyncedLocked(lockedModules)
     setLocalLocked(lockedModules)
-  }, [lockedModules])
+  }
 
   const handleToggleModule = (moduleId: string) => {
     setLocalLocked(prev => 
@@ -233,7 +237,14 @@ function EmployeePinSection({
       <div className="pt-8 mt-2 border-t border-black/[0.04]">
         <h3 className="text-[16px] font-black text-neutral-900 mb-1">Cerrar pantallas con candado</h3>
         <p className="text-[13.5px] text-neutral-500 mb-6">Selecciona qué pantallas requerirán el PIN anterior para poder entrar.</p>
-        
+
+        {!hasPinSet && (
+          <div className="mb-6 flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-[13px] font-medium text-amber-800">
+            <AlertCircle size={16} className="shrink-0 mt-0.5" />
+            <span>Primero crea tu PIN maestro arriba. Sin un PIN configurado, el candado no se activa y todas las pantallas quedan abiertas.</span>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {MODULES.map(module => {
             const isLocked = localLocked.includes(module.id)
@@ -268,6 +279,15 @@ function EmployeePinSection({
             )
           })}
         </div>
+
+        {(localLocked.includes('dashboard') || localLocked.includes('settings')) && (
+          <div className="mt-6 flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-[13px] font-medium text-amber-800">
+            <AlertCircle size={16} className="shrink-0 mt-0.5" />
+            <span>
+              Vas a bloquear {localLocked.includes('settings') ? <><strong>Configuración</strong> (esta pantalla)</> : <strong>el Panel de Control</strong>}: te pedirá el PIN cada vez que entres. Si lo olvidas, usa <strong>“¿Olvidaste el PIN?”</strong> en la pantalla de bloqueo para restablecerlo con tu cuenta (correo o Google).
+            </span>
+          </div>
+        )}
 
         <div className="mt-6 flex items-center gap-4 border-t border-black/[0.04] pt-6">
           <button

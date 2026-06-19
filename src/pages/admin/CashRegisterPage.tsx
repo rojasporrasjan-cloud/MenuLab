@@ -194,7 +194,8 @@ export default function CashRegisterPage() {
   const [countedCash, setCountedCash] = useState('')
   const [closeNote, setCloseNote] = useState('')
   const [error, setError] = useState<string | null>(null)
-  
+  const [showTips, setShowTips] = useState(true)
+
   // Verificación de Empleado
   const [verifyingAction, setVerifyingAction] = useState<'open' | 'close' | null>(null)
   const [operatorName, setOperatorName] = useState('')

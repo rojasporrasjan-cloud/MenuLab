@@ -24,7 +24,8 @@ export function useUpdateLockedModules(tenantId: string): UseUpdateLockedModules
       await queryClient.invalidateQueries({ queryKey: ['tenant-context'] })
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
-    } catch {
+    } catch (err) {
+      console.error('Failed to save locked modules', err)
       setError('No se pudieron guardar los módulos bloqueados. Intenta de nuevo.')
     } finally {
       setIsLoading(false)

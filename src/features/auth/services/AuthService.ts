@@ -6,6 +6,9 @@ import {
   signOut,
   sendPasswordResetEmail,
   sendEmailVerification,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
+  EmailAuthProvider,
   GoogleAuthProvider,
   type UserCredential,
 } from 'firebase/auth'
@@ -108,5 +111,42 @@ export const AuthService = {
       return
     }
     return signOut(auth)
+  },
+
+  /**
+   * Método de inicio de sesión del usuario actual: 'google' (popup) o
+   * 'password' (correo/contraseña). Define cómo se le pide re-autenticarse.
+   * `null` si no hay sesión.
+   */
+  getAuthProvider: (): 'google' | 'password' | null => {
+    if (!isFirebaseConfigured) return 'password'
+    const user = auth.currentUser
+    if (!user) return null
+    const providerId = user.providerData[0]?.providerId
+    return providerId === GoogleAuthProvider.PROVIDER_ID ? 'google' : 'password'
+  },
+
+  /**
+   * Re-autentica al usuario actual para operaciones sensibles (ej. restablecer
+   * el PIN maestro cuando el dueño lo olvidó). Prueba que es el dueño y no un
+   * empleado usando su sesión. Lanza FirebaseError si las credenciales fallan.
+   */
+  reauthenticate: async (password?: string): Promise<void> => {
+    if (!isFirebaseConfigured) return
+    const user = auth.currentUser
+    if (!user) throw new Error('No hay una sesión activa.')
+
+    const providerId = user.providerData[0]?.providerId
+    if (providerId === GoogleAuthProvider.PROVIDER_ID) {
+      const googleProvider = new GoogleAuthProvider()
+      googleProvider.setCustomParameters({ prompt: 'select_account' })
+      await reauthenticateWithPopup(user, googleProvider)
+      return
+    }
+
+    if (!user.email) throw new Error('Tu cuenta no tiene un correo asociado.')
+    if (!password) throw new Error('Ingresa la contraseña de tu cuenta.')
+    const credential = EmailAuthProvider.credential(user.email, password)
+    await reauthenticateWithCredential(user, credential)
   },
 }

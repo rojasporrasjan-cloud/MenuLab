@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTenantContext } from '@app/providers/TenantProvider'
 import { PinLockScreen } from '@shared/ui/components/PinLockScreen'
+import { PinRecovery } from '@features/settings/components/PinRecovery'
 
 interface RequirePinProps {
   moduleId?: string
@@ -39,6 +40,7 @@ export function RequirePin({ moduleId, children, onSuccess, onCancel }: RequireP
   const [isUnlocked, setIsUnlocked] = useState(() => {
     return moduleId ? readUnlockedModules(moduleId) : false
   })
+  const [showRecovery, setShowRecovery] = useState(false)
 
   if (!tenant) return <>{children}</>
 
@@ -49,6 +51,7 @@ export function RequirePin({ moduleId, children, onSuccess, onCancel }: RequireP
     if (moduleId) {
       persistUnlockedModule(moduleId)
     }
+    setShowRecovery(false)
     setIsUnlocked(true)
     if (onSuccess) onSuccess()
   }
@@ -58,5 +61,17 @@ export function RequirePin({ moduleId, children, onSuccess, onCancel }: RequireP
     return <>{children}</>
   }
 
-  return <PinLockScreen onUnlock={handleUnlock} onCancel={onCancel} />
+  // Recuperación: el dueño re-autentica con su cuenta y define un PIN nuevo.
+  // Es la única vía para no quedar encerrado cuando se bloquea Configuración.
+  if (showRecovery) {
+    return <PinRecovery onRecovered={handleUnlock} onBack={() => setShowRecovery(false)} />
+  }
+
+  return (
+    <PinLockScreen
+      onUnlock={handleUnlock}
+      onCancel={onCancel}
+      onForgotPin={() => setShowRecovery(true)}
+    />
+  )
 }

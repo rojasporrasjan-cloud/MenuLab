@@ -10,6 +10,11 @@ service firebase.storage {
     // Storage does not have access to Firestore, so we rely on path ownership
     // (the tenantId in the path must match the tenantId custom claim on the token).
     // Claim is set by the backend at login via Admin SDK setCustomUserClaims().
+    //
+    // NOTE: image uploads currently go to Cloudinary (see StorageService +
+    // VITE_CLOUDINARY_*), so Firebase Storage is an unused fallback. If it's ever
+    // enabled as the primary, a backend must set the `tenantId` claim on signup
+    // or these writes will be denied (see PENDIENTES.md "Custom Claims").
     function ownsTenantPath(tenantId) {
       return isAuthenticated()
         && request.auth.token.tenantId == tenantId;

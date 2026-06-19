@@ -2,15 +2,15 @@ import { useState, useRef, useEffect } from 'react'
 import { Lock, Eye, EyeOff, AlertCircle } from 'lucide-react'
 import { useTenantContext } from '@app/providers/TenantProvider'
 import { sha256 } from '@shared/utils/sha256'
-import { Spinner } from '../Spinner'
 import { Button } from '../Button'
 
 interface PinLockScreenProps {
   onUnlock: () => void
   onCancel?: () => void
+  onForgotPin?: () => void
 }
 
-export function PinLockScreen({ onUnlock, onCancel }: PinLockScreenProps) {
+export function PinLockScreen({ onUnlock, onCancel, onForgotPin }: PinLockScreenProps) {
   const { tenant } = useTenantContext()
   const [pin, setPin] = useState('')
   const [showPin, setShowPin] = useState(false)
@@ -92,8 +92,9 @@ export function PinLockScreen({ onUnlock, onCancel }: PinLockScreenProps) {
             {onCancel && (
               <Button
                 type="button"
-                variant="outline"
-                className="w-full flex-1 border-white/10 text-neutral-400 hover:bg-white/5 hover:text-white"
+                variant="secondary"
+                size="lg"
+                className="w-full flex-1"
                 onClick={onCancel}
                 disabled={isLoading}
               >
@@ -102,13 +103,31 @@ export function PinLockScreen({ onUnlock, onCancel }: PinLockScreenProps) {
             )}
             <Button
               type="submit"
-              className="w-full flex-1 bg-white text-black hover:bg-neutral-200"
+              variant="primary"
+              size="lg"
+              className="w-full flex-1"
+              isLoading={isLoading}
               disabled={isLoading || pin.length < 4}
             >
-              {isLoading ? <Spinner size="sm" className="text-black" /> : 'Desbloquear'}
+              Desbloquear
             </Button>
           </div>
         </form>
+
+        {onForgotPin ? (
+          <button
+            type="button"
+            onClick={onForgotPin}
+            className="mt-6 text-[13px] font-semibold text-amber-600 transition-colors hover:text-amber-700 hover:underline"
+          >
+            ¿Olvidaste el PIN? Restablécelo con tu cuenta
+          </button>
+        ) : (
+          <p className="mt-6 text-[12px] leading-relaxed text-zinc-400">
+            ¿Olvidaste el PIN? El propietario puede restablecerlo desde{' '}
+            <span className="font-semibold text-zinc-500">Configuración → Accesos y Empleados</span>.
+          </p>
+        )}
       </div>
     </div>
   )

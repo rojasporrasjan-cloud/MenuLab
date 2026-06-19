@@ -121,7 +121,7 @@ export function AppRouter() {
                 <Route path={ROUTES.admin.templates} element={<RequirePin moduleId="templates"><TemplatesPage /></RequirePin>} />
                 <Route path={ROUTES.admin.appearance} element={<RequirePin moduleId="appearance"><AppearancePage /></RequirePin>} />
                 <Route path={ROUTES.admin.analytics} element={<RequirePin moduleId="analytics"><AnalyticsPage /></RequirePin>} />
-                <Route path={ROUTES.admin.settings} element={<SettingsPage />} />
+                <Route path={ROUTES.admin.settings} element={<RequirePin moduleId="settings"><SettingsPage /></RequirePin>} />
                 <Route path={ROUTES.admin.orders} element={<RequirePin moduleId="orders"><OrdersPage /></RequirePin>} />
                 <Route path={ROUTES.admin.cash} element={<RequirePin moduleId="cash"><CashRegisterPage /></RequirePin>} />
                 <Route path={ROUTES.admin.reservations} element={<RequirePin moduleId="reservations"><AdminReservationsPage /></RequirePin>} />
