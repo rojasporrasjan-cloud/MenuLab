@@ -16,7 +16,7 @@ import { doc, setDoc, onSnapshot, updateDoc } from 'firebase/firestore'
 import { db } from '@infrastructure/firebase/firestore'
 import { TEMPLATE_DEFINITIONS, TEMPLATE_DEFAULT_BRANDING, getTemplateComponent } from '@features/templates'
 import { useUpdateAppearance } from '@features/settings/hooks/useUpdateAppearance'
-import { AppearanceMobileShell, type EditorTool } from '@features/settings/components/AppearanceMobile'
+import { AppearanceMobileShell, PhonePreviewFrame, type EditorTool } from '@features/settings/components/AppearanceMobile'
 import { isValidHex } from '@shared/utils/colorScale'
 import { FONT_OPTIONS } from '@core/domain/entities/Tenant'
 import { useAdminMenus } from '@features/menus'
@@ -470,16 +470,11 @@ export default function AppearancePage() {
   )
 
   const mobilePreview = previewTenant ? (
-    // transform-gpu hace que el frame sea el contenedor de los elementos
-    // `position: fixed` del template (ej. botón "Ordenar"), evitando que se
-    // escapen sobre el toolbar. overflow-hidden los recorta dentro del teléfono.
-    <div className="transform-gpu aspect-[10/19] h-full max-h-full w-auto overflow-hidden rounded-[2.3rem] border-2 border-white/10 bg-black shadow-2xl ring-1 ring-white/5">
+    <PhonePreviewFrame backgroundColor={editing.backgroundColor}>
       <Suspense fallback={<div className="grid h-full place-items-center" style={{ backgroundColor: editing.backgroundColor }}><Spinner size="sm" /></div>}>
-        <div className="scrollbar-hide h-full w-full overflow-y-auto" style={{ backgroundColor: editing.backgroundColor }}>
-          <TemplatePreview tenant={previewTenant} menu={previewMenu} table={PREVIEW_TABLE} groups={previewGroups} tenantId={tenantId} />
-        </div>
+        <TemplatePreview tenant={previewTenant} menu={previewMenu} table={PREVIEW_TABLE} groups={previewGroups} tenantId={tenantId} />
       </Suspense>
-    </div>
+    </PhonePreviewFrame>
   ) : (
     <div className="grid h-full place-items-center"><Spinner size="sm" /></div>
   )

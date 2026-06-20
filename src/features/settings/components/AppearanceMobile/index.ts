@@ -1,4 +1,5 @@
 export { AppearanceMobileShell } from './AppearanceMobileShell'
 export { EditorToolbar } from './EditorToolbar'
 export { EditorSheet } from './EditorSheet'
+export { PhonePreviewFrame } from './PhonePreviewFrame'
 export type { EditorTool } from './types'
