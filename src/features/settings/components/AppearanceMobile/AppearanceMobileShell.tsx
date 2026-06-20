@@ -49,7 +49,7 @@ export function AppearanceMobileShell({ preview, tools, header }: AppearanceMobi
             {header}
           </div>
         )}
-        <div className="grid h-full w-full place-items-center overflow-hidden p-4">
+        <div className="grid h-full w-full place-items-center overflow-hidden px-2 pb-2 pt-14">
           {preview}
         </div>
       </div>

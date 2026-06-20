@@ -442,13 +442,15 @@ export default function AppearancePage() {
   }, [hasChanges])
 
   // ── Móvil: herramientas, preview y acciones para el shell nativo ───────────
+  const themeToolProps = { editing, set, handleTemplateSelect, isPreviewCollapsed: false } as const
   const mobileTools: EditorTool[] = [
+    { id: 'template', label: 'Plantilla',  icon: LayoutGrid,     content: <ThemePanel {...themeToolProps} only="template" /> },
+    { id: 'colors',   label: 'Colores',    icon: Palette,        content: <ThemePanel {...themeToolProps} only="colors" /> },
+    { id: 'gradient', label: 'Fondo',      icon: GripHorizontal, content: <ThemePanel {...themeToolProps} only="gradient" /> },
+    { id: 'type',     label: 'Tipografía', icon: Type,           content: <ThemePanel {...themeToolProps} only="typography" /> },
+    { id: 'style',    label: 'Estilo',     icon: Sparkles,       content: <ThemePanel {...themeToolProps} only="style" /> },
     {
-      id: 'theme', label: 'Tema', icon: Palette,
-      content: <ThemePanel editing={editing} set={set} handleTemplateSelect={handleTemplateSelect} isPreviewCollapsed={false} />,
-    },
-    {
-      id: 'sections', label: 'Secciones', icon: LayoutGrid,
+      id: 'sections', label: 'Secciones', icon: ShoppingBag,
       content: <SectionsPanel editing={editing} set={set} openSection={openSection} toggleSection={toggleSection} previewGroups={previewGroups} isPreviewCollapsed={false} />,
     },
   ]
@@ -468,7 +470,10 @@ export default function AppearancePage() {
   )
 
   const mobilePreview = previewTenant ? (
-    <div className="aspect-[9/19.5] h-full max-h-full w-auto overflow-hidden rounded-[2.2rem] border border-white/10 bg-black shadow-2xl">
+    // transform-gpu hace que el frame sea el contenedor de los elementos
+    // `position: fixed` del template (ej. botón "Ordenar"), evitando que se
+    // escapen sobre el toolbar. overflow-hidden los recorta dentro del teléfono.
+    <div className="transform-gpu aspect-[10/19] h-full max-h-full w-auto overflow-hidden rounded-[2.3rem] border-2 border-white/10 bg-black shadow-2xl ring-1 ring-white/5">
       <Suspense fallback={<div className="grid h-full place-items-center" style={{ backgroundColor: editing.backgroundColor }}><Spinner size="sm" /></div>}>
         <div className="scrollbar-hide h-full w-full overflow-y-auto" style={{ backgroundColor: editing.backgroundColor }}>
           <TemplatePreview tenant={previewTenant} menu={previewMenu} table={PREVIEW_TABLE} groups={previewGroups} tenantId={tenantId} />
@@ -1374,13 +1379,15 @@ function AppearanceTemplateModal({
 // ── Theme Tab ──────────────────────────────────────────────────────────────────
 
 function ThemePanel({
-  editing, set, handleTemplateSelect, isPreviewCollapsed,
+  editing, set, handleTemplateSelect, isPreviewCollapsed, only,
 }: {
   editing: EditingState
   set: <K extends keyof EditingState>(k: K, v: EditingState[K]) => void
   handleTemplateSelect: (id: TemplateId) => void
   isPreviewCollapsed: boolean
+  only?: 'template' | 'colors' | 'gradient' | 'typography' | 'style'
 }) {
+  const show = (key: NonNullable<typeof only>): boolean => only === undefined || only === key
   return (
     <div className={cn(
       "grid gap-6 p-4 pb-12 items-start",
@@ -1388,7 +1395,7 @@ function ThemePanel({
     )}>
 
       {/* Template */}
-      <section className="flex flex-col gap-3">
+      <section className={cn('flex-col gap-3', show('template') ? 'flex' : 'hidden')}>
         <SectionLabel icon={<LayoutGrid size={12} />}>Plantilla</SectionLabel>
         <AppearanceTemplateTrigger
           currentTemplateId={editing.templateId}
@@ -1397,7 +1404,7 @@ function ThemePanel({
       </section>
 
       {/* Colors */}
-      <section className="flex flex-col gap-3">
+      <section className={cn('flex-col gap-3', show('colors') ? 'flex' : 'hidden')}>
         <SectionLabel icon={<Palette size={12} />}>Colores</SectionLabel>
 
         {/* Palette presets */}
@@ -1438,7 +1445,7 @@ function ThemePanel({
       </section>
 
       {/* Gradient */}
-      <section className="flex flex-col gap-3">
+      <section className={cn('flex-col gap-3', show('gradient') ? 'flex' : 'hidden')}>
         <div className="flex items-center justify-between">
           <SectionLabel icon={<GripHorizontal size={12} />}>Fondo gradiente</SectionLabel>
           <button
@@ -1473,7 +1480,7 @@ function ThemePanel({
       </section>
 
       {/* Typography */}
-      <section className="flex flex-col gap-4 mt-2">
+      <section className={cn('flex-col gap-4 mt-2', show('typography') ? 'flex' : 'hidden')}>
         <SectionLabel icon={<Type size={14} className="text-brand-500" />}>Tipografía</SectionLabel>
         <div className="flex flex-col gap-2">
           <label className="text-xs font-semibold text-surface-800">Fuente tipográfica</label>
@@ -1505,7 +1512,7 @@ function ThemePanel({
       </section>
 
       {/* Style */}
-      <section className="flex flex-col gap-4 mt-4">
+      <section className={cn('flex-col gap-4 mt-4', show('style') ? 'flex' : 'hidden')}>
         <SectionLabel icon={<LayoutGrid size={14} className="text-brand-500" />}>Estilo de componentes</SectionLabel>
         <div className="flex flex-col gap-2">
           <label className="text-xs font-semibold text-surface-800">Bordes de tarjetas</label>
