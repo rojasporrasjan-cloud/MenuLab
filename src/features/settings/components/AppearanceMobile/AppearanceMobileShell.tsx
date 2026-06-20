@@ -42,14 +42,14 @@ export function AppearanceMobileShell({ preview, tools, header }: AppearanceMobi
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-zinc-950 text-white">
-      {/* ── Viewport: preview limpio ─────────────────────────────────────── */}
-      <div className="relative min-h-0 flex-1 overflow-hidden">
+      {/* ── Viewport: barra slim + preview ──────────────────────────────── */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {header && (
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-2 p-3 [&>*]:pointer-events-auto">
+          <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-2.5">
             {header}
           </div>
         )}
-        <div className="grid h-full w-full place-items-center overflow-hidden px-2 pb-2 pt-14">
+        <div className="grid min-h-0 flex-1 place-items-center overflow-hidden px-2 pb-2">
           {preview}
         </div>
       </div>

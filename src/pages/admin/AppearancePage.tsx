@@ -457,12 +457,12 @@ export default function AppearancePage() {
 
   const mobileHeader = (
     <>
-      <Link to={ROUTES.admin.dashboard} aria-label="Cerrar editor" className="grid h-11 w-11 place-items-center rounded-full bg-black/40 text-white backdrop-blur-md transition-transform active:scale-90">
-        <X size={20} />
+      <Link to={ROUTES.admin.dashboard} aria-label="Cerrar editor" className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white transition-transform active:scale-90">
+        <X size={18} />
       </Link>
       <div className="flex items-center gap-2">
-        {success && <span className="rounded-full bg-emerald-500/90 px-3 py-2 text-[12px] font-bold text-white shadow-lg">Guardado</span>}
-        <button type="button" onClick={() => void handleSave()} disabled={isLoading} className="h-11 rounded-full bg-brand-500 px-5 text-[14px] font-black text-white shadow-lg shadow-brand-500/30 transition-transform active:scale-95 disabled:opacity-60">
+        {success && <span className="rounded-full bg-emerald-500/90 px-2.5 py-1 text-[11px] font-bold text-white">Guardado</span>}
+        <button type="button" onClick={() => void handleSave()} disabled={isLoading} className="h-9 rounded-full bg-brand-500 px-4 text-[13px] font-bold text-white shadow-md shadow-brand-500/30 transition-transform active:scale-95 disabled:opacity-60">
           {isLoading ? 'Guardando…' : 'Publicar'}
         </button>
       </div>
