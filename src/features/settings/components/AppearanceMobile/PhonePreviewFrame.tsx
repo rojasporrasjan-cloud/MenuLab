@@ -1,24 +1,24 @@
 import { useEffect, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
 
-/** Ancho lógico de un teléfono; el contenido se renderiza a este ancho y se escala. */
+/** Ancho lógico de un teléfono; el iframe se renderiza a este ancho y se escala. */
 const LOGICAL_PHONE_WIDTH = 390
 
 interface PhonePreviewFrameProps {
+  /** URL del menú en modo preview (ej. `/{tenant}/menu?preview=true`). */
+  readonly src: string
   readonly backgroundColor: string
-  readonly children: ReactNode
 }
 
 /**
- * Marco de teléfono que escala el menú para que SIEMPRE se vea proporcional.
+ * Marco de teléfono que muestra el menú real dentro de un iframe escalado.
  *
- * El contenido se renderiza a un ancho fijo (390px, como un teléfono real) y se
- * reduce con `transform: scale` para encajar en el marco disponible. Así, cuando
- * el sheet de controles achica el marco, el menú no se reacomoda "enorme": se ve
- * como un celular visto de lejos. `scale` también contiene los elementos
- * `position: fixed` del template dentro del marco.
+ * Usar un iframe (en vez de escalar un div) es clave: dentro del iframe los
+ * elementos `position: fixed` del template (ej. el botón "Ordenar ahora") se
+ * posicionan respecto al viewport del iframe → quedan bien pegados abajo. El
+ * iframe se renderiza a 390px de ancho y se reduce con `transform: scale` para
+ * encajar en el marco disponible, así el menú siempre se ve proporcional.
  */
-export function PhonePreviewFrame({ backgroundColor, children }: PhonePreviewFrameProps) {
+export function PhonePreviewFrame({ src, backgroundColor }: PhonePreviewFrameProps) {
   const frameRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 })
 
@@ -38,20 +38,21 @@ export function PhonePreviewFrame({ backgroundColor, children }: PhonePreviewFra
   return (
     <div
       ref={frameRef}
-      className="transform-gpu relative aspect-[10/19] h-full max-h-full w-auto overflow-hidden rounded-[2.3rem] border-2 border-white/10 bg-black shadow-2xl ring-1 ring-white/5"
+      className="relative aspect-[10/19] h-full max-h-full w-auto overflow-hidden rounded-[2.3rem] border-2 border-black bg-black shadow-2xl ring-1 ring-white/10"
     >
       {scale > 0 && (
-        <div
-          className="scrollbar-hide absolute left-0 top-0 origin-top-left overflow-y-auto"
+        <iframe
+          src={src}
+          title="Vista previa del menú"
+          className="phone-preview-scroll absolute left-0 top-0 border-0"
           style={{
             width: LOGICAL_PHONE_WIDTH,
             height: size.height / scale,
             transform: `scale(${scale})`,
-            backgroundColor,
+            transformOrigin: 'top left',
+            background: backgroundColor,
           }}
-        >
-          {children}
-        </div>
+        />
       )}
     </div>
   )

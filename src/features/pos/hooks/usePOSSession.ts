@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import type { Tenant } from '@core/domain/entities/Tenant'
 import { COPY } from '@shared/copy/ui.copy'
@@ -49,6 +49,13 @@ export function usePOSSession(tenant: Tenant | null): UsePOSSessionResult {
   )
   const [isValidating, setIsValidating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Sincronizar la caché offline apenas cargue la sesión o cambie el tenant.
+  useEffect(() => {
+    if (tenantId) {
+      POSAuthService.syncCache(tenantId).catch(() => {})
+    }
+  }, [tenantId])
 
   const unlock = useCallback(
     async (pin: string): Promise<boolean> => {

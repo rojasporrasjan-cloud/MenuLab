@@ -1,4 +1,6 @@
-import { useMemo } from 'react'
+import { useMemo, useEffect, useRef } from 'react'
+
+import { playTone } from '@shared/utils/beep'
 
 import type { Order } from '@core/domain/entities/Order'
 import { ORDER_STATUS } from '@core/domain/entities/Order'
@@ -36,6 +38,24 @@ export function usePOSOrders(tenantId: string): POSOrdersResult {
   const digitalOrders = useMemo(() => {
     return orders.filter(o => o.type !== 'table' && !o.tableId)
   }, [orders])
+
+  const pendingCountRef = useRef(0)
+
+  useEffect(() => {
+    if (isLoading) return
+    const currentPending = digitalOrders.filter(o => o.status === ORDER_STATUS.pending).length
+    if (currentPending > pendingCountRef.current) {
+      // Pitido de alerta cuando entra un nuevo pedido digital pendiente
+      try {
+        const ctx = new AudioContext()
+        playTone(ctx, 880, ctx.currentTime, 100)
+        playTone(ctx, 1100, ctx.currentTime + 0.15, 150)
+      } catch (_e) {
+        // Ignorar si el navegador bloquea el AudioContext sin interacción previa
+      }
+    }
+    pendingCountRef.current = currentPending
+  }, [digitalOrders, isLoading])
 
   function tableState(tableId: string): POSTableState {
     const tableOrders = ordersByTable.get(tableId)

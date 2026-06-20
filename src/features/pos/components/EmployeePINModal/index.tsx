@@ -17,7 +17,7 @@ export function EmployeePINModal({ isValidating, error, onSubmit }: EmployeePINM
 
   function handleDigit(digit: string) {
     if (isValidating) return;
-    setPin((prev) => prev.length < 6 ? prev + digit : prev);
+    setPin((prev) => prev.length < 8 ? prev + digit : prev);
   }
 
   function handleDelete() {

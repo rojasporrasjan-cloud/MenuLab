@@ -13,6 +13,7 @@ import {
   usePOSOrders,
   useCloseCheck,
   EmployeePINModal,
+  DigitalOrderInvoice,
   POSCart,
   CheckCloser,
 } from '@features/pos'
@@ -22,7 +23,7 @@ import { DigitalOrderGrid } from '@features/pos/components/DigitalOrderGrid'
 import { POSMenu } from '@features/pos/components/POSMenu'
 import { TerminalLockButton } from '@shared/ui/components/TerminalLockButton'
 import { cn } from '@shared/utils/cn'
-import { useCreateOrder } from '@features/cart'
+import { useCreateOrder, useUpdateOrderStatus } from '@features/cart'
 import { useTables } from '@features/qr'
 import { useAdminMenus, useAdminDishes, useAdminCategories } from '@features/dishes'
 import { UpgradeGate } from '@features/billing'
@@ -92,6 +93,7 @@ function POSWorkspace({ tenantId, employeeName, createdBy, onLock }: POSWorkspac
 
   const createOrder = useCreateOrder()
   const closeCheck = useCloseCheck()
+  const updateStatus = useUpdateOrderStatus()
 
   const tableOrders = useMemo(() => {
     if (selectedDigitalOrder) return [selectedDigitalOrder]
@@ -186,7 +188,7 @@ function POSWorkspace({ tenantId, employeeName, createdBy, onLock }: POSWorkspac
   // ── Vista: grid de mesas o digital ──
   if (!selectedTable && !selectedDigitalOrder) {
     return (
-      <div className="flex h-full flex-col gap-6 overflow-y-auto pb-6">
+      <div className="flex h-full flex-col gap-6 overflow-y-auto pb-6 print:hidden">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-3xl bg-neutral-900/50 p-6 ring-1 ring-white/5 shadow-xl">
           <div className="flex items-center gap-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-500/20 shadow-inner ring-1 ring-indigo-500/30">
@@ -265,7 +267,7 @@ function POSWorkspace({ tenantId, employeeName, createdBy, onLock }: POSWorkspac
   // ── Vista: menú + comanda de la mesa / pedido ──
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
-      <div className="flex shrink-0 items-center justify-between rounded-2xl bg-neutral-900/40 p-4 ring-1 ring-white/5 backdrop-blur-md">
+      <div className="flex shrink-0 items-center justify-between rounded-2xl bg-neutral-900/40 p-4 ring-1 ring-white/5 backdrop-blur-md print:hidden">
         <div className="flex items-center gap-4">
           <button
             type="button"
@@ -292,24 +294,39 @@ function POSWorkspace({ tenantId, employeeName, createdBy, onLock }: POSWorkspac
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[1fr_320px]">
-        <div className="min-h-0 overflow-hidden rounded-3xl bg-neutral-900/20 ring-1 ring-white/5">
-          <POSMenu dishes={dishes} categories={categories} onAdd={handleAddDish} />
+      {selectedDigitalOrder ? (
+        <DigitalOrderInvoice
+          order={selectedDigitalOrder}
+          onSendToKitchen={() => {
+            updateStatus.mutate(
+              { tenantId, orderId: selectedDigitalOrder.id, status: ORDER_STATUS.confirmed },
+              { onSuccess: () => setSelectedDigitalOrder(null) }
+            )
+          }}
+          onPay={() => setIsClosingCheck(true)}
+          onClose={() => setSelectedDigitalOrder(null)}
+          isUpdating={updateStatus.isPending}
+        />
+      ) : (
+        <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[1fr_320px] print:hidden">
+          <div className="min-h-0 overflow-hidden rounded-3xl bg-neutral-900/20 ring-1 ring-white/5">
+            <POSMenu dishes={dishes} categories={categories} onAdd={handleAddDish} />
+          </div>
+          <div
+            className="flex min-h-0 flex-col rounded-3xl p-4 shadow-xl"
+            style={{ background: 'rgba(20,20,20,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}
+          >
+            <POSCart
+              lines={cartLines}
+              tableOrders={tableOrders}
+              isSending={createOrder.isPending}
+              onQuantityChange={handleQuantityChange}
+              onSend={handleSendToKitchen}
+              onCloseCheck={() => setIsClosingCheck(true)}
+            />
+          </div>
         </div>
-        <div
-          className="flex min-h-0 flex-col rounded-3xl p-4 shadow-xl"
-          style={{ background: 'rgba(20,20,20,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}
-        >
-          <POSCart
-            lines={cartLines}
-            tableOrders={tableOrders}
-            isSending={createOrder.isPending}
-            onQuantityChange={handleQuantityChange}
-            onSend={handleSendToKitchen}
-            onCloseCheck={() => setIsClosingCheck(true)}
-          />
-        </div>
-      </div>
+      )}
 
       {isClosingCheck && (
         <CheckCloser
