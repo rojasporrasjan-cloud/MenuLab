@@ -1284,17 +1284,6 @@ function AppearanceTemplateModal({
           <h2 className="text-xl font-black text-surface-900 tracking-tight">Galería de plantillas</h2>
           <p className="mt-1 text-[12px] font-medium text-surface-500">{templates.length} diseños listos para usar</p>
         </div>
-        <div className="relative flex items-center">
-          <Search size={14} className="pointer-events-none absolute left-3.5 text-surface-400" />
-          <input
-            autoFocus
-            type="text"
-            placeholder="Buscar plantilla..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="h-10 w-64 rounded-xl border border-surface-200 bg-surface-50 pl-9 pr-4 text-sm text-surface-800 placeholder-surface-400 outline-none transition-all focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/10"
-          />
-        </div>
         <button
           onClick={onClose}
           title="Cerrar (Esc)"
