@@ -16,6 +16,7 @@ import { doc, setDoc, onSnapshot, updateDoc } from 'firebase/firestore'
 import { db } from '@infrastructure/firebase/firestore'
 import { TEMPLATE_DEFINITIONS, TEMPLATE_DEFAULT_BRANDING, getTemplateComponent } from '@features/templates'
 import { useUpdateAppearance } from '@features/settings/hooks/useUpdateAppearance'
+import { AppearanceMobileShell, type EditorTool } from '@features/settings/components/AppearanceMobile'
 import { isValidHex } from '@shared/utils/colorScale'
 import { FONT_OPTIONS } from '@core/domain/entities/Tenant'
 import { useAdminMenus } from '@features/menus'
@@ -440,8 +441,48 @@ export default function AppearancePage() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [hasChanges])
 
+  // ── Móvil: herramientas, preview y acciones para el shell nativo ───────────
+  const mobileTools: EditorTool[] = [
+    {
+      id: 'theme', label: 'Tema', icon: Palette,
+      content: <ThemePanel editing={editing} set={set} handleTemplateSelect={handleTemplateSelect} isPreviewCollapsed={false} />,
+    },
+    {
+      id: 'sections', label: 'Secciones', icon: LayoutGrid,
+      content: <SectionsPanel editing={editing} set={set} openSection={openSection} toggleSection={toggleSection} previewGroups={previewGroups} isPreviewCollapsed={false} />,
+    },
+  ]
+
+  const mobileHeader = (
+    <>
+      <Link to={ROUTES.admin.dashboard} aria-label="Cerrar editor" className="grid h-11 w-11 place-items-center rounded-full bg-black/40 text-white backdrop-blur-md transition-transform active:scale-90">
+        <X size={20} />
+      </Link>
+      <div className="flex items-center gap-2">
+        {success && <span className="rounded-full bg-emerald-500/90 px-3 py-2 text-[12px] font-bold text-white shadow-lg">Guardado</span>}
+        <button type="button" onClick={() => void handleSave()} disabled={isLoading} className="h-11 rounded-full bg-brand-500 px-5 text-[14px] font-black text-white shadow-lg shadow-brand-500/30 transition-transform active:scale-95 disabled:opacity-60">
+          {isLoading ? 'Guardando…' : 'Publicar'}
+        </button>
+      </div>
+    </>
+  )
+
+  const mobilePreview = previewTenant ? (
+    <div className="aspect-[9/19.5] h-full max-h-full w-auto overflow-hidden rounded-[2.2rem] border border-white/10 bg-black shadow-2xl">
+      <Suspense fallback={<div className="grid h-full place-items-center" style={{ backgroundColor: editing.backgroundColor }}><Spinner size="sm" /></div>}>
+        <div className="scrollbar-hide h-full w-full overflow-y-auto" style={{ backgroundColor: editing.backgroundColor }}>
+          <TemplatePreview tenant={previewTenant} menu={previewMenu} table={PREVIEW_TABLE} groups={previewGroups} tenantId={tenantId} />
+        </div>
+      </Suspense>
+    </div>
+  ) : (
+    <div className="grid h-full place-items-center"><Spinner size="sm" /></div>
+  )
+
   return (
-    <div className="flex flex-col gap-0 h-full w-full min-h-0">
+    <>
+    {/* ── Desktop: layout existente ─────────────────────────────────── */}
+    <div className="hidden md:flex flex-col gap-0 h-full w-full min-h-0">
 
       {/* ── Top bar ─────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-4 py-1.5 border-b border-zinc-200 bg-white shrink-0 shadow-sm">
@@ -756,6 +797,12 @@ export default function AppearancePage() {
         )}
       </div>
     </div>
+
+    {/* ── Móvil: editor de apariencia nativo a pantalla completa ────── */}
+    <div className="md:hidden fixed inset-0 z-40">
+      <AppearanceMobileShell preview={mobilePreview} tools={mobileTools} header={mobileHeader} />
+    </div>
+    </>
   )
 }
 
