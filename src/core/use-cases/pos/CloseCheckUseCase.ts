@@ -68,6 +68,13 @@ export class CloseCheckUseCase {
         createdBy: input.createdBy,
       }
       payments.push(await this.paymentRepository.create(payment))
+
+      // Si el pedido nunca pasó por cocina (ej: digital cobrado directo),
+      // primero lo confirmamos para que el KDS lo registre.
+      if (order.status === ORDER_STATUS.pending) {
+        await this.orderRepository.updateStatus(input.tenantId, order.id, ORDER_STATUS.confirmed)
+      }
+
       await this.orderRepository.updateStatus(input.tenantId, order.id, ORDER_STATUS.delivered)
     }
 

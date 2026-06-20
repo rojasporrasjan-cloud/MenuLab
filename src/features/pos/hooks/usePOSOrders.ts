@@ -1,6 +1,6 @@
 import { useMemo, useEffect, useRef } from 'react'
 
-import { playTone } from '@shared/utils/beep'
+import { playNewOrderBeep } from '@shared/utils/beep'
 
 import type { Order } from '@core/domain/entities/Order'
 import { ORDER_STATUS } from '@core/domain/entities/Order'
@@ -46,13 +46,7 @@ export function usePOSOrders(tenantId: string): POSOrdersResult {
     const currentPending = digitalOrders.filter(o => o.status === ORDER_STATUS.pending).length
     if (currentPending > pendingCountRef.current) {
       // Pitido de alerta cuando entra un nuevo pedido digital pendiente
-      try {
-        const ctx = new AudioContext()
-        playTone(ctx, 880, ctx.currentTime, 100)
-        playTone(ctx, 1100, ctx.currentTime + 0.15, 150)
-      } catch (_e) {
-        // Ignorar si el navegador bloquea el AudioContext sin interacción previa
-      }
+      playNewOrderBeep()
     }
     pendingCountRef.current = currentPending
   }, [digitalOrders, isLoading])
