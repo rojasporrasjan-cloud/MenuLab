@@ -357,8 +357,8 @@ export default function AppearancePage() {
 
   // Truly live sync to iframe via postMessage (no Firebase limits)
   useEffect(() => {
-    if (iframeRef.current?.contentWindow && previewTenant) {
-      iframeRef.current.contentWindow.postMessage({
+    if (previewTenant) {
+      const message = {
         type: 'LIVE_PREVIEW_UPDATE',
         payload: {
           name: previewTenant.name,
@@ -366,7 +366,19 @@ export default function AppearancePage() {
           branding: stripUndefined(previewTenant.branding),
           features: previewTenant.features,
         }
-      }, '*')
+      }
+      
+      if (iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(message, '*')
+      }
+      
+      const mobileIframes = document.querySelectorAll('iframe.phone-preview-scroll')
+      mobileIframes.forEach((iframe) => {
+        const win = (iframe as HTMLIFrameElement).contentWindow
+        if (win && win !== iframeRef.current?.contentWindow) {
+          win.postMessage(message, '*')
+        }
+      })
     }
   }, [previewTenant])
 
