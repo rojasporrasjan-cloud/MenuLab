@@ -82,8 +82,8 @@ function EmployeePinSection({
     e.preventDefault()
     setLocalError(null)
 
-    if (!/^\d{4,6}$/.test(pin)) {
-      setLocalError('El PIN debe tener entre 4 y 6 dígitos numéricos.')
+    if (!/^\d{4,8}$/.test(pin)) {
+      setLocalError('El PIN debe tener entre 4 y 8 dígitos numéricos.')
       return
     }
     if (pin !== confirm) {
@@ -172,8 +172,8 @@ function EmployeePinSection({
                 type={showPin ? 'text' : 'password'}
                 inputMode="numeric"
                 pattern="\d*"
-                maxLength={6}
-                placeholder="4–6 dígitos"
+                maxLength={8}
+                placeholder="4–8 dígitos"
                 value={pin}
                 onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
                 className="w-full rounded-2xl border border-neutral-200 bg-neutral-50/50 px-4 py-3.5 pr-12 text-[15px] font-bold outline-none transition-colors focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100"
@@ -199,7 +199,7 @@ function EmployeePinSection({
                  type={showPin ? 'text' : 'password'}
                  inputMode="numeric"
                  pattern="\d*"
-                 maxLength={6}
+                 maxLength={8}
                  placeholder="Repítelo"
                  value={confirm}
                  onChange={e => setConfirm(e.target.value.replace(/\D/g, ''))}
