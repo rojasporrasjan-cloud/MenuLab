@@ -25,7 +25,8 @@ import { TerminalLockButton } from '@shared/ui/components/TerminalLockButton'
 import { cn } from '@shared/utils/cn'
 import { useCreateOrder, useUpdateOrderStatus } from '@features/cart'
 import { useTables } from '@features/qr'
-import { useAdminMenus, useAdminDishes, useAdminCategories } from '@features/dishes'
+import { useAdminMenus } from '@features/dishes'
+import { useActiveDishes } from '@features/menu'
 import { UpgradeGate } from '@features/billing'
 import { COPY } from '@shared/copy/ui.copy'
 
@@ -82,8 +83,10 @@ function POSWorkspace({ tenantId, employeeName, createdBy, onLock }: POSWorkspac
 
   const { data: menus = [] } = useAdminMenus(tenantId)
   const menuId = menus[0]?.id ?? null
-  const { data: dishes = [] } = useAdminDishes(tenantId, menuId)
-  const { data: categories = [] } = useAdminCategories(tenantId, menuId)
+  const { groups = [] } = useActiveDishes(tenantId, menuId ?? '', [])
+
+  const categories = useMemo(() => groups.map((g) => g.category), [groups])
+  const dishes = useMemo(() => groups.flatMap((g) => g.dishes), [groups])
 
   const [viewMode, setViewMode] = useState<'tables' | 'digital'>('tables')
   const [selectedTable, setSelectedTable] = useState<Table | null>(null)
@@ -308,12 +311,12 @@ function POSWorkspace({ tenantId, employeeName, createdBy, onLock }: POSWorkspac
           isUpdating={updateStatus.isPending}
         />
       ) : (
-        <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[1fr_320px] print:hidden">
-          <div className="min-h-0 overflow-hidden rounded-3xl bg-neutral-900/20 ring-1 ring-white/5">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row print:hidden">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl bg-neutral-900/20 ring-1 ring-white/5">
             <POSMenu dishes={dishes} categories={categories} onAdd={handleAddDish} />
           </div>
           <div
-            className="flex min-h-0 flex-col rounded-3xl p-4 shadow-xl"
+            className="flex min-h-0 shrink-0 flex-col rounded-3xl p-4 shadow-xl max-h-[45vh] lg:max-h-none lg:w-[320px]"
             style={{ background: 'rgba(20,20,20,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}
           >
             <POSCart

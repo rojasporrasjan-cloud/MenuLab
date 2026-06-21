@@ -20,11 +20,13 @@ export function POSMenu({ dishes, categories, onAdd }: POSMenuProps) {
   const [search, setSearch] = useState('')
 
   const visible = useMemo(() => {
-    const term = search.trim().toLowerCase()
+    const normalize = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+    const term = normalize(search.trim())
+    
     return dishes.filter((dish) => {
       if (dish.status !== 'available') return false
       if (categoryId !== ALL_CATEGORIES && dish.categoryId !== categoryId) return false
-      if (term && !dish.name.toLowerCase().includes(term)) return false
+      if (term && !normalize(dish.name).includes(term)) return false
       return true
     })
   }, [dishes, categoryId, search])
@@ -80,7 +82,7 @@ export function POSMenu({ dishes, categories, onAdd }: POSMenuProps) {
       </div>
 
       {/* Dishes grid */}
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto pr-1">
         {visible.length === 0 ? (
           <p
             className="rounded-2xl border border-dashed px-4 py-10 text-center text-[13px]"
@@ -89,23 +91,47 @@ export function POSMenu({ dishes, categories, onAdd }: POSMenuProps) {
             {COPY.empty.search}
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
-            {visible.map((dish) => (
-              <button
-                key={dish.id}
-                type="button"
-                onClick={() => onAdd(dish)}
-                className="flex flex-col items-start gap-1 rounded-2xl p-3 text-left transition-all active:scale-95"
-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)' }}
-              >
-                <span className="line-clamp-2 text-[13px] font-bold leading-snug text-white">
-                  {dish.name}
-                </span>
-                <span className="text-[12.5px] font-black tabular-nums" style={{ color: '#f5b520' }}>
-                  {formatCurrency(dish.price.amount, dish.price.currency)}
-                </span>
-              </button>
-            ))}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {visible.map((dish) => {
+              const image = dish.assets?.thumbnailUrl || dish.assets?.imageUrl
+              return (
+                <button
+                  key={dish.id}
+                  type="button"
+                  onClick={() => onAdd(dish)}
+                  className="group relative flex flex-col items-stretch overflow-hidden rounded-2xl text-left transition-all active:scale-95 shadow-sm"
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+                >
+                  {/* Aspect ratio container for the image */}
+                  <div className="relative aspect-square w-full overflow-hidden bg-neutral-800/50">
+                    {image ? (
+                      <img 
+                        src={image} 
+                        alt={dish.name} 
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-neutral-800/80">
+                        <span className="text-[32px] opacity-20">🍽️</span>
+                      </div>
+                    )}
+                    {/* Dark gradient overlay for contrast if we want text on top, but we put text below */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                  </div>
+                  
+                  {/* Text area */}
+                  <div className="flex flex-1 flex-col justify-between p-3">
+                    <span className="line-clamp-2 text-[13px] font-bold leading-snug text-white/90">
+                      {dish.name}
+                    </span>
+                    <span className="mt-1.5 text-[14px] font-black tracking-tight" style={{ color: '#f5b520' }}>
+                      {formatCurrency(dish.price.amount, dish.price.currency)}
+                    </span>
+                  </div>
+                </button>
+              )
+            })}
           </div>
         )}
       </div>
