@@ -23,6 +23,7 @@ import { ROUTES } from '@shared/constants/routes'
 import type { Menu } from '@core/domain/entities/Menu'
 import type { Category } from '@core/domain/entities/Category'
 import type { MenuFormValues, CategoryFormValues } from '@features/menus'
+import { MenuScannerModal } from '@features/menus/components/MenuScannerModal'
 
 // ── Modal state helpers ───────────────────────────────────────────────────────
 
@@ -57,6 +58,7 @@ export default function MenuManagerPage() {
   // ── Modal state ─────────────────────────────────────────────────────────────
   const [menuModal, setMenuModal] = useState<MenuModal | null>(null)
   const [categoryModal, setCategoryModal] = useState<CategoryModal | null>(null)
+  const [showScanner, setShowScanner] = useState(false)
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
@@ -101,11 +103,9 @@ export default function MenuManagerPage() {
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <Button variant="secondary" asChild className="rounded-xl shadow-sm border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 hidden sm:flex">
-            <Link to={`${ROUTES.admin.editor}?openDigitalize=1`}>
-              <Sparkles size={15} className="mr-2" />
-              Digitalizar IA
-            </Link>
+          <Button variant="secondary" onClick={() => setShowScanner(true)} className="rounded-xl shadow-sm border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 hidden sm:flex">
+            <Sparkles size={15} className="mr-2" />
+            Digitalizar IA
           </Button>
           <Button onClick={() => setMenuModal({ type: 'create' })} className="rounded-xl shadow-sm">
             <PlusCircle size={15} className="mr-2" />
@@ -304,6 +304,14 @@ export default function MenuManagerPage() {
           error={categoryModal.type === 'edit' ? updateCatError : createCatError}
           onSubmit={handleCategorySubmit}
           onClose={() => setCategoryModal(null)}
+        />
+      )}
+
+      {showScanner && resolvedMenuId && (
+        <MenuScannerModal
+          tenantId={tenantId}
+          menuId={resolvedMenuId}
+          onClose={() => setShowScanner(false)}
         />
       )}
     </div>

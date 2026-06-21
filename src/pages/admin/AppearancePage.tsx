@@ -21,6 +21,7 @@ import { isValidHex } from '@shared/utils/colorScale'
 import { FONT_OPTIONS } from '@core/domain/entities/Tenant'
 import { useAdminMenus } from '@features/menus'
 import { useActiveDishes } from '@features/menu'
+import { MenuScannerModal } from '@features/menus/components/MenuScannerModal'
 import type { TemplateId, TenantAnnouncement, TenantSocials, TenantInfoFooter, TenantOrderButton, TenantBgGradient, TenantReservation, TenantPromo, TenantFeatured, ImageRounding } from '@core/domain/entities/Tenant'
 import type { Tenant } from '@core/domain/entities/Tenant'
 import type { Menu } from '@core/domain/entities/Menu'
@@ -126,8 +127,9 @@ function stripUndefined(value: unknown): FirestoreValue {
 export default function AppearancePage() {
   const { tenant, tenantId } = useTenantContext()
   const { save, isLoading, error, success } = useUpdateAppearance(tenantId)
-  const { data: menus } = useAdminMenus(tenantId)
+  const { data: menus = [] } = useAdminMenus(tenantId)
 
+  const activeMenuId = menus[0]?.id ?? null
   const resolvedMenuId = menus?.[0]?.id ?? ''
   const { groups: realGroups = [] } = useActiveDishes(tenantId, resolvedMenuId, menus?.[0]?.categoryOrder ?? [])
   const previewGroups = realGroups
@@ -168,6 +170,7 @@ export default function AppearancePage() {
 
   const [editing, setEditing] = useState<EditingState>(defaultEditing)
   const [isQrDialogOpen, setIsQrDialogOpen] = useState(false)
+  const [showScanner, setShowScanner] = useState(false)
   const [isPreviewCollapsed, setIsPreviewCollapsed] = useState(false)
 
   // Re-inicializa la edición cuando llega (o cambia) el tenant, o si el tenant se actualiza
@@ -473,13 +476,13 @@ export default function AppearancePage() {
         <X size={18} />
       </Link>
       <div className="flex items-center gap-2">
-        <Link 
-          to={`${ROUTES.admin.editor}?openDigitalize=1`}
+        <button
+          onClick={() => setShowScanner(true)}
           className="flex h-9 items-center gap-1.5 rounded-full bg-violet-500/20 px-3 text-[12px] font-bold text-violet-300 ring-1 ring-violet-500/30 transition-transform active:scale-95"
         >
           <Sparkles size={14} />
           <span>IA</span>
-        </Link>
+        </button>
         {success && <span className="rounded-full bg-emerald-500/90 px-2.5 py-1 text-[11px] font-bold text-white">Guardado</span>}
         <button type="button" onClick={() => void handleSave()} disabled={isLoading} className="h-9 rounded-full bg-brand-500 px-4 text-[13px] font-bold text-white shadow-md shadow-brand-500/30 transition-transform active:scale-95 disabled:opacity-60">
           {isLoading ? 'Guardando…' : 'Publicar'}
@@ -627,9 +630,9 @@ export default function AppearancePage() {
 
           {/* AI Digitize banner — always visible */}
           <div className="shrink-0 m-3 rounded-xl overflow-hidden border border-violet-200 bg-gradient-to-r from-violet-50 to-purple-50">
-            <Link
-              to={`${ROUTES.admin.editor}?openDigitalize=1`}
-              className="flex items-center gap-3 p-3 hover:from-violet-100 hover:to-purple-100 transition-colors"
+            <button
+              onClick={() => setShowScanner(true)}
+              className="flex items-center gap-3 p-3 w-full hover:from-violet-100 hover:to-purple-100 transition-colors text-left"
             >
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/15">
                 <Sparkles size={15} className="text-violet-600" />
@@ -639,7 +642,7 @@ export default function AppearancePage() {
                 <p className="text-[10px] text-violet-500 leading-tight">Sube una foto y Gemini lo convierte en tu menú digital</p>
               </div>
               <ExternalLink size={11} className="shrink-0 text-violet-400" />
-            </Link>
+            </button>
           </div>
 
           {/* Panel content */}
@@ -811,17 +814,32 @@ export default function AppearancePage() {
           </div>
         )}
       </div>
+
+      {showScanner && activeMenuId && (
+        <MenuScannerModal
+          tenantId={tenantId}
+          menuId={activeMenuId}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
     </div>
 
     {/* ── Móvil: editor de apariencia nativo a pantalla completa ────── */}
     <div className="md:hidden fixed inset-0 z-40">
       <AppearanceMobileShell preview={mobilePreview} tools={mobileTools} header={mobileHeader} />
+      {showScanner && activeMenuId && (
+        <MenuScannerModal
+          tenantId={tenantId}
+          menuId={activeMenuId}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
     </div>
     </>
   )
 }
 
-// ── Sections Tab ───────────────────────────────────────────────────────────────
+// ── Sections Tab ──────────────────────────────────────────────────────────────
 
 function SectionsPanel({
   editing, set, openSection, toggleSection, previewGroups, isPreviewCollapsed,
