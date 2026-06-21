@@ -91,11 +91,15 @@ function EmployeePinSection({
       return
     }
 
-    const hash = await sha256(pin)
-    await updatePin(hash)
-    setPin('')
-    setConfirm('')
-    pinRef.current?.focus()
+    try {
+      const hash = await sha256(pin)
+      await updatePin(hash)
+      setPin('')
+      setConfirm('')
+      pinRef.current?.focus()
+    } catch (err) {
+      setLocalError(err instanceof Error ? err.message : 'Error interno al cifrar el PIN.')
+    }
   }
 
   const [localLocked, setLocalLocked] = useState<string[]>(lockedModules)
@@ -334,6 +338,7 @@ function StaffAccountSection({ tenantId }: { tenantId: string }) {
     }
     setIsLoading(true)
     try {
+      // Need to hash the staff PIN as well if that's what setStaffPin expects, but let's check StaffAccountService.setStaffPin
       await StaffAccountService.setStaffPin({ tenantId, pin })
       setSuccess(true)
       setPin('')
