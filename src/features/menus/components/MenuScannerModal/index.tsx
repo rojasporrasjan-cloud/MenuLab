@@ -58,6 +58,17 @@ function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = (event) => {
+      const dataUrl = event.target?.result as string
+      
+      // If it's a PDF, DO NOT put it in an Image! Just return the base64 directly.
+      // Safari will throw "The string did not match the expected pattern." if you feed a PDF data URI to img.src.
+      if (file.type === 'application/pdf') {
+        const base64 = dataUrl.split(',')[1]
+        if (!base64) reject(new Error('base64 extraction failed'))
+        else resolve(base64)
+        return
+      }
+
       const img = new Image()
       img.onload = () => {
         const canvas = document.createElement('canvas')
@@ -82,9 +93,8 @@ function fileToBase64(file: File): Promise<string> {
         }
         ctx.drawImage(img, 0, 0, width, height)
         
-        // Comprimir como JPEG al 70% de calidad para reducir dramáticamente el peso
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.7)
-        const base64 = dataUrl.split(',')[1]
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7)
+        const base64 = compressedDataUrl.split(',')[1]
         if (!base64) {
           reject(new Error('base64 extraction failed'))
           return
@@ -92,7 +102,7 @@ function fileToBase64(file: File): Promise<string> {
         resolve(base64)
       }
       img.onerror = () => reject(new Error('Image load error'))
-      img.src = event.target?.result as string
+      img.src = dataUrl
     }
     reader.onerror = () => reject(reader.error)
     reader.readAsDataURL(file)
@@ -181,10 +191,15 @@ export function MenuScannerModal({ tenantId, menuId, onClose }: MenuScannerModal
 
   // ── File handling ────────────────────────────────────────────────────────────
 
-  async function processFile(file: File): Promise<void> {
+  async function processFiles(files: FileList | File[]): Promise<void> {
     setFileError(null)
-    const err = validateFile(file)
-    if (err) { setFileError(VALIDATION_MSGS[err]); return }
+    const filesArray = Array.from(files).slice(0, 5) // Max 5
+    if (filesArray.length === 0) return
+
+    for (const file of filesArray) {
+      const err = validateFile(file)
+      if (err) { setFileError(VALIDATION_MSGS[err]); return }
+    }
     
     if (!GeminiApiService.isConfigured()) {
       setFileError('Falta la API key de Gemini. Añade VITE_GEMINI_API_KEY en tu archivo .env y reinicia el servidor.')
@@ -193,9 +208,16 @@ export function MenuScannerModal({ tenantId, menuId, onClose }: MenuScannerModal
 
     try {
       setStep(2)
-      setStatusMsg('Analizando imagen…')
-      const base64 = await fileToBase64(file)
-      const extracted = await GeminiApiService.analyzeMenuImages([{ base64, mimeType: file.type }])
+      setStatusMsg(`Analizando ${filesArray.length > 1 ? `${filesArray.length} imágenes` : 'imagen'}…`)
+      
+      const toAnalyze = await Promise.all(
+        filesArray.map(async (file) => {
+          const base64 = await fileToBase64(file)
+          return { base64, mimeType: file.type }
+        })
+      )
+
+      const extracted = await GeminiApiService.analyzeMenuImages(toAnalyze)
       setPayload(extracted)
       setStep(3)
     } catch (error) {
@@ -208,13 +230,15 @@ export function MenuScannerModal({ tenantId, menuId, onClose }: MenuScannerModal
   function handleDrop(e: React.DragEvent<HTMLDivElement>): void {
     e.preventDefault()
     setIsDragOver(false)
-    const file = e.dataTransfer.files[0]
-    if (file) void processFile(file)
+    if (e.dataTransfer.files.length > 0) {
+      void processFiles(e.dataTransfer.files)
+    }
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>): void {
-    const file = e.target.files?.[0]
-    if (file) void processFile(file)
+    if (e.target.files && e.target.files.length > 0) {
+      void processFiles(e.target.files)
+    }
     e.target.value = ''
   }
 
@@ -311,6 +335,7 @@ export function MenuScannerModal({ tenantId, menuId, onClose }: MenuScannerModal
                 <input
                   ref={inputRef}
                   type="file"
+                  multiple
                   accept={ACCEPTED_TYPES.join(',')}
                   onChange={handleFileChange}
                   className="sr-only"

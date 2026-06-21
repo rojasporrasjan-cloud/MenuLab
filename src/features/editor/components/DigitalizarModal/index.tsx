@@ -59,6 +59,17 @@ function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = (event) => {
+      const dataUrl = event.target?.result as string
+
+      // If it's a PDF, DO NOT put it in an Image! Just return the base64 directly.
+      // Safari will throw "The string did not match the expected pattern." if you feed a PDF data URI to img.src.
+      if (file.type === 'application/pdf') {
+        const base64 = dataUrl.split(',')[1]
+        if (!base64) reject(new Error('base64 extraction failed'))
+        else resolve(base64)
+        return
+      }
+
       const img = new Image()
       img.onload = () => {
         const canvas = document.createElement('canvas')
@@ -83,9 +94,8 @@ function fileToBase64(file: File): Promise<string> {
         }
         ctx.drawImage(img, 0, 0, width, height)
         
-        // Comprimir como JPEG al 70% de calidad para reducir dramáticamente el peso
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.7)
-        const base64 = dataUrl.split(',')[1]
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7)
+        const base64 = compressedDataUrl.split(',')[1]
         if (!base64) {
           reject(new Error('base64 extraction failed'))
           return
@@ -93,7 +103,7 @@ function fileToBase64(file: File): Promise<string> {
         resolve(base64)
       }
       img.onerror = () => reject(new Error('Image load error'))
-      img.src = event.target?.result as string
+      img.src = dataUrl
     }
     reader.onerror = () => reject(reader.error)
     reader.readAsDataURL(file)
@@ -385,6 +395,7 @@ export function DigitalizarModal({ tenantId, menuId, onClose }: DigitalizarModal
                 <input
                   ref={inputRef}
                   type="file"
+                  multiple
                   accept={ACCEPTED_TYPES.join(',')}
                   onChange={handleFileChange}
                   className="sr-only"
