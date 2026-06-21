@@ -470,11 +470,7 @@ export default function AppearancePage() {
   )
 
   const mobilePreview = previewTenant ? (
-    <PhonePreviewFrame backgroundColor={editing.backgroundColor}>
-      <Suspense fallback={<div className="grid h-full place-items-center" style={{ backgroundColor: editing.backgroundColor }}><Spinner size="sm" /></div>}>
-        <TemplatePreview tenant={previewTenant} menu={previewMenu} table={PREVIEW_TABLE} groups={previewGroups} tenantId={tenantId} />
-      </Suspense>
-    </PhonePreviewFrame>
+    <PhonePreviewFrame src={`${menuPreviewUrl}?preview=true`} backgroundColor={editing.backgroundColor} />
   ) : (
     <div className="grid h-full place-items-center"><Spinner size="sm" /></div>
   )
