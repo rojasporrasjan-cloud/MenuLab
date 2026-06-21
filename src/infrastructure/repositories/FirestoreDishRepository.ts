@@ -18,11 +18,12 @@ export class FirestoreDishRepository implements IDishRepository {
   async getByMenuId(tenantId: string, menuId: string): Promise<Dish[]> {
     const q = query(
       collection(db, firestorePaths.dishes(tenantId, menuId)),
-      where('status', '==', 'available'),
       orderBy('sortOrder', 'asc'),
     )
     const snap = await getDocs(q)
-    return snap.docs.map((d) => DishMapper.toDomain(d, tenantId, menuId))
+    return snap.docs
+      .map((d) => DishMapper.toDomain(d, tenantId, menuId))
+      .filter((dish) => dish.status === 'available')
   }
 
   async getById(tenantId: string, menuId: string, dishId: string): Promise<Dish> {
@@ -41,10 +42,11 @@ export class FirestoreDishRepository implements IDishRepository {
     const q = query(
       collection(db, firestorePaths.dishes(tenantId, menuId)),
       where('categoryId', '==', categoryId),
-      where('status', '==', 'available'),
-      orderBy('sortOrder', 'asc'),
     )
     const snap = await getDocs(q)
-    return snap.docs.map((d) => DishMapper.toDomain(d, tenantId, menuId))
+    return snap.docs
+      .map((d) => DishMapper.toDomain(d, tenantId, menuId))
+      .filter((dish) => dish.status === 'available')
+      .sort((a, b) => a.sortOrder - b.sortOrder)
   }
 }
