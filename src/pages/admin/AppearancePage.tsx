@@ -461,6 +461,13 @@ export default function AppearancePage() {
         <X size={18} />
       </Link>
       <div className="flex items-center gap-2">
+        <Link 
+          to={`${ROUTES.admin.editor}?openDigitalize=1`}
+          className="flex h-9 items-center gap-1.5 rounded-full bg-violet-500/20 px-3 text-[12px] font-bold text-violet-300 ring-1 ring-violet-500/30 transition-transform active:scale-95"
+        >
+          <Sparkles size={14} />
+          <span>IA</span>
+        </Link>
         {success && <span className="rounded-full bg-emerald-500/90 px-2.5 py-1 text-[11px] font-bold text-white">Guardado</span>}
         <button type="button" onClick={() => void handleSave()} disabled={isLoading} className="h-9 rounded-full bg-brand-500 px-4 text-[13px] font-bold text-white shadow-md shadow-brand-500/30 transition-transform active:scale-95 disabled:opacity-60">
           {isLoading ? 'Guardando…' : 'Publicar'}

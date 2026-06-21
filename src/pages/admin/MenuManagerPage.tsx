@@ -100,10 +100,18 @@ export default function MenuManagerPage() {
             Organiza tus menús y sus categorías.
           </p>
         </div>
-        <Button onClick={() => setMenuModal({ type: 'create' })} className="rounded-xl shadow-sm">
-          <PlusCircle size={15} className="mr-2" />
-          Nuevo menú
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button variant="secondary" asChild className="rounded-xl shadow-sm border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 hidden sm:flex">
+            <Link to={`${ROUTES.admin.editor}?openDigitalize=1`}>
+              <Sparkles size={15} className="mr-2" />
+              Digitalizar IA
+            </Link>
+          </Button>
+          <Button onClick={() => setMenuModal({ type: 'create' })} className="rounded-xl shadow-sm">
+            <PlusCircle size={15} className="mr-2" />
+            Nuevo menú
+          </Button>
+        </div>
       </div>
 
       {/* Main loading */}
