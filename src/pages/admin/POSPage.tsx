@@ -82,7 +82,8 @@ function POSWorkspace({ tenantId, employeeName, createdBy, onLock }: POSWorkspac
   const { ordersByTable, digitalOrders, tableState } = usePOSOrders(tenantId)
 
   const { data: menus = [] } = useAdminMenus(tenantId)
-  const menuId = menus[0]?.id ?? null
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
+  const menuId = activeMenuId ?? menus[0]?.id ?? null
   const { groups = [] } = useActiveDishes(tenantId, menuId ?? '', [])
 
   const categories = useMemo(() => groups.map((g) => g.category), [groups])
@@ -313,7 +314,32 @@ function POSWorkspace({ tenantId, employeeName, createdBy, onLock }: POSWorkspac
       ) : (
         <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row print:hidden">
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl bg-neutral-900/20 ring-1 ring-white/5">
-            <POSMenu dishes={dishes} categories={categories} onAdd={handleAddDish} />
+            {/* Menu tabs si hay más de 1 menú */}
+            {menus.length > 1 && (
+              <div className="flex shrink-0 gap-2 overflow-x-auto border-b border-white/5 px-4 py-3">
+                {menus.map((menu) => {
+                  const isActive = (activeMenuId ?? menus[0]?.id) === menu.id
+                  return (
+                    <button
+                      key={menu.id}
+                      type="button"
+                      onClick={() => setActiveMenuId(menu.id)}
+                      className={cn(
+                        "shrink-0 rounded-full px-4 py-2 text-[12px] font-bold transition-all",
+                        isActive
+                          ? "bg-indigo-500 text-white shadow-md"
+                          : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white"
+                      )}
+                    >
+                      {menu.name}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+            <div className="flex-1 min-h-0 p-4">
+              <POSMenu dishes={dishes} categories={categories} onAdd={handleAddDish} />
+            </div>
           </div>
           <div
             className="flex min-h-0 shrink-0 flex-col rounded-3xl p-4 shadow-xl max-h-[45vh] lg:max-h-none lg:w-[320px]"
