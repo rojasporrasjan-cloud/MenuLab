@@ -21,6 +21,13 @@ export function slugify(input: string): string {
  */
 export function uniqueSlug(input: string): string {
   const base = slugify(input) || 'restaurante'
-  const suffix = crypto.randomUUID().replace(/-/g, '').slice(0, 7)
+  let uuid: string
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    uuid = crypto.randomUUID()
+  } else {
+    // Fallback para HTTP (dispositivos móviles en la misma red local)
+    uuid = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+  }
+  const suffix = uuid.replace(/-/g, '').slice(0, 7)
   return `${base}-${suffix}`
 }

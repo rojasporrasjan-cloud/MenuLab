@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { PlusCircle, BookOpen, Layers, AlertCircle, ExternalLink } from 'lucide-react'
+import { PlusCircle, BookOpen, Layers, AlertCircle, ExternalLink, Sparkles } from 'lucide-react'
 import { useTenantContext } from '@app/providers/TenantProvider'
 import {
   MenuCard,

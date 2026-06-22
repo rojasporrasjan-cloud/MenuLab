@@ -33,9 +33,24 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
 }
 
 export function parseAuthError(error: unknown): string {
+  console.error('Auth/Provisioning Error:', error)
+
+  // Duck-typing para prevenir fallos de `instanceof FirebaseError` en Vite dev server
+  if (error && typeof error === 'object' && 'code' in error) {
+    const code = String((error as { code: unknown }).code)
+    if (code.startsWith('auth/')) {
+      return AUTH_ERROR_MESSAGES[code] ?? `Error de autenticación (${code})`
+    }
+  }
+
   if (error instanceof FirebaseError) {
     return AUTH_ERROR_MESSAGES[error.code] ?? `Error de autenticación (${error.code})`
   }
+
+  if (error instanceof Error) {
+    return `Ocurrió un error: ${error.message}`
+  }
+
   return 'Ocurrió un error inesperado. Intenta de nuevo.'
 }
 

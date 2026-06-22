@@ -1,4 +1,5 @@
 import { useRef, useState }  from 'react'
+import imageCompression from 'browser-image-compression'
 import {
   X,
   UploadCloud,
@@ -42,71 +43,55 @@ const ACCEPTED_TYPES = [
 const MAX_BYTES   = LIMITS.upload.maxFileSizeBytes
 const MAX_SIZE_MB = MAX_BYTES / (1024 * 1024)
 
-type ValidationError = 'TYPE_NOT_SUPPORTED' | 'FILE_TOO_LARGE'
+type ValidationError = 'TYPE_NOT_SUPPORTED' | 'FILE_TOO_LARGE' | 'TOO_MANY_FILES'
 
 const VALIDATION_MSGS: Record<ValidationError, string> = {
   TYPE_NOT_SUPPORTED: 'Solo se aceptan imágenes JPG, PNG, WebP o PDF.',
   FILE_TOO_LARGE:     `El archivo supera el límite de ${MAX_SIZE_MB} MB.`,
+  TOO_MANY_FILES:     'Puedes subir un máximo de 5 imágenes a la vez.',
 }
 
 function validateFile(file: File): ValidationError | null {
-  if (!ACCEPTED_TYPES.includes(file.type)) return 'TYPE_NOT_SUPPORTED'
+  const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+  if (!ACCEPTED_TYPES.includes(file.type) && !isPDF) {
+    if (!file.name.toLowerCase().endsWith('.heic') && !file.name.toLowerCase().endsWith('.heif')) {
+      return 'TYPE_NOT_SUPPORTED'
+    }
+  }
   if (file.size > MAX_BYTES)               return 'FILE_TOO_LARGE'
   return null
 }
 
-function fileToBase64(file: File): Promise<string> {
+async function fileToBase64(file: File): Promise<string> {
+  let processedFile = file
+  
+  const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+  
+  // Optimizamos solo imágenes, los PDFs se leen directo
+  if (!isPDF) {
+    try {
+      processedFile = await imageCompression(file, {
+        maxSizeMB: 0.8,
+        maxWidthOrHeight: 1200,
+        useWebWorker: true,
+        fileType: 'image/jpeg',
+        initialQuality: 0.7
+      })
+    } catch (e) {
+      console.warn('Image compression failed, using original', e)
+    }
+  }
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = (event) => {
       const dataUrl = event.target?.result as string
-
-      // If it's a PDF, DO NOT put it in an Image! Just return the base64 directly.
-      // Safari will throw "The string did not match the expected pattern." if you feed a PDF data URI to img.src.
-      if (file.type === 'application/pdf') {
-        const base64 = dataUrl.split(',')[1]
-        if (!base64) reject(new Error('base64 extraction failed'))
-        else resolve(base64)
-        return
-      }
-
-      const img = new Image()
-      img.onload = () => {
-        const canvas = document.createElement('canvas')
-        const MAX_DIMENSION = 1600
-        let width = img.width
-        let height = img.height
-
-        if (width > height && width > MAX_DIMENSION) {
-          height = Math.round((height * MAX_DIMENSION) / width)
-          width = MAX_DIMENSION
-        } else if (height > MAX_DIMENSION) {
-          width = Math.round((width * MAX_DIMENSION) / height)
-          height = MAX_DIMENSION
-        }
-
-        canvas.width = width
-        canvas.height = height
-        const ctx = canvas.getContext('2d')
-        if (!ctx) {
-          reject(new Error('No 2d context'))
-          return
-        }
-        ctx.drawImage(img, 0, 0, width, height)
-        
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7)
-        const base64 = compressedDataUrl.split(',')[1]
-        if (!base64) {
-          reject(new Error('base64 extraction failed'))
-          return
-        }
-        resolve(base64)
-      }
-      img.onerror = () => reject(new Error('Image load error'))
-      img.src = dataUrl
+      const base64 = dataUrl.split(',')[1]
+      if (!base64) reject(new Error('base64 extraction failed'))
+      else resolve(base64)
     }
     reader.onerror = () => reject(reader.error)
-    reader.readAsDataURL(file)
+    reader.readAsDataURL(processedFile)
   })
 }
 
@@ -261,28 +246,63 @@ export function DigitalizarModal({ tenantId, menuId, onClose }: DigitalizarModal
 
   // ── File handling ────────────────────────────────────────────────────────────
 
-  async function processFile(file: File): Promise<void> {
+  async function processFiles(files: FileList | File[]): Promise<void> {
     setFileError(null)
-    const err = validateFile(file)
-    if (err) { setFileError(VALIDATION_MSGS[err]); return }
+    const filesArray = Array.from(files)
+    if (filesArray.length === 0) return
+
+    if (filesArray.length > 5) {
+      setFileError(VALIDATION_MSGS.TOO_MANY_FILES)
+      return
+    }
+
+    for (const file of filesArray) {
+      const err = validateFile(file)
+      if (err) { setFileError(VALIDATION_MSGS[err]); return }
+    }
+
     try {
-      const base64 = await fileToBase64(file)
-      await extract(base64, file.type)
-    } catch {
-      setFileError('No se pudo leer el archivo. Intenta con otra imagen.')
+      const imagesData = []
+      let totalPayloadSize = 0
+
+      // Procesamiento secuencial para no ahogar la RAM en celulares
+      for (const file of filesArray) {
+        const base64 = await fileToBase64(file)
+        imagesData.push({
+          base64,
+          mimeType: file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg')
+        })
+        totalPayloadSize += base64.length
+      }
+
+      // Verificamos límite seguro (4MB string size = ~3MB binary)
+      const payloadMb = totalPayloadSize / (1024 * 1024)
+      if (payloadMb > 3.8) {
+        throw new Error('El lote combinado es demasiado pesado para la IA (probablemente por incluir PDFs sin comprimir). Sube menos páginas a la vez.')
+      }
+
+      await extract(imagesData)
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('demasiado pesado')) {
+        setFileError(err.message)
+      } else {
+        setFileError('No se pudo leer una o más imágenes. Intenta con otros archivos.')
+      }
     }
   }
 
   function handleDrop(e: React.DragEvent<HTMLDivElement>): void {
     e.preventDefault()
     setIsDragOver(false)
-    const file = e.dataTransfer.files[0]
-    if (file) void processFile(file)
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      void processFiles(e.dataTransfer.files)
+    }
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>): void {
-    const file = e.target.files?.[0]
-    if (file) void processFile(file)
+    if (e.target.files && e.target.files.length > 0) {
+      void processFiles(e.target.files)
+    }
     e.target.value = ''
   }
 

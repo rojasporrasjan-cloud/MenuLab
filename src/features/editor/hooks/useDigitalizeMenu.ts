@@ -45,7 +45,7 @@ export function useDigitalizeMenu(tenantId: string, menuId: string | null) {
   const theme        = useEditorStore(selectTheme)
   const loadDocument = useEditorStore((s) => s.loadDocument)
 
-  async function extract(imageBase64: string, mimeType: string): Promise<void> {
+  async function extract(images: Array<{ base64: string; mimeType: string }>): Promise<void> {
     if (!GeminiApiService.isConfigured()) {
       setStatus({
         phase:   'error',
@@ -58,7 +58,7 @@ export function useDigitalizeMenu(tenantId: string, menuId: string | null) {
     setStatus({ phase: 'extracting' })
 
     try {
-      const payload = await GeminiApiService.analyzeMenuImages([{ base64: imageBase64, mimeType }])
+      const payload = await GeminiApiService.analyzeMenuImages(images)
       setStatus({ phase: 'preview', payload })
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error desconocido al analizar la imagen.'
