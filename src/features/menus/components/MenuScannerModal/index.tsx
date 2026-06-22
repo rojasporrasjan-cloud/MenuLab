@@ -244,7 +244,7 @@ export function MenuScannerModal({ tenantId, menuId, onClose }: MenuScannerModal
 
   // ── Apply ────────────────────────────────────────────────────────────────────
 
-  async function handleApply(): void {
+  async function handleApply(): Promise<void> {
     if (!payload || !menuId) return
     setIsSaving(true)
     try {
