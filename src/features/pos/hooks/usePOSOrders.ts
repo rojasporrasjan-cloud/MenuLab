@@ -55,7 +55,13 @@ export function usePOSOrders(tenantId: string): POSOrdersResult {
 
       if (newDigital) {
         playNewOrderBeep()
-        speakNewOrder('Nuevo pedido en línea')
+        if (newDigital.type === 'delivery') {
+          speakNewOrder('Nuevo pedido Express')
+        } else if (newDigital.type === 'pickup') {
+          speakNewOrder('Nuevo pedido para llevar')
+        } else {
+          speakNewOrder('Nuevo pedido')
+        }
       } else if (newTable) {
         playNewOrderBeep()
         speakNewOrder('Nuevo pedido en mesa')
