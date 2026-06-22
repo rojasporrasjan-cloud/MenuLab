@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
-import { X, ShoppingBag, MessageCircle, CreditCard } from 'lucide-react'
+import { X, ShoppingBag, MessageCircle, CreditCard, Check } from 'lucide-react'
 import { formatCurrency } from '@shared/utils/formatCurrency'
 import { COPY } from '@shared/copy/ui.copy'
 import { useCart } from '../../hooks/useCart'
@@ -111,8 +111,8 @@ export function CartDrawer({
                     boxShadow: `0 4px 18px ${accentColor}33`,
                   }}
                 >
-                  <MessageCircle size={16} />
-                  {COPY.cart.orderViaWhatsApp}
+                  {tableId !== null ? <Check size={16} /> : <MessageCircle size={16} />}
+                  {tableId !== null ? COPY.cart.confirm : COPY.cart.orderViaWhatsApp}
                 </button>
 
                 <button

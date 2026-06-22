@@ -198,7 +198,8 @@ export function CheckoutModal({
       setValidationMessage(null)
     }
 
-    if (whatsappPhone && (!isTableOrder || orderFailed)) {
+    const shouldOpenWhatsApp = whatsappPhone && (orderFailed || (mode !== 'table' && !isTableOrder))
+    if (shouldOpenWhatsApp) {
       window.open(buildWhatsAppUrl(whatsappPhone, message), '_blank', 'noopener,noreferrer')
     }
 

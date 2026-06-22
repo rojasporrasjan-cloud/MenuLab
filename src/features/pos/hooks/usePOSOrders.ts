@@ -1,6 +1,6 @@
 import { useMemo, useEffect, useRef } from 'react'
 
-import { playNewOrderBeep } from '@shared/utils/beep'
+import { playNewOrderBeep, speakNewOrder } from '@shared/utils/beep'
 
 import type { Order } from '@core/domain/entities/Order'
 import { ORDER_STATUS } from '@core/domain/entities/Order'
@@ -47,6 +47,7 @@ export function usePOSOrders(tenantId: string): POSOrdersResult {
     if (currentPending > pendingCountRef.current) {
       // Pitido de alerta cuando entra un nuevo pedido digital pendiente
       playNewOrderBeep()
+      speakNewOrder()
     }
     pendingCountRef.current = currentPending
   }, [digitalOrders, isLoading])

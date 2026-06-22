@@ -116,6 +116,20 @@ export function POSCart({
                 {formatCurrency(accountTotal, currency)}
               </span>
             </div>
+            
+            {/* Desglose de los platos pedidos en la mesa */}
+            <div className="mt-2 flex max-h-40 flex-col gap-1 overflow-y-auto pr-1">
+              {tableOrders.flatMap(o => o.items).map((item, idx) => (
+                <div key={idx} className="flex items-start justify-between text-[11px] leading-tight" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                  <span className="min-w-0 flex-1 truncate pr-2">
+                    <span className="font-bold text-white/60">{item.quantity}x</span> {item.dishName}
+                    {item.variantLabel && <span className="ml-1 text-white/30">({item.variantLabel})</span>}
+                  </span>
+                  <span className="shrink-0 tabular-nums">{formatCurrency(item.unitPrice * item.quantity, currency)}</span>
+                </div>
+              ))}
+            </div>
+
             <button
               type="button"
               onClick={onCloseCheck}

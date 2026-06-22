@@ -52,3 +52,23 @@ export function playNotificationBeep(): void {
   if (!ctx) return
   playTone(ctx, BEEP_FREQUENCIES[0], ctx.currentTime, BEEP_DURATION_MS)
 }
+
+/** Síntesis de voz para decir "Nuevo pedido en cocina" */
+export function speakNewOrder(): void {
+  try {
+    if (!('speechSynthesis' in window)) return
+    // Cancelar cualquier discurso previo para que la alerta sea inmediata
+    window.speechSynthesis.cancel()
+    
+    const msg = new SpeechSynthesisUtterance('Nuevo pedido en cocina')
+    msg.lang = 'es-ES'
+    msg.rate = 1.05
+    msg.pitch = 1.0
+    msg.volume = 1.0
+    
+    window.speechSynthesis.speak(msg)
+  } catch (error) {
+    // Si la API falla silenciosamente, ignoramos el error.
+    void error
+  }
+}
