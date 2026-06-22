@@ -1,7 +1,6 @@
 import {
   collection,
   doc,
-  getDoc,
   getDocs,
   increment,
   orderBy,
@@ -27,37 +26,36 @@ import type { Customer } from '@core/domain/entities/Customer'
 export class FirestoreCustomerRepository implements ICustomerRepository {
   async upsertFromOrder(snapshot: CustomerOrderSnapshot): Promise<void> {
     const ref = doc(db, firestorePaths.customer(snapshot.tenantId, snapshot.phone))
-    const existing = await getDoc(ref)
-
-    if (existing.exists()) {
-      await setDoc(
-        ref,
-        {
-          name: snapshot.name || existing.data()['name'] || '',
-          totalOrders: increment(1),
-          totalSpent: increment(snapshot.subtotal),
-          currency: snapshot.currency,
-          lastOrderAt: serverTimestamp(),
-        },
-        { merge: true },
-      )
-      return
+    
+    try {
+      // 1. Intentamos actualizar el cliente existente.
+      // Esto funcionará porque las reglas de seguridad permiten `update` si no se cambian `tenantId` ni `phone`.
+      // Si el cliente no existe, fallará (permission-denied o not-found).
+      await updateDoc(ref, {
+        name: snapshot.name,
+        totalOrders: increment(1),
+        totalSpent: increment(snapshot.subtotal),
+        currency: snapshot.currency,
+        lastOrderAt: serverTimestamp(),
+      })
+    } catch (_error) {
+      // 2. Si falló, asumimos que no existe y lo creamos.
+      // Las reglas de seguridad permiten `create` libremente si el `tenantId` coincide.
+      await setDoc(ref, {
+        tenantId: snapshot.tenantId,
+        phone: snapshot.phone,
+        name: snapshot.name,
+        email: null,
+        totalOrders: 1,
+        totalSpent: snapshot.subtotal,
+        currency: snapshot.currency,
+        tags: [],
+        note: null,
+        firstOrderAt: serverTimestamp(),
+        lastOrderAt: serverTimestamp(),
+        createdAt: serverTimestamp(),
+      })
     }
-
-    await setDoc(ref, {
-      tenantId: snapshot.tenantId,
-      phone: snapshot.phone,
-      name: snapshot.name,
-      email: null,
-      totalOrders: 1,
-      totalSpent: snapshot.subtotal,
-      currency: snapshot.currency,
-      tags: [],
-      note: null,
-      firstOrderAt: serverTimestamp(),
-      lastOrderAt: serverTimestamp(),
-      createdAt: serverTimestamp(),
-    })
   }
 
   async list(tenantId: string): Promise<Customer[]> {
