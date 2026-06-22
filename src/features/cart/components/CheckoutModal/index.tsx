@@ -163,7 +163,7 @@ export function CheckoutModal({
       customerPhone: customerPhone.trim() || null,
       deliveryAddress,
       note: note.trim() || null,
-      status: 'pending',
+      status: isTableOrder ? 'confirmed' : 'pending',
     }
 
     const message = buildOrderMessage({
