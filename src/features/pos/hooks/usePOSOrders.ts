@@ -39,18 +39,31 @@ export function usePOSOrders(tenantId: string): POSOrdersResult {
     return orders.filter(o => o.type !== 'table' && !o.tableId)
   }, [orders])
 
-  const pendingCountRef = useRef(0)
+  const knownOrderIds = useRef<Set<string> | null>(null)
 
   useEffect(() => {
     if (isLoading) return
-    const currentPending = digitalOrders.filter(o => o.status === ORDER_STATUS.pending).length
-    if (currentPending > pendingCountRef.current) {
-      // Pitido de alerta cuando entra un nuevo pedido digital pendiente
-      playNewOrderBeep()
-      speakNewOrder()
+    
+    const currentIds = new Set(orders.map(o => o.id))
+
+    if (knownOrderIds.current !== null) {
+      const previous = knownOrderIds.current
+      const newOrders = orders.filter(o => !previous.has(o.id))
+      
+      const newDigital = newOrders.find(o => o.type !== 'table' && o.status === ORDER_STATUS.pending)
+      const newTable = newOrders.find(o => o.type === 'table' && o.status === ORDER_STATUS.confirmed)
+
+      if (newDigital) {
+        playNewOrderBeep()
+        speakNewOrder('Nuevo pedido en línea')
+      } else if (newTable) {
+        playNewOrderBeep()
+        speakNewOrder('Nuevo pedido en mesa')
+      }
     }
-    pendingCountRef.current = currentPending
-  }, [digitalOrders, isLoading])
+    
+    knownOrderIds.current = currentIds
+  }, [orders, isLoading])
 
   function tableState(tableId: string): POSTableState {
     const tableOrders = ordersByTable.get(tableId)

@@ -4,7 +4,7 @@ import type { Order, OrderStatus } from '@core/domain/entities/Order'
 import { ORDER_STATUS } from '@core/domain/entities/Order'
 import { OrderRealtimeService } from '@infrastructure/services/OrderRealtimeService'
 import { isFirebaseConfigured } from '@infrastructure/firebase/config'
-import { playNewOrderBeep } from '@shared/utils/beep'
+import { playNewOrderBeep, speakNewOrder } from '@shared/utils/beep'
 
 /** Estados visibles en el tablero de cocina. */
 const KITCHEN_STATUSES: readonly OrderStatus[] = [
@@ -75,7 +75,10 @@ export function useKitchenOrders(tenantId: string): KitchenOrdersState {
         if (knownIncomingIds.current !== null) {
           const previous = knownIncomingIds.current
           const hasNew = board.incoming.some((o) => !previous.has(o.id))
-          if (hasNew) playNewOrderBeep()
+          if (hasNew) {
+            playNewOrderBeep()
+            speakNewOrder('Nuevo pedido en cocina')
+          }
         }
         knownIncomingIds.current = incomingIds
 
