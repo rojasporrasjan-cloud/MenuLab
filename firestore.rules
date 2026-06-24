@@ -146,10 +146,10 @@ service cloud.firestore {
         allow update, delete: if false;      // immutable — Cloud Functions aggregate
       }
 
-      // ── Analytics daily summaries (Cloud Functions only via Admin SDK) ────────
+      // ── Analytics daily summaries ──────────────────────────────────────────────
       match /analyticsDailySummaries/{date} {
         allow read:  if isTenantMember(tenantId);
-        allow write: if false; // Admin SDK bypasses rules
+        allow write: if true; // Permite incrementos anónimos desde el cliente
       }
 
       // ── Orders (pedidos en línea desde QR + POS) ──────────────────────────────

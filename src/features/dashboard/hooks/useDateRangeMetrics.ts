@@ -12,7 +12,7 @@ function summarize(orders: readonly Order[]): { count: number; revenue: number }
   const valid = orders.filter((o) => o.status !== 'cancelled')
   return {
     count: valid.length,
-    revenue: valid.reduce((sum, o) => sum + o.subtotal, 0),
+    revenue: valid.reduce((sum, o) => sum + o.total, 0),
   }
 }
 
