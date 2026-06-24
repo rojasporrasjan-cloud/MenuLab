@@ -3,6 +3,7 @@ import { CreditCard, Users, Eye, EyeOff, CheckCircle2, AlertCircle, UserCircle, 
 import { PageHeader } from '@shared/ui/components/PageHeader'
 import { useTenantContext } from '@app/providers/TenantProvider'
 import { cn } from '@shared/utils/cn'
+import { ROUTES } from '@shared/constants/routes'
 import { sha256 } from '@shared/utils/sha256'
 import {
   ProfileForm,
@@ -13,9 +14,9 @@ import {
 } from '@features/settings'
 import { Spinner } from '@shared/ui/components/Spinner'
 import { StaffAccountService } from '@infrastructure/services/StaffAccountService'
-import { ROUTES } from '@shared/constants/routes'
 import type { SettingsTab } from '@features/settings'
 import type { ProfileFormValues } from '@features/settings'
+import { CommerceForm, useUpdateCommerce } from '@features/settings'
 
 interface TabDef {
   key: SettingsTab
@@ -26,6 +27,7 @@ interface TabDef {
 
 const TABS: TabDef[] = [
   { key: 'profile',   label: 'Perfil del Restaurante',     icon: UserCircle, description: 'Datos básicos, logo y redes sociales.' },
+  { key: 'commerce',  label: 'Ventas y Facturación',       icon: CheckCircle2, description: 'Configuración de Express e Impuestos (IVA).' },
   { key: 'plan',      label: 'Suscripción',       icon: CreditCard, description: 'Tu plan actual y facturación.' },
   { key: 'employees', label: 'Accesos y Empleados',  icon: Users, description: 'Control de pines y permisos operativos.' },
 ]
@@ -454,6 +456,13 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile')
 
   const {
+    updateCommerce,
+    isLoading: isCommerceLoading,
+    error: commerceError,
+    success: commerceSuccess,
+  } = useUpdateCommerce(tenantId)
+
+  const {
     updateProfile,
     isLoading: isProfileLoading,
     error: profileError,
@@ -516,6 +525,27 @@ export default function SettingsPage() {
                 error={profileError}
                 success={profileSuccess}
                 onSubmit={(values) => { void handleProfileSubmit(values) }}
+              />
+            </div>
+          )}
+
+          {activeTab === 'commerce' && tenant && (
+            <div className="rounded-3xl border border-black/[0.04] bg-white p-6 shadow-sm">
+               <div className="flex items-center gap-3 border-b border-black/[0.04] pb-6 mb-6">
+                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 border border-amber-200">
+                   <CheckCircle2 size={24} />
+                 </div>
+                 <div>
+                    <h2 className="text-lg font-black text-neutral-900 tracking-tight">Ventas y Facturación</h2>
+                    <p className="text-[13.5px] text-neutral-500 mt-1">Configura el costo de los envíos (Express) y el tratamiento de los impuestos (IVA).</p>
+                 </div>
+              </div>
+              <CommerceForm
+                tenant={tenant}
+                isLoading={isCommerceLoading}
+                error={commerceError}
+                success={commerceSuccess}
+                onSubmit={(values) => { void updateCommerce(values) }}
               />
             </div>
           )}

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ArrowLeft, Lock, Info, MonitorSpeaker } from 'lucide-react'
+import { ArrowLeft, Lock, Info, MonitorSpeaker, Plus } from 'lucide-react'
 
 import type { Order } from '@core/domain/entities/Order'
 import type { Dish } from '@core/domain/entities/Dish'
@@ -58,8 +58,11 @@ function POSPageContent() {
     )
   }
 
+  if (!tenant) return null
+
   return (
     <POSWorkspace
+      tenant={tenant}
       tenantId={tenantId}
       employeeName={session.employeeName}
       createdBy={session.employeeId ?? session.employeeName}
@@ -70,14 +73,17 @@ function POSPageContent() {
 
 // ─── Workspace (desbloqueado) ─────────────────────────────────────────────────
 
+import type { Tenant } from '@core/domain/entities/Tenant'
+
 interface POSWorkspaceProps {
+  readonly tenant: Tenant
   readonly tenantId: string
   readonly employeeName: string
   readonly createdBy: string
   readonly onLock: () => void
 }
 
-function POSWorkspace({ tenantId, employeeName, createdBy, onLock }: POSWorkspaceProps) {
+function POSWorkspace({ tenant, tenantId, employeeName, createdBy, onLock }: POSWorkspaceProps) {
   const { data: tables = [] } = useTables(tenantId)
   const { ordersByTable, digitalOrders, tableState } = usePOSOrders(tenantId)
 
@@ -92,6 +98,7 @@ function POSWorkspace({ tenantId, employeeName, createdBy, onLock }: POSWorkspac
   const [viewMode, setViewMode] = useState<'tables' | 'digital'>('tables')
   const [selectedTable, setSelectedTable] = useState<Table | null>(null)
   const [selectedDigitalOrder, setSelectedDigitalOrder] = useState<Order | null>(null)
+  const [isCreatingExpress, setIsCreatingExpress] = useState(false)
   const [cartLines, setCartLines] = useState<POSCartLine[]>([])
   const [isClosingCheck, setIsClosingCheck] = useState(false)
 
@@ -134,16 +141,26 @@ function POSWorkspace({ tenantId, employeeName, createdBy, onLock }: POSWorkspac
     )
   }
 
-  function handleSendToKitchen() {
-    if (!selectedTable || cartLines.length === 0) return
+  function handleSendToKitchen(deliveryData?: {
+    type: 'delivery' | 'pickup' | 'table',
+    customerPhone: string,
+    customerName: string,
+    deliveryAddress: string
+  }) {
+    if (cartLines.length === 0) return
+    const type = deliveryData?.type ?? 'table'
+
+    // Require a selected table ONLY if the order is for a table
+    if (type === 'table' && !selectedTable) return
+
     const firstLine = cartLines[0]
     if (!firstLine) return
 
     const order: NewOrder = {
       tenantId,
-      tableId: selectedTable.id,
-      tableLabel: selectedTable.label ?? selectedTable.number,
-      type: 'table',
+      tableId: type !== 'table' ? null : (selectedTable?.id ?? null),
+      tableLabel: type !== 'table' ? null : (selectedTable?.label ?? selectedTable?.number ?? null),
+      type,
       items: cartLines.map((l) => ({
         dishId: l.dishId,
         dishName: l.dishName,
@@ -153,16 +170,25 @@ function POSWorkspace({ tenantId, employeeName, createdBy, onLock }: POSWorkspac
         note: null,
       })),
       subtotal: cartLines.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0),
+      deliveryCost: 0,
+      taxAmount: 0,
+      total: cartLines.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0),
       currency: firstLine.currency,
-      customerName: employeeName,
-      customerPhone: null,
-      deliveryAddress: null,
+      customerName: deliveryData && deliveryData.type !== 'table' ? deliveryData.customerName : employeeName,
+      customerPhone: deliveryData?.customerPhone || null,
+      deliveryAddress: deliveryData?.deliveryAddress || null,
       note: null,
-      // Comandero: el pedido nace confirmado (lo tomó un empleado en sala).
+      // Los pedidos express manuales también nacen confirmados (saltan pending)
       status: ORDER_STATUS.confirmed,
+      paymentStatus: 'pending',
     }
 
-    createOrder.mutate(order, { onSuccess: () => setCartLines([]) })
+    createOrder.mutate(order, { onSuccess: () => {
+      setCartLines([])
+      if (deliveryData && deliveryData.type !== 'table') {
+        setIsCreatingExpress(false) // Cerrar menú express al enviar
+      }
+    }})
   }
 
   function handleConfirmPayment(input: {
@@ -186,11 +212,12 @@ function POSWorkspace({ tenantId, employeeName, createdBy, onLock }: POSWorkspac
     if (closeCheck.isSuccess) {
       setSelectedTable(null)
       setSelectedDigitalOrder(null)
+      setIsCreatingExpress(false)
     }
   }
 
   // ── Vista: grid de mesas o digital ──
-  if (!selectedTable && !selectedDigitalOrder) {
+  if (!selectedTable && !selectedDigitalOrder && !isCreatingExpress) {
     return (
       <div className="flex h-full flex-col gap-6 overflow-y-auto pb-6 print:hidden">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-3xl bg-neutral-900/50 p-6 ring-1 ring-white/5 shadow-xl">
@@ -255,20 +282,30 @@ function POSWorkspace({ tenantId, employeeName, createdBy, onLock }: POSWorkspac
           <TableGrid
             tables={tables}
             stateOf={tableState}
-            accountSizeOf={(tableId) => ordersByTable.get(tableId)?.length ?? 0}
+            ordersOf={(tableId) => ordersByTable.get(tableId) ?? []}
             onSelect={setSelectedTable}
           />
         ) : (
-          <DigitalOrderGrid
-            orders={digitalOrders}
-            onSelect={setSelectedDigitalOrder}
-          />
+          <div className="flex flex-col gap-6">
+            <button
+              type="button"
+              onClick={() => setIsCreatingExpress(true)}
+              className="flex items-center justify-center gap-2 rounded-2xl bg-amber-500/20 px-6 py-4 text-[14px] font-black text-amber-400 ring-1 ring-amber-500/30 transition-all hover:bg-amber-500/30 hover:ring-amber-500/50"
+            >
+              <Plus size={18} />
+              NUEVO PEDIDO MANUAL (EXPRESS / LLEVAR)
+            </button>
+            <DigitalOrderGrid
+              orders={digitalOrders}
+              onSelect={setSelectedDigitalOrder}
+            />
+          </div>
         )}
       </div>
     )
   }
 
-  // ── Vista: menú + comanda de la mesa / pedido ──
+  // ── Vista: menú + comanda de la mesa / pedido / express ──
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
       <div className="flex shrink-0 items-center justify-between rounded-2xl bg-neutral-900/40 p-4 ring-1 ring-white/5 backdrop-blur-md print:hidden">
@@ -278,6 +315,7 @@ function POSWorkspace({ tenantId, employeeName, createdBy, onLock }: POSWorkspac
             onClick={() => {
               setSelectedTable(null)
               setSelectedDigitalOrder(null)
+              setIsCreatingExpress(false)
               setCartLines([])
             }}
             className="group flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 transition-all hover:bg-white/10 ring-1 ring-white/10"
@@ -286,11 +324,13 @@ function POSWorkspace({ tenantId, employeeName, createdBy, onLock }: POSWorkspac
           </button>
           <div>
             <h1 className="text-xl font-black text-white tracking-tight">
-              {selectedTable 
-                ? (selectedTable.label ?? COPY.table.label(selectedTable.number))
-                : selectedDigitalOrder?.customerName 
-                  ? `Delivery: ${selectedDigitalOrder.customerName}`
-                  : 'Pedido de Mostrador'
+              {isCreatingExpress 
+                ? 'Nuevo Pedido Express / Llevar'
+                : selectedTable 
+                  ? (selectedTable.label ?? COPY.table.label(selectedTable.number))
+                  : selectedDigitalOrder?.customerName 
+                    ? `Delivery: ${selectedDigitalOrder.customerName}`
+                    : 'Pedido de Mostrador'
               }
             </h1>
             <p className="text-[12px] font-medium text-neutral-400">Atendido por <span className="text-indigo-300">{employeeName}</span></p>
@@ -301,6 +341,7 @@ function POSWorkspace({ tenantId, employeeName, createdBy, onLock }: POSWorkspac
       {selectedDigitalOrder ? (
         <DigitalOrderInvoice
           order={selectedDigitalOrder}
+          tenant={tenant}
           onSendToKitchen={() => {
             updateStatus.mutate(
               { tenantId, orderId: selectedDigitalOrder.id, status: ORDER_STATUS.confirmed },
@@ -352,6 +393,8 @@ function POSWorkspace({ tenantId, employeeName, createdBy, onLock }: POSWorkspac
               onQuantityChange={handleQuantityChange}
               onSend={handleSendToKitchen}
               onCloseCheck={() => setIsClosingCheck(true)}
+              forceTableMode={!!selectedTable}
+              isExpressMode={isCreatingExpress}
             />
           </div>
         </div>
@@ -359,7 +402,7 @@ function POSWorkspace({ tenantId, employeeName, createdBy, onLock }: POSWorkspac
 
       {isClosingCheck && (
         <CheckCloser
-          orders={tableOrders}
+          orders={tableOrders.filter(o => o.paymentStatus !== 'paid')}
           isProcessing={closeCheck.isPending}
           isDone={closeCheck.isSuccess}
           onConfirm={handleConfirmPayment}

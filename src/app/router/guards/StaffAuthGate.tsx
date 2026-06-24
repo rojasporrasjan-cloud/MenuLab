@@ -81,6 +81,12 @@ function StaffPinScreen({ tenantId }: { tenantId: string }) {
         <p className="mt-6 text-center text-[11px] text-surface-400">
           Panel operativo · solo lo necesario para tu turno
         </p>
+
+        <div className="mt-8 text-center">
+          <a href="/admin" className="text-xs font-bold text-surface-500 hover:text-surface-800 transition-colors">
+            ¿Eres el dueño? Ir al Dashboard →
+          </a>
+        </div>
       </div>
     </div>
   )

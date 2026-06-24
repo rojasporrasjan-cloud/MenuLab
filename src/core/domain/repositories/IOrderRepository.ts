@@ -1,4 +1,4 @@
-import type { NewOrder, Order, OrderStatus } from '../entities/Order'
+import type { NewOrder, Order, OrderStatus, PaymentStatus } from '../entities/Order'
 
 export interface IOrderRepository {
   create(order: NewOrder): Promise<Order>
@@ -11,4 +11,5 @@ export interface IOrderRepository {
   /** Pedidos en un rango de fechas [start, end] (para analíticas). */
   listBetween(tenantId: string, start: Date, end: Date): Promise<Order[]>
   updateStatus(tenantId: string, orderId: string, status: OrderStatus): Promise<void>
+  updatePaymentStatus(tenantId: string, orderId: string, paymentStatus: PaymentStatus): Promise<void>
 }

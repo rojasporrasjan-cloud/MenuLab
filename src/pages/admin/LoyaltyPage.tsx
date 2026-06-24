@@ -9,7 +9,7 @@ import {
   useAddStamp,
   useRedeemReward,
   useCreateLoyaltyCard,
-  useLoyaltyStats,
+  useLoyaltyCards,
   LoyaltyCardView,
   LoyaltyScanner,
   LoyaltyService,
@@ -35,6 +35,10 @@ const PAGE_COPY = {
     save: 'Guardar configuración',
     saving: 'Guardando…',
     saved: 'Configuración guardada',
+    designTitle: 'Diseño de la Tarjeta',
+    cardColor: 'Color Base',
+    cardTextColor: 'Color del Texto',
+    cardStyle: 'Estilo de Fondo',
   },
   stats: {
     totalCards: 'Tarjetas',
@@ -64,6 +68,10 @@ function LoyaltyConfigSection({ tenantId, config }: { tenantId: string; config: 
   const [stampsForReward, setStampsForReward] = useState(config.stampsForReward)
   const [rewardDescription, setRewardDescription] = useState(config.rewardDescription)
   const [stampLabel, setStampLabel] = useState(config.stampLabel)
+  const [cardColor, setCardColor] = useState(config.cardColor || '#171717')
+  const [cardTextColor, setCardTextColor] = useState<'dark' | 'light'>(config.cardTextColor || 'light')
+  const [cardStyle, setCardStyle] = useState<'solid' | 'gradient' | 'glass'>(config.cardStyle || 'gradient')
+  
   const [isSaving, setIsSaving] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
@@ -75,6 +83,9 @@ function LoyaltyConfigSection({ tenantId, config }: { tenantId: string; config: 
         stampsForReward: Math.max(1, stampsForReward),
         rewardDescription: rewardDescription.trim() || DEFAULT_LOYALTY_CONFIG.rewardDescription,
         stampLabel: stampLabel.trim() || DEFAULT_LOYALTY_CONFIG.stampLabel,
+        cardColor,
+        cardTextColor,
+        cardStyle,
       })
       await queryClient.invalidateQueries({ queryKey: ['tenant', tenantId] })
       setMessage(PAGE_COPY.config.saved)
@@ -99,43 +110,142 @@ function LoyaltyConfigSection({ tenantId, config }: { tenantId: string; config: 
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 pt-2">
-        <label className="flex flex-col gap-2">
-          <span className="text-[12px] font-bold uppercase tracking-wider text-neutral-500 flex items-center gap-1.5">
-            <Award size={14} /> {PAGE_COPY.config.stampsForReward}
-          </span>
-          <input
-            type="number"
-            min={1}
-            max={30}
-            value={stampsForReward}
-            onChange={(e) => setStampsForReward(Number(e.target.value))}
-            className="rounded-xl border border-neutral-200 bg-neutral-50/50 px-4 py-3 text-[14px] font-bold text-neutral-900 outline-none transition-colors focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-100"
-          />
-        </label>
-        <label className="flex flex-col gap-2">
-          <span className="text-[12px] font-bold uppercase tracking-wider text-neutral-500 flex items-center gap-1.5">
-            <Gift size={14} /> {PAGE_COPY.config.rewardDescription}
-          </span>
-          <input
-            type="text"
-            value={rewardDescription}
-            onChange={(e) => setRewardDescription(e.target.value)}
-            className="rounded-xl border border-neutral-200 bg-neutral-50/50 px-4 py-3 text-[14px] font-bold text-neutral-900 outline-none transition-colors focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-100"
-          />
-        </label>
-        <label className="flex flex-col gap-2">
-          <span className="text-[12px] font-bold uppercase tracking-wider text-neutral-500 flex items-center gap-1.5">
-            <Star size={14} /> {PAGE_COPY.config.stampLabel}
-          </span>
-          <input
-            type="text"
-            value={stampLabel}
-            maxLength={4}
-            onChange={(e) => setStampLabel(e.target.value)}
-            className="rounded-xl border border-neutral-200 bg-neutral-50/50 px-4 py-3 text-[14px] font-bold text-neutral-900 outline-none transition-colors focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-100"
-          />
-        </label>
+      <div className="flex flex-col lg:flex-row gap-6 mt-6">
+        {/* FORMULARIO DE CONFIG */}
+        <div className="w-full lg:w-1/2">
+          <div className="grid grid-cols-1 gap-4">
+            <label className="flex flex-col gap-2">
+              <span className="text-[12px] font-bold uppercase tracking-wider text-neutral-500 flex items-center gap-1.5">
+                <Award size={14} /> {PAGE_COPY.config.stampsForReward}
+              </span>
+              <input
+                type="number"
+                min={1}
+                max={30}
+                value={stampsForReward}
+                onChange={(e) => setStampsForReward(Number(e.target.value))}
+                className="rounded-xl border border-neutral-200 bg-neutral-50/50 px-4 py-3 text-[14px] font-bold text-neutral-900 outline-none transition-colors focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-100"
+              />
+            </label>
+            <label className="flex flex-col gap-2">
+              <span className="text-[12px] font-bold uppercase tracking-wider text-neutral-500 flex items-center gap-1.5">
+                <Gift size={14} /> {PAGE_COPY.config.rewardDescription}
+              </span>
+              <input
+                type="text"
+                value={rewardDescription}
+                onChange={(e) => setRewardDescription(e.target.value)}
+                className="rounded-xl border border-neutral-200 bg-neutral-50/50 px-4 py-3 text-[14px] font-bold text-neutral-900 outline-none transition-colors focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-100"
+              />
+            </label>
+            <label className="flex flex-col gap-2">
+              <span className="text-[12px] font-bold uppercase tracking-wider text-neutral-500 flex items-center gap-1.5">
+                <Star size={14} /> {PAGE_COPY.config.stampLabel}
+              </span>
+              <input
+                type="text"
+                value={stampLabel}
+                maxLength={4}
+                onChange={(e) => setStampLabel(e.target.value)}
+                className="rounded-xl border border-neutral-200 bg-neutral-50/50 px-4 py-3 text-[14px] font-bold text-neutral-900 outline-none transition-colors focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-100"
+              />
+            </label>
+          </div>
+
+          {/* DISEÑO DE TARJETA */}
+          <div className="mt-6 border-t border-black/[0.04] pt-6">
+            <div className="mb-4">
+              <h4 className="text-[15px] font-black text-neutral-900">{PAGE_COPY.config.designTitle}</h4>
+              <p className="text-[13px] font-medium text-neutral-500">Personaliza la apariencia de la tarjeta VIP.</p>
+            </div>
+            
+            <div className="grid grid-cols-1 gap-4">
+              <label className="flex flex-col gap-2">
+                <span className="text-[12px] font-bold uppercase tracking-wider text-neutral-500">
+                  {PAGE_COPY.config.cardColor}
+                </span>
+                <div className="flex h-[46px] items-center gap-3 rounded-xl border border-neutral-200 bg-neutral-50/50 px-3">
+                  <input
+                    type="color"
+                    value={cardColor}
+                    onChange={(e) => setCardColor(e.target.value)}
+                    className="h-6 w-8 shrink-0 cursor-pointer rounded border-0 bg-transparent p-0 outline-none"
+                  />
+                  <input
+                    type="text"
+                    value={cardColor}
+                    onChange={(e) => setCardColor(e.target.value)}
+                    className="w-full bg-transparent text-[14px] font-bold text-neutral-900 outline-none uppercase"
+                  />
+                </div>
+              </label>
+
+              <label className="flex flex-col gap-2">
+                <span className="text-[12px] font-bold uppercase tracking-wider text-neutral-500">
+                  {PAGE_COPY.config.cardTextColor}
+                </span>
+                <select
+                  value={cardTextColor}
+                  onChange={(e) => setCardTextColor(e.target.value as 'dark' | 'light')}
+                  className="h-[46px] rounded-xl border border-neutral-200 bg-neutral-50/50 px-4 text-[14px] font-bold text-neutral-900 outline-none transition-colors focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-100"
+                >
+                  <option value="light">Claro (Blanco)</option>
+                  <option value="dark">Oscuro (Negro)</option>
+                </select>
+              </label>
+
+              <label className="flex flex-col gap-2">
+                <span className="text-[12px] font-bold uppercase tracking-wider text-neutral-500">
+                  {PAGE_COPY.config.cardStyle}
+                </span>
+                <select
+                  value={cardStyle}
+                  onChange={(e) => setCardStyle(e.target.value as 'solid' | 'gradient' | 'glass')}
+                  className="h-[46px] rounded-xl border border-neutral-200 bg-neutral-50/50 px-4 text-[14px] font-bold text-neutral-900 outline-none transition-colors focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-100"
+                >
+                  <option value="solid">Color Sólido</option>
+                  <option value="gradient">Gradiente Metálico</option>
+                  <option value="glass">Efecto Cristal</option>
+                </select>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* VISTA PREVIA EN VIVO */}
+        <div className="w-full lg:w-1/2 flex flex-col justify-center">
+          <div className="mb-4">
+            <h4 className="text-[12px] font-bold uppercase tracking-wider text-neutral-500 text-center">Vista Previa</h4>
+          </div>
+          <div className="pointer-events-none scale-[0.95] origin-top">
+            <LoyaltyCardView
+              card={{
+                id: 'preview',
+                tenantId: tenantId,
+                customerPhone: '8888-8888',
+                customerName: 'Cliente Ejemplo',
+                stamps: Math.floor(stampsForReward / 2),
+                stampsForReward: stampsForReward,
+                totalStamps: Math.floor(stampsForReward / 2),
+                redeemedRewards: 0,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                lastActivityAt: new Date(),
+              }}
+              config={{
+                stampsForReward,
+                rewardDescription: rewardDescription || 'Recompensa',
+                stampLabel: stampLabel || '⭐',
+                cardColor,
+                cardTextColor,
+                cardStyle,
+              }}
+              onAddStamp={() => {}}
+              onRedeem={() => {}}
+              isBusy={false}
+            />
+          </div>
+        </div>
       </div>
 
       <div className="flex items-center justify-end gap-3 mt-2">
@@ -172,6 +282,7 @@ function LoyaltyPageContent() {
 
   const { data: card, isLoading: isSearching, isFetched } = useLoyaltyCard(tenantId, searchedPhone)
   const { data: stats } = useLoyaltyStats(tenantId)
+  const { data: allCards = [] } = useLoyaltyCards(tenantId)
   const addStamp = useAddStamp()
   const redeemReward = useRedeemReward()
   const createCard = useCreateLoyaltyCard()
@@ -303,6 +414,51 @@ function LoyaltyPageContent() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Clientes Activos (Tabla) */}
+        <div className="mt-4 rounded-3xl border border-black/[0.04] bg-white p-6 shadow-md">
+          <div className="mb-4 flex items-center justify-between border-b border-black/[0.04] pb-4">
+            <h3 className="text-[16px] font-black text-neutral-900">Directorio de Clientes</h3>
+            <span className="rounded-full bg-neutral-100 px-3 py-1 text-[12px] font-bold text-neutral-500">{allCards.length} tarjetas</span>
+          </div>
+          
+          {allCards.length === 0 ? (
+            <p className="text-center text-[13px] font-medium text-neutral-500 py-6">Aún no hay clientes registrados en el programa.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-[13px]">
+                <thead>
+                  <tr className="border-b border-neutral-100 text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+                    <th className="py-3 px-2">Cliente</th>
+                    <th className="py-3 px-2">Teléfono</th>
+                    <th className="py-3 px-2 text-center">Sellos Actuales</th>
+                    <th className="py-3 px-2 text-center">Sellos Históricos</th>
+                    <th className="py-3 px-2 text-center">Premios</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allCards.map((c) => (
+                    <tr key={c.id} className="border-b border-neutral-50 transition-colors hover:bg-neutral-50/50">
+                      <td className="py-3 px-2 font-bold text-neutral-900">{c.customerName}</td>
+                      <td className="py-3 px-2 font-medium text-neutral-500">{c.customerPhone}</td>
+                      <td className="py-3 px-2 text-center">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 font-bold text-amber-700 border border-amber-100">
+                          {c.stamps} / {c.stampsForReward}
+                        </span>
+                      </td>
+                      <td className="py-3 px-2 text-center font-bold text-neutral-700">{c.totalStamps}</td>
+                      <td className="py-3 px-2 text-center">
+                        <span className="inline-flex items-center gap-1 font-bold text-purple-600">
+                          <Gift size={12} /> {c.redeemedRewards}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* Configuración */}

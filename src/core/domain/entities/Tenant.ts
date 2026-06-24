@@ -129,17 +129,35 @@ export interface TenantFeatureFlags {
   reservationsEnabled: boolean
 }
 
+export interface TenantDeliveryConfig {
+  enabled: boolean
+  cost: number
+  freeDeliveryThreshold: number | null
+}
+
+export interface TenantTaxConfig {
+  enabled: boolean
+  rate: number // Ej. 0.13
+  includedInPrice: boolean
+}
+
 /** Configuración del programa de lealtad (sellos digitales). */
 export interface LoyaltyConfig {
   readonly stampsForReward: number
   readonly rewardDescription: string
   readonly stampLabel: string
+  readonly cardColor?: string
+  readonly cardTextColor?: 'dark' | 'light'
+  readonly cardStyle?: 'solid' | 'gradient' | 'glass'
 }
 
 export const DEFAULT_LOYALTY_CONFIG: LoyaltyConfig = {
   stampsForReward: 10,
   rewardDescription: 'Recompensa gratis',
   stampLabel: '⭐',
+  cardColor: '#171717',
+  cardTextColor: 'light',
+  cardStyle: 'gradient',
 }
 
 export type MenuLanguage = 'es' | 'en'
@@ -165,6 +183,8 @@ export interface Tenant {
   templateId: TemplateId
   branding: TenantBranding
   features: TenantFeatureFlags
+  deliveryConfig?: TenantDeliveryConfig
+  taxConfig?: TenantTaxConfig
   timezone: string
   locale: string
   employeePinHash: string | null

@@ -34,7 +34,7 @@ export function PrintableQRs({ tables, branding, restaurantName, bgColor = '#fff
           }
           .qr-print-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 15mm;
             width: 100%;
           }
@@ -52,7 +52,7 @@ export function PrintableQRs({ tables, branding, restaurantName, bgColor = '#fff
             overflow: hidden;
             background: ${bgColor} !important;
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            height: 100%;
+            height: 125mm;
             color: ${textColor} !important;
           }
           .qr-print-card::before {
@@ -75,18 +75,18 @@ export function PrintableQRs({ tables, branding, restaurantName, bgColor = '#fff
               {/* Header: Logo / Name */}
               <div className="mb-4 flex flex-col items-center gap-2">
                 {logoUrl ? (
-                  <img src={logoUrl} alt={restaurantName} className="h-10 w-10 object-contain rounded-md bg-white p-0.5" />
+                  <img src={logoUrl} alt={restaurantName} className="h-14 w-14 object-contain rounded-md bg-white p-1" />
                 ) : null}
-                <h1 className="text-sm font-bold tracking-tight leading-tight" style={{ color: textColor }}>
+                <h1 className="text-lg font-bold tracking-tight leading-tight mt-1" style={{ color: textColor }}>
                   {restaurantName}
                 </h1>
               </div>
 
               {/* QR Code */}
-              <div className="rounded-xl bg-white p-2 shadow-sm border border-zinc-100 mb-4">
+              <div className="rounded-2xl bg-white p-3 shadow-sm border border-zinc-100 mb-6 mt-2">
                 <QRCodeSVG
                   value={menuUrl}
-                  size={110}
+                  size={160}
                   level="Q"
                   includeMargin={false}
                   fgColor="#000000"
@@ -94,24 +94,23 @@ export function PrintableQRs({ tables, branding, restaurantName, bgColor = '#fff
                 />
               </div>
 
-              {/* Footer: Table Info */}
-              <div className="w-full flex flex-col items-center gap-1 mt-auto pb-2">
-                <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: mutedTextColor }}>
+              <div className="w-full flex flex-col items-center gap-1.5 mt-auto pb-4">
+                <p className="text-[12px] font-bold uppercase tracking-widest" style={{ color: mutedTextColor }}>
                   Escanear para ordenar
                 </p>
                 <div 
-                  className="mt-1 rounded-full px-4 py-1.5 w-full"
+                  className="mt-2 rounded-full px-5 py-2.5 w-full"
                   style={{ backgroundColor: `${primaryColor}${isDark ? '40' : '15'}` }}
                 >
                   <p 
-                    className="text-sm font-black uppercase tracking-wide"
+                    className="text-base font-black uppercase tracking-wide"
                     style={{ color: isDark ? '#ffffff' : primaryColor }}
                   >
                     Mesa {table.number}
                   </p>
                 </div>
                 {table.label && (
-                  <p className="mt-1 text-[10px] font-medium" style={{ color: mutedTextColor }}>{table.label}</p>
+                  <p className="mt-2 text-xs font-semibold" style={{ color: mutedTextColor }}>{table.label}</p>
                 )}
               </div>
             </div>

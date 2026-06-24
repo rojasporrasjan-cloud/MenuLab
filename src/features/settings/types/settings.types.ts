@@ -61,4 +61,4 @@ export const LOCALE_OPTIONS = [
 
 // Branding tab intentionally removed — appearance lives in `/admin/appearance`
 // (single source of truth for the 20+ branding fields on Tenant).
-export type SettingsTab = 'profile' | 'plan' | 'employees'
+export type SettingsTab = 'profile' | 'commerce' | 'plan' | 'employees'

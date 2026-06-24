@@ -4,6 +4,7 @@ export { useAddStamp } from './hooks/useAddStamp'
 export { useRedeemReward } from './hooks/useRedeemReward'
 export { useCreateLoyaltyCard } from './hooks/useCreateLoyaltyCard'
 export { useLoyaltyStats } from './hooks/useLoyaltyStats'
+export { useLoyaltyCards } from './hooks/useLoyaltyCards'
 
 // ── Components ────────────────────────────────────────────────────────────────
 export { LoyaltyCardView } from './components/LoyaltyCardView'

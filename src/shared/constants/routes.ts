@@ -44,6 +44,7 @@ export const ROUTES = {
     pos: '/admin/pos',
     cash: '/admin/caja',
     employees: '/admin/empleados',
+    dispatcher: '/admin/envios',
   },
 
   /* ── Staff panel (trabajadores — entran con PIN por menú: /:tenantId/staff) ── */
@@ -51,6 +52,7 @@ export const ROUTES = {
     base: '/:tenantId/staff',
     home: (tenantId: string) => `/${tenantId}/staff`,
     segments: {
+      waiter: 'tomar-pedido',
       orders: 'pedidos',
       availability: 'disponibilidad',
       promos: 'promos',

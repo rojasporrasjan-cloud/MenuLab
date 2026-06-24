@@ -9,6 +9,16 @@ interface DigitalOrderInvoiceProps {
   readonly onPay: () => void
   readonly onClose: () => void
   readonly isUpdating: boolean
+  readonly tenant?: {
+    name: string
+    branding: {
+      logoUrl: string | null
+      infoFooter: {
+        phone: string | null
+        address: string | null
+      }
+    }
+  } | null
 }
 
 export function DigitalOrderInvoice({
@@ -16,7 +26,8 @@ export function DigitalOrderInvoice({
   onSendToKitchen,
   onPay,
   onClose,
-  isUpdating
+  isUpdating,
+  tenant,
 }: DigitalOrderInvoiceProps) {
   const isPending = order.status === ORDER_STATUS.pending
   
@@ -31,33 +42,60 @@ export function DigitalOrderInvoice({
     <div className="flex h-full flex-col overflow-y-auto">
       <div className="mx-auto w-full max-w-lg rounded-3xl bg-neutral-900/50 p-8 shadow-xl ring-1 ring-white/10 backdrop-blur-sm print:m-0 print:max-w-none print:rounded-none print:bg-white print:p-0 print:shadow-none print:ring-0">
         
-        {/* Encabezado del Ticket */}
-        <div className="flex flex-col items-center border-b border-white/10 pb-6 text-center print:border-black/20">
-          <h2 className="text-2xl font-black text-white print:text-black">
-            {isDelivery ? 'Delivery' : 'Para Llevar'}
-          </h2>
-          <p className="mt-1 text-sm font-medium text-neutral-400 print:text-black/70">
-            {new Intl.DateTimeFormat('es-CR', {
-              dateStyle: 'short',
-              timeStyle: 'short'
-            }).format(order.createdAt)}
-          </p>
-          <div className="mt-4 rounded-xl bg-white/5 px-4 py-2 ring-1 ring-white/10 print:bg-transparent print:ring-0">
-            <span className="text-lg font-black text-white print:text-black">
-              {order.customerName || 'Cliente Anónimo'}
+        {/* Encabezado del Ticket Térmico 80mm */}
+        <div className="flex flex-col items-center border-b border-dashed border-white/20 pb-6 text-center print:border-black/30">
+          {tenant?.branding.logoUrl && (
+            <img 
+              src={tenant.branding.logoUrl} 
+              alt={tenant.name}
+              className="mb-3 h-16 w-16 object-contain grayscale print:h-20 print:w-20"
+            />
+          )}
+          {tenant?.name && (
+            <h1 className="text-xl font-black uppercase tracking-widest text-white print:text-black print:text-2xl">
+              {tenant.name}
+            </h1>
+          )}
+          {(tenant?.branding.infoFooter.address || tenant?.branding.infoFooter.phone) && (
+            <div className="mt-1 flex flex-col items-center text-xs text-neutral-400 print:text-black/80 print:text-[13px]">
+              {tenant.branding.infoFooter.address && <p className="max-w-[200px]">{tenant.branding.infoFooter.address}</p>}
+              {tenant.branding.infoFooter.phone && <p>Tel: {tenant.branding.infoFooter.phone}</p>}
+            </div>
+          )}
+
+          <div className="mt-4 mb-2 flex flex-col items-center gap-1">
+            <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 print:text-black/60">
+              Ticket #{order.id.slice(-5).toUpperCase()}
+            </p>
+            <h2 className="text-2xl font-black text-white print:text-black print:text-3xl">
+              {isDelivery ? 'EXPRESS' : (order.type === 'pickup' ? 'PARA LLEVAR' : 'EN MESA')}
+            </h2>
+            <p className="text-sm font-medium text-neutral-400 print:text-black/70 print:text-[13px]">
+              {new Intl.DateTimeFormat('es-CR', {
+                dateStyle: 'short',
+                timeStyle: 'short'
+              }).format(order.createdAt)}
+            </p>
+          </div>
+
+          <div className="mt-4 w-full rounded-xl bg-white/5 px-4 py-3 ring-1 ring-white/10 print:bg-transparent print:border print:border-dashed print:border-black/30 print:ring-0 text-left">
+            <span className="text-base font-black text-white print:text-black">
+              Cliente: {order.customerName || 'Anónimo'}
             </span>
             {order.customerPhone && (
-              <p className="mt-1 text-sm text-neutral-300 print:text-black/80">{order.customerPhone}</p>
+              <p className="mt-0.5 text-sm text-neutral-300 print:text-black/80 font-bold">Tel: {order.customerPhone}</p>
+            )}
+            {isDelivery && order.deliveryAddress && (
+              <p className="mt-2 text-sm leading-relaxed text-neutral-300 print:text-black/80">
+                <span className="font-bold block text-xs uppercase text-neutral-500 print:text-black/60">Dirección</span> 
+                {order.deliveryAddress}
+              </p>
             )}
           </div>
-          {isDelivery && order.deliveryAddress && (
-            <p className="mt-4 max-w-sm text-sm leading-relaxed text-neutral-300 print:text-black/80">
-              <span className="font-bold">Dirección:</span> {order.deliveryAddress}
-            </p>
-          )}
           {order.note && (
-            <div className="mt-4 rounded-xl bg-amber-500/10 p-3 ring-1 ring-amber-500/20 print:border print:border-dashed print:border-black/30 print:bg-transparent print:ring-0">
-              <p className="text-sm font-bold text-amber-400 print:text-black">Nota: {order.note}</p>
+            <div className="mt-3 w-full rounded-xl bg-amber-500/10 p-3 ring-1 ring-amber-500/20 print:border print:border-dashed print:border-black/30 print:bg-transparent print:ring-0 text-left">
+              <span className="font-bold block text-xs uppercase text-amber-500/80 print:text-black/60 mb-0.5">Nota del Pedido</span>
+              <p className="text-sm font-bold text-amber-400 print:text-black">{order.note}</p>
             </div>
           )}
         </div>
@@ -66,10 +104,10 @@ export function DigitalOrderInvoice({
         <div className="py-6">
           <table className="w-full text-left text-sm print:text-black">
             <thead>
-              <tr className="border-b border-white/10 text-neutral-400 print:border-black/20 print:text-black/60">
-                <th className="pb-3 font-bold">Cant</th>
-                <th className="pb-3 font-bold">Descripción</th>
-                <th className="pb-3 text-right font-bold">Total</th>
+              <tr className="border-b border-dashed border-white/20 text-neutral-400 print:border-black/30 print:text-black/60">
+                <th className="pb-2 font-bold uppercase tracking-wider text-xs">Cant</th>
+                <th className="pb-2 font-bold uppercase tracking-wider text-xs">Descripción</th>
+                <th className="pb-2 text-right font-bold uppercase tracking-wider text-xs">Total</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5 print:divide-black/10">
@@ -95,15 +133,35 @@ export function DigitalOrderInvoice({
         </div>
 
         {/* Totales */}
-        <div className="flex flex-col gap-2 border-t border-white/10 pt-6 text-right print:border-black/20">
-          <div className="flex justify-between text-sm font-bold text-neutral-400 print:text-black/70">
-            <span>Subtotal</span>
-            <span>{formatCurrency(order.subtotal, order.currency)}</span>
+        <div className="flex flex-col gap-1.5 border-t border-dashed border-white/20 pt-4 text-right print:border-black/30">
+          {(order.taxAmount > 0 || order.deliveryCost > 0) && (
+            <div className="flex justify-between text-[13px] font-bold text-neutral-400 print:text-black/70">
+              <span>Subtotal</span>
+              <span>{formatCurrency(order.subtotal, order.currency)}</span>
+            </div>
+          )}
+          {order.deliveryCost > 0 && (
+            <div className="flex justify-between text-[13px] font-bold text-neutral-400 print:text-black/70">
+              <span>Envío (Express)</span>
+              <span>{formatCurrency(order.deliveryCost, order.currency)}</span>
+            </div>
+          )}
+          {order.taxAmount > 0 && (
+            <div className="flex justify-between text-[13px] font-bold text-neutral-400 print:text-black/70">
+              <span>IVA (13%)</span>
+              <span>{formatCurrency(order.taxAmount, order.currency)}</span>
+            </div>
+          )}
+          <div className="flex justify-between text-2xl font-black text-white print:text-black mt-2 print:text-3xl">
+            <span>TOTAL</span>
+            <span>{formatCurrency(order.total, order.currency)}</span>
           </div>
-          <div className="flex justify-between text-xl font-black text-white print:text-black">
-            <span>Total</span>
-            <span>{formatCurrency(order.subtotal, order.currency)}</span>
-          </div>
+        </div>
+
+        {/* Mensaje final Ticket */}
+        <div className="mt-8 text-center text-xs font-bold text-neutral-500 print:text-black/60 uppercase tracking-widest hidden print:block">
+          <p>¡Gracias por su compra!</p>
+          <p className="mt-1">Powered by Menu Rustica</p>
         </div>
 
         {/* Botones de Acción (Ocultos en impresión) */}

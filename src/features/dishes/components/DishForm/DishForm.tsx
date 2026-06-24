@@ -479,7 +479,7 @@ function VariantGroupEditor({ group, currency, onChange, onDelete }: VariantGrou
           value={group.name}
           onChange={(e) => setGroup({ name: e.target.value })}
           placeholder="Nombre del grupo (ej: Tamaño, Extras...)"
-          className="flex-1 bg-transparent text-sm font-semibold text-surface-800 placeholder:text-surface-300 focus:outline-none"
+          className="flex-1 bg-transparent text-sm font-semibold text-surface-900 placeholder:text-surface-400 focus:outline-none"
         />
         <button
           type="button"
@@ -521,7 +521,7 @@ function VariantGroupEditor({ group, currency, onChange, onDelete }: VariantGrou
               value={opt.name}
               onChange={(e) => updateOption(oi, { name: e.target.value })}
               placeholder="Opción (ej: Grande)"
-              className="flex-1 bg-transparent text-xs text-surface-700 placeholder:text-surface-300 focus:outline-none"
+              className="flex-1 bg-transparent text-xs font-medium text-surface-900 placeholder:text-surface-400 focus:outline-none"
             />
             <div className="flex items-center gap-1 shrink-0">
               <span className="text-[10px] text-surface-400">+</span>
@@ -531,7 +531,7 @@ function VariantGroupEditor({ group, currency, onChange, onDelete }: VariantGrou
                 step="100"
                 value={opt.priceDelta}
                 onChange={(e) => updateOption(oi, { priceDelta: parseFloat(e.target.value) || 0 })}
-                className="w-20 rounded-lg border border-surface-200 bg-surface-0 px-2 py-0.5 text-right text-xs font-mono text-surface-700 focus:outline-none focus:ring-1 focus:ring-brand-400"
+                className="w-20 rounded-lg border border-surface-200 bg-surface-0 px-2 py-0.5 text-right text-xs font-mono font-medium text-surface-900 focus:outline-none focus:ring-1 focus:ring-brand-400"
               />
               <span className="text-[10px] text-surface-400 w-7">
                 {currency === 'USD' ? 'USD' : currency === 'EUR' ? 'EUR' : 'CRC'}
@@ -602,7 +602,7 @@ function CheckboxField({
 
 function inputClass(hasError: boolean): string {
   return [
-    'w-full rounded-xl border bg-surface-0 px-4 py-2.5 text-sm',
+    'w-full rounded-xl border bg-surface-0 px-4 py-2.5 text-sm text-surface-900 placeholder:text-surface-400',
     'focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-brand-400',
     hasError
       ? 'border-red-400 focus:ring-red-400 focus:border-red-400'

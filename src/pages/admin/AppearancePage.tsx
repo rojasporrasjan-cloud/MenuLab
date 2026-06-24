@@ -3,7 +3,8 @@ import { useState, useEffect, useMemo, Suspense, useRef, type ReactNode } from '
 import {
   CheckCircle2, ExternalLink, Smartphone, Monitor,
   ChevronDown, Palette, Type, LayoutGrid, Upload, X,
-  GripHorizontal, Sparkles, Search, QrCode, Eye, EyeOff, ShoppingBag
+  GripHorizontal, Sparkles, Search, QrCode, Eye, EyeOff,
+  ShoppingBag, Home, Megaphone, CalendarDays, Tag, LayoutList, Star, Share2, Info
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import * as Dialog from '@radix-ui/react-dialog'
@@ -602,30 +603,32 @@ export default function AppearancePage() {
           isPreviewCollapsed ? "flex-1 w-full" : "hidden md:flex md:w-[380px] lg:w-[420px] shrink-0"
         )}>
 
-          {/* Tab nav — Shopify-style */}
-          <div className="flex shrink-0 border-b border-surface-100">
-            <button
-              onClick={() => setActiveTab('sections')}
-              className={cn(
-                'flex-1 py-3 text-xs font-semibold transition-all border-b-2',
-                activeTab === 'sections'
-                  ? 'text-brand-600 border-brand-500'
-                  : 'text-surface-400 border-transparent hover:text-surface-600',
-              )}
-            >
-              Secciones
-            </button>
-            <button
-              onClick={() => setActiveTab('theme')}
-              className={cn(
-                'flex-1 py-3 text-xs font-semibold transition-all border-b-2',
-                activeTab === 'theme'
-                  ? 'text-brand-600 border-brand-500'
-                  : 'text-surface-400 border-transparent hover:text-surface-600',
-              )}
-            >
-              Tema
-            </button>
+          {/* Segmented Control Tabs */}
+          <div className="flex shrink-0 p-3 border-b border-surface-100/60 bg-surface-50/30">
+            <div className="flex w-full rounded-xl bg-surface-150 p-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]">
+              <button
+                onClick={() => setActiveTab('sections')}
+                className={cn(
+                  'flex-1 py-2 text-[13px] font-bold transition-all rounded-lg',
+                  activeTab === 'sections'
+                    ? 'bg-white text-brand-700 shadow-sm ring-1 ring-black/5'
+                    : 'text-surface-500 hover:text-surface-700 hover:bg-surface-200/50',
+                )}
+              >
+                Secciones
+              </button>
+              <button
+                onClick={() => setActiveTab('theme')}
+                className={cn(
+                  'flex-1 py-2 text-[13px] font-bold transition-all rounded-lg',
+                  activeTab === 'theme'
+                    ? 'bg-white text-brand-700 shadow-sm ring-1 ring-black/5'
+                    : 'text-surface-500 hover:text-surface-700 hover:bg-surface-200/50',
+                )}
+              >
+                Tema
+              </button>
+            </div>
           </div>
 
           {/* AI Digitize banner — always visible */}
@@ -863,7 +866,7 @@ function SectionsPanel({
       <SectionGroup label="Identidad">
 
         <SectionCard
-          icon="🏠" iconBg="#fff7ed"
+          icon={<Home size={22} className="text-orange-500" />} iconBg="#fff7ed"
           title="Hero & Restaurante"
           preview={[editing.restaurantName, editing.tagline].filter(Boolean).join(' · ') || undefined}
           isOpen={openSection === 'hero'}
@@ -903,10 +906,10 @@ function SectionsPanel({
         </SectionCard>
 
         <SectionCard
-          icon="📢" iconBg="#fef9c3"
+          icon={<Megaphone size={22} className="text-yellow-600" />} iconBg="#fef9c3"
           title="Barra de anuncio"
           preview={editing.announcement.enabled
-            ? `${editing.announcement.emoji} ${editing.announcement.text}`
+            ? `Anuncio visible`
             : 'Mensaje en la parte superior del menú'}
           isOpen={openSection === 'announcement'}
           onToggle={() => toggleSection('announcement')}
@@ -946,7 +949,7 @@ function SectionsPanel({
       <SectionGroup label="Acciones">
 
         <SectionCard
-          icon="🛍️" iconBg="#f0fdf4"
+          icon={<ShoppingBag size={22} className="text-emerald-500" />} iconBg="#f0fdf4"
           title="Botón de pedidos"
           preview={editing.orderButton.enabled
             ? `"${editing.orderButton.label}" vía WhatsApp`
@@ -1004,7 +1007,7 @@ function SectionsPanel({
         </SectionCard>
 
         <SectionCard
-          icon="📅" iconBg="#f0f9ff"
+          icon={<CalendarDays size={22} className="text-sky-500" />} iconBg="#f0f9ff"
           title="Reservaciones"
           preview={editing.reservation.enabled
             ? editing.reservation.title
@@ -1030,7 +1033,7 @@ function SectionsPanel({
         </SectionCard>
 
         <SectionCard
-          icon="🏷️" iconBg="#fdf2f8"
+          icon={<Tag size={22} className="text-pink-500" />} iconBg="#fdf2f8"
           title="Promoción especial"
           preview={editing.promo.enabled
             ? (editing.promo.title || 'Banner de promoción activo')
@@ -1062,7 +1065,7 @@ function SectionsPanel({
       <SectionGroup label="Menú">
 
         <SectionCard
-          icon="📋" iconBg="#f5f3ff"
+          icon={<LayoutList size={22} className="text-violet-500" />} iconBg="#f5f3ff"
           title="Configuración del menú"
           preview={[
             editing.showPrices        && 'Precios ✓',
@@ -1144,7 +1147,7 @@ function SectionsPanel({
         </SectionCard>
 
         <SectionCard
-          icon="⭐" iconBg="#fffbeb"
+          icon={<Star size={22} className="text-amber-500" />} iconBg="#fffbeb"
           title="Platos destacados"
           preview={editing.featuredSection.enabled
             ? `"${editing.featuredSection.title}" — carrusel al inicio`
@@ -1171,7 +1174,7 @@ function SectionsPanel({
       <SectionGroup label="Contacto">
 
         <SectionCard
-          icon="🔗" iconBg="#f5f3ff"
+          icon={<Share2 size={22} className="text-violet-500" />} iconBg="#f5f3ff"
           title="Redes sociales"
           preview={editing.socials.enabled
             ? (socialCount > 0
@@ -1191,7 +1194,7 @@ function SectionsPanel({
         </SectionCard>
 
         <SectionCard
-          icon="ℹ️" iconBg="#eff6ff"
+          icon={<Info size={22} className="text-blue-500" />} iconBg="#eff6ff"
           title="Información del local"
           preview={editing.infoFooter.enabled
             ? ([editing.infoFooter.hours, editing.infoFooter.address].filter(Boolean)[0] ?? 'Información configurada')
@@ -1579,14 +1582,14 @@ function ThemePanel({
 
 function SectionGroup({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2 px-0.5">
-        <span className="shrink-0 text-[9px] font-bold uppercase tracking-[0.18em] text-surface-350">
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-3 px-1">
+        <span className="shrink-0 text-[10px] font-black uppercase tracking-[0.2em] text-surface-400">
           {label}
         </span>
-        <div className="h-px flex-1 bg-surface-100" />
+        <div className="h-px flex-1 bg-gradient-to-r from-surface-200 to-transparent" />
       </div>
-      <div className="flex flex-col gap-1.5">{children}</div>
+      <div className="flex flex-col gap-2.5">{children}</div>
     </div>
   )
 }
@@ -1600,7 +1603,7 @@ function SectionCard({
   locked,
   children,
 }: {
-  icon: string
+  icon: ReactNode
   iconBg: string
   title: string
   preview?: string
@@ -1655,14 +1658,14 @@ function SectionCard({
         {/* Title + preview */}
         <div className="min-w-0 flex-1">
           <p className={cn(
-            'text-[13px] font-bold leading-tight transition-colors',
+            'text-[15px] font-black tracking-tight leading-tight transition-colors',
             isOpen ? 'text-brand-700' : 'text-surface-900',
             isOff && !isOpen && 'text-surface-500'
           )}>
             {title}
           </p>
           {preview && !isOpen && (
-            <p className="mt-0.5 truncate text-[10px] leading-tight text-surface-400">
+            <p className="mt-1 truncate text-[11px] font-medium leading-tight text-surface-400">
               {preview}
             </p>
           )}
@@ -1807,9 +1810,11 @@ function QuadPicker({ value, onChange, options }: {
 
 function SectionLabel({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   return (
-    <div className="flex items-center gap-1.5">
-      <span className="text-surface-400">{icon}</span>
-      <h2 className="text-[11px] font-bold uppercase tracking-wider text-surface-500">{children}</h2>
+    <div className="flex items-center gap-2 mb-1">
+      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-surface-100 text-brand-600 shadow-sm">
+        {icon}
+      </div>
+      <h2 className="text-[12px] font-black uppercase tracking-wider text-surface-700">{children}</h2>
     </div>
   )
 }

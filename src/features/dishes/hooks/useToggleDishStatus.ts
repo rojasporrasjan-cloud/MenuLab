@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { DishService } from '../services/DishService'
 import { dishQueryKeys } from '../types/dish.types'
+import { menuQueryKeys } from '@features/menu/types/menu.types'
 import type { DishStatus } from '@core/domain/entities/Dish'
 
 interface UseToggleDishStatusReturn {
@@ -20,9 +21,12 @@ export function useToggleDishStatus(tenantId: string): UseToggleDishStatusReturn
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: dishQueryKeys.byMenu(tenantId, menuId) }),
         queryClient.invalidateQueries({ queryKey: dishQueryKeys.all(tenantId) }),
+        queryClient.invalidateQueries({ queryKey: menuQueryKeys.all }),
       ])
     } catch {
       // revert optimistic update handled by parent
+    } finally {
+      setTogglingId(null)
     }
   }
 

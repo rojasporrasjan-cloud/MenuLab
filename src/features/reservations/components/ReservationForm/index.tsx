@@ -12,6 +12,8 @@ export interface ReservationFormValues {
   readonly date: string
   readonly time: string
   readonly note: string
+  readonly tableId: string | null
+  readonly tableLabel: string | null
 }
 
 interface ReservationFormProps {
@@ -20,6 +22,9 @@ interface ReservationFormProps {
   readonly onSubmit: (values: ReservationFormValues) => void
   /** Tema oscuro (página pública) o claro (modal admin). */
   readonly variant: 'dark' | 'light'
+  readonly tables?: readonly { id: string; number: string; label: string | null }[]
+  readonly defaultTableId?: string | null
+  readonly initialValues?: ReservationFormValues
 }
 
 const TIME_SLOTS = buildTimeSlots(
@@ -40,13 +45,14 @@ function todayISO(): string {
   return `${d.getFullYear()}-${month}-${day}`
 }
 
-export function ReservationForm({ accentColor, isSubmitting, onSubmit, variant }: ReservationFormProps) {
-  const [customerName, setCustomerName] = useState('')
-  const [customerPhone, setCustomerPhone] = useState('')
-  const [partySize, setPartySize] = useState(2)
-  const [date, setDate] = useState(todayISO())
-  const [time, setTime] = useState(TIME_SLOTS[0] ?? '12:00')
-  const [note, setNote] = useState('')
+export function ReservationForm({ accentColor, isSubmitting, onSubmit, variant, tables, defaultTableId, initialValues }: ReservationFormProps) {
+  const [customerName, setCustomerName] = useState(initialValues?.customerName ?? '')
+  const [customerPhone, setCustomerPhone] = useState(initialValues?.customerPhone ?? '')
+  const [partySize, setPartySize] = useState(initialValues?.partySize ?? 2)
+  const [date, setDate] = useState(initialValues?.date ?? todayISO())
+  const [time, setTime] = useState(initialValues?.time ?? TIME_SLOTS[0] ?? '12:00')
+  const [note, setNote] = useState(initialValues?.note ?? '')
+  const [tableId, setTableId] = useState<string | null>(initialValues?.tableId ?? defaultTableId ?? null)
   const [validationMessage, setValidationMessage] = useState<string | null>(null)
 
   const isDark = variant === 'dark'
@@ -67,7 +73,8 @@ export function ReservationForm({ accentColor, isSubmitting, onSubmit, variant }
       return
     }
     setValidationMessage(null)
-    onSubmit({ customerName, customerPhone, partySize, date, time, note })
+    const tableLabel = tables?.find((t) => t.id === tableId)?.label || tables?.find((t) => t.id === tableId)?.number || null
+    onSubmit({ customerName, customerPhone, partySize, date, time, note, tableId, tableLabel })
   }
 
   return (
@@ -138,6 +145,24 @@ export function ReservationForm({ accentColor, isSubmitting, onSubmit, variant }
           className={`${inputClass} resize-none`}
         />
       </label>
+
+      {tables && tables.length > 0 && (
+        <label className="flex flex-col gap-1.5 mt-2">
+          <span className={labelClass}>Asignar Mesa (Opcional)</span>
+          <select
+            value={tableId ?? ''}
+            onChange={(e) => setTableId(e.target.value || null)}
+            className={inputClass}
+          >
+            <option value="">Sin asignar</option>
+            {tables.map((t) => (
+              <option key={t.id} value={t.id}>
+                Mesa {t.number} {t.label ? `(${t.label})` : ''}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
       {validationMessage && (
         <p className="text-xs font-semibold text-red-500">{validationMessage}</p>

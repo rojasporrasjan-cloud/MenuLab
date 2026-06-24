@@ -11,6 +11,7 @@ const STATUS_STYLE: Record<OrderStatus, { bg: string; color: string }> = {
   preparing: { bg: 'rgba(167,139,250,0.15)', color: '#6d28d9' },
   ready: { bg: 'rgba(52,211,153,0.15)', color: '#047857' },
   delivered: { bg: 'rgba(0,0,0,0.06)', color: '#52525b' },
+  completed: { bg: 'rgba(52,211,153,0.15)', color: '#047857' },
   cancelled: { bg: 'rgba(239,68,68,0.12)', color: '#b91c1c' },
 }
 

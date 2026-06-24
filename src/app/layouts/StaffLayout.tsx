@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { signOut } from 'firebase/auth'
-import { ShoppingBag, UtensilsCrossed, Megaphone, QrCode, ExternalLink, LogOut, Menu as MenuIcon, X } from 'lucide-react'
+import { ShoppingBag, UtensilsCrossed, Megaphone, QrCode, ExternalLink, LogOut, Menu as MenuIcon, X, TabletSmartphone } from 'lucide-react'
 import { useTenantContext } from '@app/providers/TenantProvider'
 import { auth } from '@infrastructure/firebase/auth'
 import { ROUTES } from '@shared/constants/routes'
 import { cn } from '@shared/utils/cn'
 
 const STAFF_NAV = [
+  { seg: ROUTES.staff.segments.waiter,       label: 'Tomar Pedido',      Icon: TabletSmartphone },
   { seg: ROUTES.staff.segments.orders,       label: 'Pedidos',           Icon: ShoppingBag },
   { seg: ROUTES.staff.segments.availability, label: 'Disponibilidad',    Icon: UtensilsCrossed },
   { seg: ROUTES.staff.segments.promos,       label: 'Promos y Horarios', Icon: Megaphone },

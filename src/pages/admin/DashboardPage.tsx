@@ -11,6 +11,7 @@ import {
   Wallet,
   Receipt,
   CalendarCheck,
+  Users,
 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTenantContext } from '@app/providers/TenantProvider'
@@ -91,6 +92,68 @@ const MenuLinkBanner = memo(function MenuLinkBanner({ tenantId }: { tenantId: st
         >
           <ExternalLink size={13} />
           Ver menú
+        </a>
+      </div>
+    </div>
+  )
+})
+
+// ─── Staff link banner ────────────────────────────────────────────────────────
+
+const StaffLinkBanner = memo(function StaffLinkBanner({ tenantId }: { tenantId: string }) {
+  const [copied, setCopied] = useState(false)
+
+  const staffUrl = `${window.location.origin}/${tenantId}/staff`
+
+  const handleCopy = () => {
+    void navigator.clipboard.writeText(staffUrl).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  return (
+    <div className="flex flex-col gap-3 rounded-2xl border border-zinc-200/70 bg-gradient-to-br from-zinc-50 to-zinc-100/30 p-4 shadow-sm sm:flex-row sm:items-center sm:gap-4">
+      {/* Icon */}
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-zinc-800 text-white shadow-sm shadow-zinc-800/30">
+        <Users size={19} strokeWidth={2.2} />
+      </div>
+
+      {/* Text */}
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-600">
+          Tu link de Staff
+        </p>
+        <p className="truncate font-mono text-[13px] font-semibold text-surface-900">
+          {staffUrl}
+        </p>
+        <p className="text-[11px] text-zinc-500">
+          Comparte este portal con tus empleados (POS, KDS)
+        </p>
+      </div>
+
+      {/* Actions */}
+      <div className="flex shrink-0 gap-2">
+        <button
+          type="button"
+          onClick={handleCopy}
+          className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[12px] font-bold transition-all active:scale-95 ${
+            copied
+              ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+              : 'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50'
+          }`}
+        >
+          {copied ? <Check size={13} /> : <Copy size={13} />}
+          {copied ? 'Copiado' : 'Copiar'}
+        </button>
+        <a
+          href={`/${tenantId}/staff`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 rounded-xl bg-zinc-800 px-3 py-2 text-[12px] font-bold text-white transition-all hover:bg-zinc-900 active:scale-95"
+        >
+          <ExternalLink size={13} />
+          Abrir Staff
         </a>
       </div>
     </div>
@@ -346,7 +409,12 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-6">
       {user && !user.emailVerified && <EmailVerificationBanner />}
-      {tenantId && <MenuLinkBanner tenantId={tenantId} />}
+      {tenantId && (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <MenuLinkBanner tenantId={tenantId} />
+          <StaffLinkBanner tenantId={tenantId} />
+        </div>
+      )}
       {tenantId && <FreePlanUpgradeBanner tenantId={tenantId} />}
       {lowStockAlerts.length > 0 && <LowStockAlert alerts={lowStockAlerts} />}
 

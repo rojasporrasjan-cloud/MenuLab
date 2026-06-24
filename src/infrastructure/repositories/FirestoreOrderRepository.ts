@@ -15,7 +15,7 @@ import { db } from '@infrastructure/firebase/firestore'
 import { firestorePaths } from '@infrastructure/firebase/paths'
 import { OrderMapper } from '@infrastructure/mappers/OrderMapper'
 import type { IOrderRepository } from '@core/domain/repositories/IOrderRepository'
-import type { NewOrder, Order, OrderStatus } from '@core/domain/entities/Order'
+import type { NewOrder, Order, OrderStatus, PaymentStatus } from '@core/domain/entities/Order'
 import { ACTIVE_ORDER_STATUSES } from '@core/domain/entities/Order'
 import { NotFoundError } from '@core/errors/NotFoundError'
 
@@ -31,6 +31,7 @@ export class FirestoreOrderRepository implements IOrderRepository {
   async create(order: NewOrder): Promise<Order> {
     const ref = await addDoc(collection(db, firestorePaths.orders(order.tenantId)), {
       ...order,
+      paymentStatus: 'pending', // Default payment status
       items: order.items.map((i) => ({ ...i })),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -87,6 +88,13 @@ export class FirestoreOrderRepository implements IOrderRepository {
   async updateStatus(tenantId: string, orderId: string, status: OrderStatus): Promise<void> {
     await updateDoc(doc(db, firestorePaths.order(tenantId, orderId)), {
       status,
+      updatedAt: serverTimestamp(),
+    })
+  }
+
+  async updatePaymentStatus(tenantId: string, orderId: string, paymentStatus: PaymentStatus): Promise<void> {
+    await updateDoc(doc(db, firestorePaths.order(tenantId, orderId)), {
+      paymentStatus,
       updatedAt: serverTimestamp(),
     })
   }

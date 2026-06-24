@@ -73,9 +73,12 @@ export class CloseCheckUseCase {
       // primero lo confirmamos para que el KDS lo registre.
       if (order.status === ORDER_STATUS.pending) {
         await this.orderRepository.updateStatus(input.tenantId, order.id, ORDER_STATUS.confirmed)
+      } else if (order.status === ORDER_STATUS.delivered) {
+        // Si ya fue entregado y lo están pagando, completarlo para liberar la mesa
+        await this.orderRepository.updateStatus(input.tenantId, order.id, ORDER_STATUS.completed)
       }
 
-      await this.orderRepository.updateStatus(input.tenantId, order.id, ORDER_STATUS.delivered)
+      await this.orderRepository.updatePaymentStatus(input.tenantId, order.id, 'paid')
     }
 
     return { payments, total, cashChange }

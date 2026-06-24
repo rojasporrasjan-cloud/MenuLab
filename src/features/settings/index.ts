@@ -5,6 +5,7 @@ export { PlanInfo } from './components/PlanInfo'
 export { ColorPicker } from './components/ColorPicker'
 export { TenantAssetUpload } from './components/TenantAssetUpload'
 export { PinRecovery } from './components/PinRecovery'
+export { CommerceForm } from './components/CommerceForm/CommerceForm'
 
 // Hooks
 export { useUpdateProfile } from './hooks/useUpdateProfile'
@@ -12,9 +13,11 @@ export { useUpdateBranding } from './hooks/useUpdateBranding'
 export { useTenantAssetUpload } from './hooks/useTenantAssetUpload'
 export { useUpdateEmployeePin } from './hooks/useUpdateEmployeePin'
 export { useUpdateLockedModules } from './hooks/useUpdateLockedModules'
+export { useUpdateCommerce } from './hooks/useUpdateCommerce'
 
 // Services
 export { SettingsService } from './services/SettingsService'
 
 // Types
 export type { ProfileFormValues, SettingsTab, BrandingFormValues } from './types/settings.types'
+export type { CommerceFormValues } from './components/CommerceForm/CommerceForm'

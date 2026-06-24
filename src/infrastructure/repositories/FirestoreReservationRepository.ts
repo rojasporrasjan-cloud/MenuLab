@@ -54,4 +54,14 @@ export class FirestoreReservationRepository implements IReservationRepository {
   ): Promise<void> {
     await updateDoc(doc(db, firestorePaths.reservation(tenantId, reservationId)), { status })
   }
+
+  async update(
+    tenantId: string,
+    reservationId: string,
+    data: Partial<NewReservation>,
+  ): Promise<void> {
+    // Aseguramos de no meter undefineds a Firestore
+    const cleanData = Object.fromEntries(Object.entries(data).filter(([_, v]) => v !== undefined))
+    await updateDoc(doc(db, firestorePaths.reservation(tenantId, reservationId)), cleanData)
+  }
 }

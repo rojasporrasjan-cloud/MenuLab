@@ -33,6 +33,7 @@ import {
   SettingsPage,
   OrdersPage,
   KDSPage,
+  DispatcherPage,
   PublicReservationsPage,
   AdminReservationsPage,
   PlanPage,
@@ -48,6 +49,7 @@ import {
   TenantDetailPage,
   StaffAvailabilityPage,
   StaffPromosPage,
+  MobileWaiterPage,
 } from './routes'
 
 function PageLoader() {
@@ -82,7 +84,8 @@ export function AppRouter() {
             {/* ── Staff panel por menú (trabajadores entran con PIN) ── */}
             <Route path={ROUTES.staff.base} element={<StaffAuthGate />}>
               <Route element={<StaffLayout />}>
-                <Route index element={<Navigate to={ROUTES.staff.segments.orders} replace />} />
+                <Route index element={<Navigate to={ROUTES.staff.segments.waiter} replace />} />
+                <Route path={ROUTES.staff.segments.waiter} element={<MobileWaiterPage />} />
                 <Route path={ROUTES.staff.segments.orders} element={<OrdersPage />} />
                 <Route path={ROUTES.staff.segments.availability} element={<StaffAvailabilityPage />} />
                 <Route path={ROUTES.staff.segments.promos} element={<StaffPromosPage />} />
@@ -118,6 +121,7 @@ export function AppRouter() {
                 <Route path={ROUTES.admin.orders} element={<RequirePin moduleId="orders"><OrdersPage /></RequirePin>} />
                 <Route path={ROUTES.admin.pos} element={<RequirePin moduleId="orders"><FullscreenTerminal label={COPY.pos.title}><POSPage /></FullscreenTerminal></RequirePin>} />
                 <Route path={ROUTES.admin.kds} element={<RequirePin moduleId="kds"><FullscreenTerminal label={COPY.kds.title}><KDSPage /></FullscreenTerminal></RequirePin>} />
+                <Route path={ROUTES.admin.dispatcher} element={<RequirePin moduleId="orders"><FullscreenTerminal label="Despachos"><DispatcherPage /></FullscreenTerminal></RequirePin>} />
                 <Route path={ROUTES.admin.cash} element={<RequirePin moduleId="cash"><CashRegisterPage /></RequirePin>} />
                 <Route path={ROUTES.admin.reservations} element={<RequirePin moduleId="reservations"><AdminReservationsPage /></RequirePin>} />
                 <Route path={ROUTES.admin.plan} element={<PlanPage />} />

@@ -4,7 +4,7 @@ import { useKitchenOrders, KitchenTicket, KDSColumn } from '@features/kds'
 import { useUpdateOrderStatus } from '@features/cart'
 import { UpgradeGate } from '@features/billing'
 import type { Order } from '@core/domain/entities/Order'
-import { nextOrderStatus } from '@core/domain/entities/Order'
+import { nextOrderStatus, ORDER_STATUS } from '@core/domain/entities/Order'
 import { useNow } from '@shared/hooks/useNow'
 import { COPY } from '@shared/copy/ui.copy'
 import { TerminalLockButton } from '@shared/ui/components/TerminalLockButton'
@@ -29,9 +29,15 @@ function KDSPageContent() {
   const updateStatus = useUpdateOrderStatus()
   const now = useNow()
 
-  function handleAdvance(order: Order): void {
-    const next = nextOrderStatus(order.status)
+  function handleAdvance(order: Order) {
+    let next = nextOrderStatus(order.status)
     if (!next) return
+    
+    // Si ya está pagado y va a despacharse, completarlo de una vez
+    if (next === ORDER_STATUS.delivered && order.paymentStatus === 'paid') {
+      next = ORDER_STATUS.completed
+    }
+
     updateStatus.mutate({ tenantId, orderId: order.id, status: next })
   }
 
@@ -70,7 +76,7 @@ function KDSPageContent() {
   }
 
   return (
-    <div className="flex h-full flex-col gap-6 pb-4 pt-2">
+    <div className="flex min-h-full flex-col gap-6 pb-4 pt-2 md:h-full">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 shadow-inner">
@@ -92,28 +98,34 @@ function KDSPageContent() {
         </div>
       </header>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-5 md:grid-cols-3">
-        <KDSColumn
-          title={COPY.kds.columns.incoming}
-          count={board.incoming.length}
-          accentColor={COLUMN_ACCENTS.incoming}
-        >
-          {renderTickets(board.incoming)}
-        </KDSColumn>
-        <KDSColumn
-          title={COPY.kds.columns.preparing}
-          count={board.preparing.length}
-          accentColor={COLUMN_ACCENTS.preparing}
-        >
-          {renderTickets(board.preparing)}
-        </KDSColumn>
-        <KDSColumn
-          title={COPY.kds.columns.ready}
-          count={board.ready.length}
-          accentColor={COLUMN_ACCENTS.ready}
-        >
-          {renderTickets(board.ready)}
-        </KDSColumn>
+      <div className="flex md:grid min-h-0 flex-1 flex-row md:flex-col md:grid-cols-3 gap-5 overflow-x-auto md:overflow-x-visible snap-x snap-mandatory pb-4">
+        <div className="w-[85vw] shrink-0 snap-center md:w-auto md:flex-1 flex flex-col min-h-0">
+          <KDSColumn
+            title={COPY.kds.columns.incoming}
+            count={board.incoming.length}
+            accentColor={COLUMN_ACCENTS.incoming}
+          >
+            {renderTickets(board.incoming)}
+          </KDSColumn>
+        </div>
+        <div className="w-[85vw] shrink-0 snap-center md:w-auto md:flex-1 flex flex-col min-h-0">
+          <KDSColumn
+            title={COPY.kds.columns.preparing}
+            count={board.preparing.length}
+            accentColor={COLUMN_ACCENTS.preparing}
+          >
+            {renderTickets(board.preparing)}
+          </KDSColumn>
+        </div>
+        <div className="w-[85vw] shrink-0 snap-center md:w-auto md:flex-1 flex flex-col min-h-0">
+          <KDSColumn
+            title={COPY.kds.columns.ready}
+            count={board.ready.length}
+            accentColor={COLUMN_ACCENTS.ready}
+          >
+            {renderTickets(board.ready)}
+          </KDSColumn>
+        </div>
       </div>
     </div>
   )

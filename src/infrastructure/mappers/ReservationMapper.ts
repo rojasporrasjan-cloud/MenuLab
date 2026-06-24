@@ -28,6 +28,8 @@ export class ReservationMapper {
       note: typeof data['note'] === 'string' ? data['note'] : null,
       status: (data['status'] as ReservationStatus) ?? 'pending', // safe: escrito siempre desde tipos del dominio
       source: (data['source'] as ReservationSource) ?? 'qr', // safe: escrito siempre desde tipos del dominio
+      tableId: typeof data['tableId'] === 'string' ? data['tableId'] : null,
+      tableLabel: typeof data['tableLabel'] === 'string' ? data['tableLabel'] : null,
       createdAt: toDate(data['createdAt']),
     }
   }

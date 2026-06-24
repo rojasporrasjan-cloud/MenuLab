@@ -64,7 +64,7 @@ export function usePOSOrders(tenantId: string): POSOrdersResult {
         }
       } else if (newTable) {
         playNewOrderBeep()
-        speakNewOrder('Nuevo pedido en mesa')
+        speakNewOrder('Nuevo pedido')
       }
     }
     

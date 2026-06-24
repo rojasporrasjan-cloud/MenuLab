@@ -6,6 +6,7 @@ import { COPY } from '@shared/copy/ui.copy'
 import { useCart } from '../../hooks/useCart'
 import { CartItem } from '../CartItem'
 import { CheckoutModal } from '../CheckoutModal'
+import type { TenantDeliveryConfig, TenantTaxConfig } from '@core/domain/entities/Tenant'
 
 interface CartDrawerProps {
   readonly tenantId: string
@@ -16,6 +17,8 @@ interface CartDrawerProps {
   readonly tableId: string | null
   readonly tableLabel: string | null
   readonly accentColor: string
+  readonly deliveryConfig?: TenantDeliveryConfig
+  readonly taxConfig?: TenantTaxConfig
 }
 
 export function CartDrawer({
@@ -25,6 +28,8 @@ export function CartDrawer({
   tableId,
   tableLabel,
   accentColor,
+  deliveryConfig,
+  taxConfig,
 }: CartDrawerProps) {
   const cart = useCart()
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false)
@@ -142,6 +147,8 @@ export function CartDrawer({
         tableId={tableId}
         tableLabel={tableLabel}
         accentColor={accentColor}
+        deliveryConfig={deliveryConfig}
+        taxConfig={taxConfig}
       />
     </>
   )

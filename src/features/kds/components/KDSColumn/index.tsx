@@ -11,7 +11,7 @@ interface KDSColumnProps {
 
 export function KDSColumn({ title, count, accentColor, children }: KDSColumnProps) {
   return (
-    <section className="flex min-h-0 flex-1 flex-col gap-4 rounded-3xl bg-neutral-900/50 p-3 ring-1 ring-white/5">
+    <section className="flex min-h-[450px] flex-col gap-4 rounded-3xl bg-neutral-900/50 p-3 ring-1 ring-white/5 md:min-h-0 md:flex-1">
       <header
         className="flex items-center justify-between rounded-2xl px-5 py-4 shadow-sm"
         style={{ 

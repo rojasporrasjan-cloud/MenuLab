@@ -10,6 +10,7 @@ import type { NewOrder, OrderItem, OrderType } from '@core/domain/entities/Order
 import { useCart } from '../../hooks/useCart'
 import { useCreateOrder } from '../../hooks/useCreateOrder'
 import { loadCheckoutCache, saveCheckoutCache } from '../../utils/checkoutCache'
+import type { TenantDeliveryConfig, TenantTaxConfig } from '@core/domain/entities/Tenant'
 
 interface CheckoutModalProps {
   readonly isOpen: boolean
@@ -22,6 +23,8 @@ interface CheckoutModalProps {
   readonly tableId: string | null
   readonly tableLabel: string | null
   readonly accentColor: string
+  readonly deliveryConfig?: TenantDeliveryConfig
+  readonly taxConfig?: TenantTaxConfig
 }
 
 const LINE_WIDTH = 30
@@ -50,6 +53,9 @@ function buildOrderMessage(input: {
   customerPhone: string
   note: string
   sinpePayment: boolean
+  deliveryCost: number
+  taxAmount: number
+  subtotal: number
 }): string {
   const divider = '──────────────────'
   const itemLines: string[] = []
@@ -66,9 +72,17 @@ function buildOrderMessage(input: {
     divider,
     ...itemLines,
     divider,
-    `*Total: ${input.total}*`,
-    `👤 ${input.customerName}`,
   ]
+
+  if (input.taxAmount > 0) {
+    parts.push(`*Subtotal: ${formatCurrency(input.subtotal, input.currency)}*`) // if taxIncluded=true subtotal includes it, we just display it. Actually let's just keep it simple.
+  }
+
+  if (input.deliveryCost > 0) parts.push(`*Costo de envío: ${formatCurrency(input.deliveryCost, input.currency)}*`)
+  if (input.taxAmount > 0) parts.push(`*IVA (13%): ${formatCurrency(input.taxAmount, input.currency)}*`)
+
+  parts.push(`*Total: ${input.total}*`)
+  parts.push(`👤 ${input.customerName}`)
   if (input.customerPhone.trim()) parts.push(`📞 ${input.customerPhone.trim()}`)
   if (input.mode === 'delivery' && input.deliveryAddress?.trim()) parts.push(`📍 ${input.deliveryAddress.trim()}`)
   if (input.sinpePayment) parts.push('💸 Pago: SINPE Móvil')
@@ -93,6 +107,8 @@ export function CheckoutModal({
   tableId,
   tableLabel,
   accentColor,
+  deliveryConfig,
+  taxConfig,
 }: CheckoutModalProps) {
   const cart = useCart()
   const createOrder = useCreateOrder()
@@ -125,7 +141,20 @@ export function CheckoutModal({
   const [isSent, setIsSent] = useState(false)
 
   const isDelivery = !isTableOrder && mode === 'delivery'
-  const totalFormatted = formatCurrency(cart.subtotal, cart.currency)
+  
+  const deliveryCost = isDelivery && deliveryConfig?.enabled
+    ? (deliveryConfig.freeDeliveryThreshold !== null && cart.subtotal >= deliveryConfig.freeDeliveryThreshold
+        ? 0
+        : deliveryConfig.cost)
+    : 0
+
+  const taxAmount = taxConfig?.enabled
+    ? (taxConfig.includedInPrice ? (cart.subtotal * taxConfig.rate) / (1 + taxConfig.rate) : cart.subtotal * taxConfig.rate)
+    : 0
+
+  const total = cart.subtotal + deliveryCost + (taxConfig?.enabled && !taxConfig.includedInPrice ? taxAmount : 0)
+
+  const totalFormatted = formatCurrency(total, cart.currency)
 
   async function handleConfirm(): Promise<void> {
     if (!customerName.trim()) {
@@ -158,12 +187,16 @@ export function CheckoutModal({
         note: l.note,
       })),
       subtotal: cart.subtotal,
+      deliveryCost,
+      taxAmount,
+      total,
       currency: cart.currency,
       customerName: customerName.trim(),
       customerPhone: customerPhone.trim() || null,
       deliveryAddress,
       note: note.trim() || null,
       status: isTableOrder ? 'confirmed' : 'pending',
+      paymentStatus: 'pending',
     }
 
     const message = buildOrderMessage({
@@ -176,7 +209,10 @@ export function CheckoutModal({
       customerName: customerName.trim(),
       customerPhone,
       note,
-      sinpePayment: sinpeNumber !== null,
+      sinpePayment: mode !== 'table',
+      deliveryCost,
+      taxAmount,
+      subtotal: cart.subtotal,
     })
 
     // Cachea los datos del cliente para el próximo pedido.
@@ -361,9 +397,21 @@ export function CheckoutModal({
                   <p className="text-xs font-semibold text-red-400">{validationMessage}</p>
                 )}
 
+                {deliveryCost > 0 && (
+                  <div className="flex items-center justify-between px-4 py-1">
+                    <span className="text-xs font-medium text-neutral-400">Costo de Envío</span>
+                    <span className="text-sm font-bold text-white">{formatCurrency(deliveryCost, cart.currency)}</span>
+                  </div>
+                )}
+                {taxAmount > 0 && (
+                  <div className="flex items-center justify-between px-4 py-1">
+                    <span className="text-xs font-medium text-neutral-400">IVA (13%) {taxConfig?.includedInPrice && '(Incluido)'}</span>
+                    <span className="text-sm font-bold text-white">{formatCurrency(taxAmount, cart.currency)}</span>
+                  </div>
+                )}
                 <div className="mt-1 flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3">
                   <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
-                    {COPY.cart.subtotal}
+                    Total
                   </span>
                   <span className="text-base font-black text-white">{totalFormatted}</span>
                 </div>

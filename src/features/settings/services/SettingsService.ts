@@ -4,6 +4,8 @@ import { firestorePaths } from '@infrastructure/firebase/paths'
 import type { ProfileFormValues, BrandingFormValues } from '../types/settings.types'
 import type { TenantAnnouncement, TenantSocials, TenantInfoFooter, TenantOrderButton, TenantBgGradient, TenantReservation, TenantPromo, TenantFeatured, ImageRounding } from '@core/domain/entities/Tenant'
 
+import type { CommerceFormValues } from '../components/CommerceForm/CommerceForm'
+
 export const SettingsService = {
   async updateProfile(tenantId: string, values: ProfileFormValues): Promise<void> {
     await updateDoc(doc(db, firestorePaths.tenant(tenantId)), {
@@ -22,6 +24,14 @@ export const SettingsService = {
       'branding.infoFooter.googleMapsUrl': values.googleMapsUrl ?? '',
       'branding.infoFooter.sinpeNumber': values.sinpeNumber ?? '',
       'branding.infoFooter.enabled': !!(values.hours || values.address || values.phone || values.wazeUrl || values.googleMapsUrl || values.sinpeNumber),
+      updatedAt: serverTimestamp(),
+    })
+  },
+
+  async updateCommerce(tenantId: string, values: CommerceFormValues): Promise<void> {
+    await updateDoc(doc(db, firestorePaths.tenant(tenantId)), {
+      deliveryConfig: values.deliveryConfig,
+      taxConfig: values.taxConfig,
       updatedAt: serverTimestamp(),
     })
   },

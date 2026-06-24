@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { DishService } from '../services/DishService'
 import { dishQueryKeys } from '../types/dish.types'
+import { menuQueryKeys } from '@features/menu/types/menu.types'
 
 interface UseUpdateDishPriceReturn {
   updatePrice: (menuId: string, dishId: string, amount: number) => Promise<void>
@@ -20,6 +21,7 @@ export function useUpdateDishPrice(tenantId: string): UseUpdateDishPriceReturn {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: dishQueryKeys.byMenu(tenantId, menuId) }),
         queryClient.invalidateQueries({ queryKey: dishQueryKeys.all(tenantId) }),
+        queryClient.invalidateQueries({ queryKey: menuQueryKeys.all }),
       ])
     } finally {
       setSavingId(null)

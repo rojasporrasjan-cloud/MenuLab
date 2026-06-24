@@ -57,8 +57,8 @@ export function playNotificationBeep(): void {
 export function speakNewOrder(text: string): void {
   try {
     if (!('speechSynthesis' in window)) return
-    // Cancelar cualquier discurso previo para que la alerta sea inmediata
-    window.speechSynthesis.cancel()
+    // No cancelamos discursos previos para evitar que el KDS y el POS se silencien mutuamente si coinciden.
+    // window.speechSynthesis.cancel()
     
     const msg = new SpeechSynthesisUtterance(text)
     msg.lang = 'es-ES'

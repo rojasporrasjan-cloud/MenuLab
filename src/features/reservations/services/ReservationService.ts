@@ -3,6 +3,7 @@ import { CreateReservationUseCase } from '@core/use-cases/reservation/CreateRese
 import { ListReservationsByDateUseCase } from '@core/use-cases/reservation/ListReservationsByDateUseCase'
 import { UpdateReservationStatusUseCase } from '@core/use-cases/reservation/UpdateReservationStatusUseCase'
 import { GetReservationStatsUseCase } from '@core/use-cases/reservation/GetReservationStatsUseCase'
+import { UpdateReservationUseCase } from '@core/use-cases/reservation/UpdateReservationUseCase'
 
 /**
  * Composition root del feature de reservas.
@@ -15,4 +16,5 @@ export const ReservationService = {
   listReservationsByDate: new ListReservationsByDateUseCase(reservationRepository),
   updateReservationStatus: new UpdateReservationStatusUseCase(reservationRepository),
   getReservationStats: new GetReservationStatsUseCase(reservationRepository),
+  updateReservation: new UpdateReservationUseCase(reservationRepository),
 } as const

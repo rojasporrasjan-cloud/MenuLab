@@ -10,10 +10,40 @@ export function useCreateReservation() {
 
   return useMutation<Reservation, Error, NewReservation>({
     mutationFn: (input) => ReservationService.createReservation.execute(input),
-    onSuccess: (reservation) => {
-      void queryClient.invalidateQueries({
-        queryKey: reservationQueryKeys.byDate(reservation.tenantId, reservation.date),
+    onMutate: async (newReservation) => {
+      // 1. Cancelar queries en vuelo para que no sobrescriban nuestra actualización optimista
+      const queryKey = reservationQueryKeys.byDate(newReservation.tenantId, newReservation.date)
+      await queryClient.cancelQueries({ queryKey })
+
+      // 2. Guardar el estado previo por si falla
+      const previousReservations = queryClient.getQueryData<Reservation[]>(queryKey)
+
+      // 3. Insertar la reserva optimista en la caché
+      const optimisticReservation: Reservation = {
+        ...newReservation,
+        id: `temp-${Date.now()}`,
+        note: newReservation.note ?? null,
+        createdAt: new Date(),
+      }
+
+      queryClient.setQueryData<Reservation[]>(queryKey, (old = []) => {
+        return [...old, optimisticReservation]
       })
+
+      // 4. Retornar el contexto con los datos previos
+      return { previousReservations, queryKey }
+    },
+    onError: (err, newReservation, context) => {
+      // Si falla, restaurar la caché al estado previo
+      if (context?.previousReservations) {
+        queryClient.setQueryData(context.queryKey, context.previousReservations)
+      }
+    },
+    onSettled: (data, error, variables, context) => {
+      // Siempre invalidar al final para sincronizar con la fuente de verdad (Firestore)
+      if (context?.queryKey) {
+        void queryClient.invalidateQueries({ queryKey: context.queryKey })
+      }
     },
   })
 }

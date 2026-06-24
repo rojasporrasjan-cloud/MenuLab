@@ -19,7 +19,7 @@ interface ProfileFormProps {
 
 const inputClass = (hasError: boolean) =>
   [
-    'w-full rounded-xl border bg-surface-0 px-4 py-2.5 text-sm',
+    'w-full rounded-xl border bg-surface-0 px-4 py-2.5 text-sm text-surface-900',
     'focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-brand-400',
     hasError ? 'border-red-400' : 'border-surface-200',
   ].join(' ')

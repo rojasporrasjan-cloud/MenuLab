@@ -9,12 +9,15 @@ export interface OrderItem {
 
 export type OrderType = 'table' | 'pickup' | 'delivery'
 
+export type PaymentStatus = 'pending' | 'paid'
+
 export const ORDER_STATUS = {
   pending: 'pending',
   confirmed: 'confirmed',
   preparing: 'preparing',
   ready: 'ready',
   delivered: 'delivered',
+  completed: 'completed',
   cancelled: 'cancelled',
 } as const
 
@@ -26,6 +29,7 @@ export const ACTIVE_ORDER_STATUSES: readonly OrderStatus[] = [
   ORDER_STATUS.confirmed,
   ORDER_STATUS.preparing,
   ORDER_STATUS.ready,
+  ORDER_STATUS.delivered,
 ]
 
 /** Transición natural de progreso de un pedido (sin contar cancelación). */
@@ -35,6 +39,7 @@ export const ORDER_STATUS_FLOW: readonly OrderStatus[] = [
   ORDER_STATUS.preparing,
   ORDER_STATUS.ready,
   ORDER_STATUS.delivered,
+  ORDER_STATUS.completed,
 ]
 
 export function nextOrderStatus(status: OrderStatus): OrderStatus | null {
@@ -51,6 +56,9 @@ export interface Order {
   readonly type: OrderType
   readonly items: readonly OrderItem[]
   readonly subtotal: number
+  readonly deliveryCost: number
+  readonly taxAmount: number
+  readonly total: number
   readonly currency: string
   readonly customerName: string | null
   readonly customerPhone: string | null
@@ -58,6 +66,7 @@ export interface Order {
   readonly deliveryAddress: string | null
   readonly note: string | null
   readonly status: OrderStatus
+  readonly paymentStatus: PaymentStatus
   readonly createdAt: Date
   readonly updatedAt: Date
 }

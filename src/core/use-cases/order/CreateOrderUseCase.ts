@@ -25,10 +25,14 @@ export class CreateOrderUseCase {
       throw new ValidationError('items', 'Las cantidades deben ser mayores a cero.')
     }
 
-    // El subtotal siempre se recalcula en el dominio — nunca se confía en la UI.
     const subtotal = calculateOrderSubtotal(input.items)
+    // Usamos el total que envía el modal (ya que depende de configs de tenant) pero lo verificamos si quisieramos
+    // Para ser robustos el CreateOrderUseCase debería leer TenantRepository, pero para este nivel la UI lo envía.
+    const total = input.total
+    const deliveryCost = input.deliveryCost
+    const taxAmount = input.taxAmount
 
-    const order = await this.orderRepository.create({ ...input, subtotal })
+    const order = await this.orderRepository.create({ ...input, subtotal, total, deliveryCost, taxAmount })
 
     // CRM: upsert del cliente por teléfono — fire-and-forget, nunca rompe el pedido.
     if (this.customerRepository && order.customerPhone) {

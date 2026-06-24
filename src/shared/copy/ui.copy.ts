@@ -94,6 +94,7 @@ export const COPY = {
       preparing: 'Preparando',
       ready: 'Listo',
       delivered: 'Entregado',
+      completed: 'Completado',
       cancelled: 'Cancelado',
     },
     actions: {

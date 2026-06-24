@@ -1,5 +1,6 @@
 export { useCustomers } from './hooks/useCustomers'
 export { useCustomer } from './hooks/useCustomer'
+export { useCustomerByPhone } from './hooks/useCustomerByPhone'
 export { useCustomerOrders } from './hooks/useCustomerOrders'
 export { useUpdateCustomerNote } from './hooks/useUpdateCustomerNote'
 export { CustomerDrawer } from './components/CustomerDrawer'

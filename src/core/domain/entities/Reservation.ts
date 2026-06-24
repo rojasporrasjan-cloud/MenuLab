@@ -29,6 +29,8 @@ export interface Reservation {
   readonly note: string | null
   readonly status: ReservationStatus
   readonly source: ReservationSource
+  readonly tableId?: string | null
+  readonly tableLabel?: string | null
   readonly createdAt: Date
 }
 

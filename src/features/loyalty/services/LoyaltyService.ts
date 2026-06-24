@@ -7,6 +7,7 @@ import { CreateLoyaltyCardUseCase } from '@core/use-cases/loyalty/CreateLoyaltyC
 import { AddStampUseCase } from '@core/use-cases/loyalty/AddStampUseCase'
 import { RedeemRewardUseCase } from '@core/use-cases/loyalty/RedeemRewardUseCase'
 import { GetLoyaltyStatsUseCase } from '@core/use-cases/loyalty/GetLoyaltyStatsUseCase'
+import { ListLoyaltyCardsUseCase } from '@core/use-cases/loyalty/ListLoyaltyCardsUseCase'
 import type { LoyaltyConfig } from '@core/domain/entities/Tenant'
 
 /**
@@ -21,6 +22,7 @@ export const LoyaltyService = {
   addStamp: new AddStampUseCase(loyaltyCardRepository),
   redeemReward: new RedeemRewardUseCase(loyaltyCardRepository),
   getStats: new GetLoyaltyStatsUseCase(loyaltyCardRepository),
+  listCards: new ListLoyaltyCardsUseCase(loyaltyCardRepository),
 
   /** Configuración del programa — vive en el doc del tenant (mismo patrón que SettingsService). */
   async updateConfig(tenantId: string, config: LoyaltyConfig): Promise<void> {

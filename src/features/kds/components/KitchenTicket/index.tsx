@@ -8,7 +8,8 @@ import { COPY } from '@shared/copy/ui.copy'
 interface KitchenTicketProps {
   readonly order: Order
   readonly now: Date
-  readonly onAdvance: (orderId: string) => void
+  readonly onAdvance?: (orderId: string) => void
+  readonly customAdvanceLabel?: string
   readonly isUpdating: boolean
 }
 
@@ -52,14 +53,15 @@ function urgencyFor(elapsedMin: number): TicketUrgency {
   return 'fresh'
 }
 
-function actionLabelFor(order: Order): string | null {
+function actionLabelFor(order: Order, customAdvanceLabel?: string): string | null {
+  if (customAdvanceLabel) return customAdvanceLabel
   if (order.status === ORDER_STATUS.confirmed) return COPY.kds.actions.startPreparing
   if (order.status === ORDER_STATUS.preparing) return COPY.kds.actions.markReady
   if (order.status === ORDER_STATUS.ready) return COPY.kds.actions.markDelivered
   return null
 }
 
-export function KitchenTicket({ order, now, onAdvance, isUpdating }: KitchenTicketProps) {
+export function KitchenTicket({ order, now, onAdvance, customAdvanceLabel, isUpdating }: KitchenTicketProps) {
   const elapsedMin = Math.max(0, Math.floor((now.getTime() - order.createdAt.getTime()) / 60000))
   const urgency = urgencyFor(elapsedMin)
   const styles = URGENCY_STYLES[urgency]
@@ -67,14 +69,16 @@ export function KitchenTicket({ order, now, onAdvance, isUpdating }: KitchenTick
   
   const isTable = !!order.tableLabel
   const origin = isTable 
-    ? COPY.table.label(order.tableLabel || '') 
+    ? (order.tableLabel || '').toUpperCase()
     : order.type === 'delivery'
       ? COPY.cart.delivery.delivery
       : COPY.kds.pickup
-  const actionLabel = actionLabelFor(order)
+  const actionLabel = actionLabelFor(order, customAdvanceLabel)
 
   function handleAdvance() {
-    onAdvance(order.id)
+    if (onAdvance) {
+      onAdvance(order.id)
+    }
   }
 
   return (

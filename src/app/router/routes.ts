@@ -24,6 +24,7 @@ export const AnalyticsPage = lazy(() => import('@pages/admin/AnalyticsPage'))
 export const SettingsPage = lazy(() => import('@pages/admin/SettingsPage'))
 export const OrdersPage = lazy(() => import('@pages/admin/OrdersPage'))
 export const KDSPage = lazy(() => import('@pages/admin/KDSPage'))
+export const DispatcherPage = lazy(() => import('@pages/admin/DispatcherPage'))
 export const AdminReservationsPage = lazy(() => import('@pages/admin/ReservationsPage'))
 export const PlanPage = lazy(() => import('@pages/admin/PlanPage'))
 export const LoyaltyPage = lazy(() => import('@pages/admin/LoyaltyPage'))
@@ -35,6 +36,7 @@ export const CashRegisterPage = lazy(() => import('@pages/admin/CashRegisterPage
 // ── Staff panel (trabajadores) ───────────────────────────────────────────────
 export const StaffAvailabilityPage = lazy(() => import('@pages/staff/StaffAvailabilityPage'))
 export const StaffPromosPage = lazy(() => import('@pages/staff/StaffPromosPage'))
+export const MobileWaiterPage = lazy(() => import('@pages/staff/MobileWaiterPage'))
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 export const LoginPage = lazy(() => import('@pages/auth/LoginPage'))

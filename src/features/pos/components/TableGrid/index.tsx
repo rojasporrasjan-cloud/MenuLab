@@ -6,7 +6,7 @@ import type { POSTableState } from '../../types/pos.types'
 interface TableGridProps {
   readonly tables: readonly Table[]
   readonly stateOf: (tableId: string) => POSTableState
-  readonly accountSizeOf: (tableId: string) => number
+  readonly ordersOf: (tableId: string) => readonly Order[]
   readonly onSelect: (table: Table) => void
 }
 
@@ -35,7 +35,7 @@ const STATE_DOT: Record<POSTableState, string> = {
 }
 
 /** Grid de mesas color-coded: verde libre, naranja ocupada, rojo pendiente. */
-export function TableGrid({ tables, stateOf, accountSizeOf, onSelect }: TableGridProps) {
+export function TableGrid({ tables, stateOf, ordersOf, onSelect }: TableGridProps) {
   if (tables.length === 0) {
     return (
       <p
@@ -52,7 +52,6 @@ export function TableGrid({ tables, stateOf, accountSizeOf, onSelect }: TableGri
       {tables.map((table) => {
         const state = stateOf(table.id)
         const style = STATE_STYLE[state]
-        const accountSize = accountSizeOf(table.id)
         return (
           <button
             key={table.id}
@@ -68,11 +67,29 @@ export function TableGrid({ tables, stateOf, accountSizeOf, onSelect }: TableGri
               <span className="h-2 w-2 rounded-full" style={{ background: STATE_DOT[state] }} />
               {style.label}
             </span>
-            {accountSize > 0 && (
-              <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.45)' }}>
-                {COPY.pos.tables.account(accountSize)}
-              </span>
-            )}
+            {(() => {
+              const orders = ordersOf(table.id)
+              if (orders.length === 0) return null
+
+              // Aggrupar items de todas las órdenes activas de la mesa
+              const allItems = orders.flatMap(o => o.items)
+              if (allItems.length === 0) return null
+
+              const summary = allItems.slice(0, 3).map(i => `${i.quantity}x ${i.dishName}`).join(', ')
+              const hasMore = allItems.length > 3
+              const accountSize = orders.length
+
+              return (
+                <div className="mt-2 flex flex-col gap-1 w-full">
+                  <span className="text-[11px] leading-snug line-clamp-2" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                    {summary}{hasMore ? '...' : ''}
+                  </span>
+                  <span className="text-[10px] font-bold" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                    {COPY.pos.tables.account(accountSize)}
+                  </span>
+                </div>
+              )
+            })()}
           </button>
         )
       })}

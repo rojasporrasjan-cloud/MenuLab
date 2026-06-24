@@ -33,12 +33,16 @@ export class OrderMapper {
       type: (data['type'] as OrderType) ?? 'pickup', // safe: validado por reglas + escritura tipada
       items: toItems(data['items']),
       subtotal: Number(data['subtotal'] ?? 0),
+      deliveryCost: Number(data['deliveryCost'] ?? 0),
+      taxAmount: Number(data['taxAmount'] ?? 0),
+      total: Number(data['total'] ?? data['subtotal'] ?? 0), // fallback al subtotal viejo
       currency: String(data['currency'] ?? 'CRC'),
       customerName: typeof data['customerName'] === 'string' ? data['customerName'] : null,
       customerPhone: typeof data['customerPhone'] === 'string' ? data['customerPhone'] : null,
       deliveryAddress: typeof data['deliveryAddress'] === 'string' ? data['deliveryAddress'] : null,
       note: typeof data['note'] === 'string' ? data['note'] : null,
       status: (data['status'] as OrderStatus) ?? 'pending', // safe: escrito siempre desde tipos del dominio
+      paymentStatus: (data['paymentStatus'] as any) === 'paid' ? 'paid' : 'pending',
       createdAt: toDate(data['createdAt']),
       updatedAt: toDate(data['updatedAt']),
     }

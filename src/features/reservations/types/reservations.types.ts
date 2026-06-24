@@ -1,4 +1,5 @@
 export const reservationQueryKeys = {
+  all: (tenantId: string) => ['reservations', tenantId] as const,
   byDate: (tenantId: string, date: string) => ['reservations', tenantId, 'date', date] as const,
   stats: (tenantId: string, date: string) => ['reservations', tenantId, 'stats', date] as const,
 } as const
