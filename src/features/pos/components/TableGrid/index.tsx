@@ -1,4 +1,5 @@
 import type { Table } from '@core/domain/entities/Table'
+import type { Order } from '@core/domain/entities/Order'
 import { COPY } from '@shared/copy/ui.copy'
 
 import type { POSTableState } from '../../types/pos.types'

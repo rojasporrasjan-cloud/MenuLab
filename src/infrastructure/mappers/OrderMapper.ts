@@ -42,7 +42,7 @@ export class OrderMapper {
       deliveryAddress: typeof data['deliveryAddress'] === 'string' ? data['deliveryAddress'] : null,
       note: typeof data['note'] === 'string' ? data['note'] : null,
       status: (data['status'] as OrderStatus) ?? 'pending', // safe: escrito siempre desde tipos del dominio
-      paymentStatus: (data['paymentStatus'] as any) === 'paid' ? 'paid' : 'pending',
+      paymentStatus: String(data['paymentStatus']) === 'paid' ? 'paid' : 'pending',
       createdAt: toDate(data['createdAt']),
       updatedAt: toDate(data['updatedAt']),
     }

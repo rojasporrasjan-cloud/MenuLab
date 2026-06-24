@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Search, Plus, Minus, ArrowLeft, ShoppingBag, Send, TabletSmartphone } from 'lucide-react'
+import { Plus, Minus, ArrowLeft, ShoppingBag, Send, TabletSmartphone } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { useTenantContext } from '@app/providers/TenantProvider'
 import { useAuthContext } from '@app/providers/AuthProvider'
@@ -17,16 +17,16 @@ import { ORDER_STATUS } from '@core/domain/entities/Order'
 type Step = 'table' | 'menu' | 'cart'
 
 export default function MobileWaiterPage() {
-  const { tenant, tenantId } = useTenantContext()
+  const { tenantId } = useTenantContext()
   const { firebaseUser } = useAuthContext()
   const { data: tables = [], isLoading: loadingTables } = useTables(tenantId)
   const { data: menus = [], isLoading: loadingMenus } = useAdminMenus(tenantId)
-  const { orders = [], isLoading: loadingOrders } = useActiveOrders(tenantId)
+  const { orders = [] } = useActiveOrders(tenantId)
   
   const menuId = menus[0]?.id ?? null
   const { groups = [], isLoading: loadingDishes } = useActiveDishes(tenantId, menuId ?? '', [])
   
-  const createOrder = useCreateOrder(tenantId ?? '')
+  const createOrder = useCreateOrder()
 
   const occupiedTableIds = useMemo(() => {
     const ids = new Set<string>()
@@ -49,7 +49,7 @@ export default function MobileWaiterPage() {
   const cartItems = Array.from(cart.values())
   const cartTotal = cartItems.reduce((acc, item) => acc + item.dish.price.amount * item.quantity, 0)
   const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0)
-  const currency = tenant?.currency ?? 'CRC'
+  const currency = 'CRC'
 
   function updateQuantity(dish: Dish, delta: number) {
     setCart((prev) => {

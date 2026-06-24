@@ -67,6 +67,7 @@ function ReservationsHeader() {
 function ReservationCard({
   reservation,
   onUpdateStatus,
+  onEdit,
   isUpdating,
 }: {
   reservation: Reservation

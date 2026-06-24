@@ -1,5 +1,4 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import type { Reservation } from '@core/domain/entities/Reservation'
 import type { UpdateReservationInput } from '@core/use-cases/reservation/UpdateReservationUseCase'
 import { ReservationService } from '../services/ReservationService'
 import { reservationQueryKeys } from '../types/reservations.types'

@@ -8,7 +8,10 @@ export interface UpdateReservationInput extends Partial<NewReservation> {
 }
 
 export class UpdateReservationUseCase {
-  constructor(private readonly reservationRepository: IReservationRepository) {}
+  private readonly repository: IReservationRepository
+  constructor(repository: IReservationRepository) {
+    this.repository = repository
+  }
 
   async execute(input: UpdateReservationInput): Promise<void> {
     if (!input.tenantId) {
@@ -18,23 +21,21 @@ export class UpdateReservationUseCase {
       throw new ValidationError('reservationId', 'ID de reserva requerido.')
     }
 
-    const updateData: Partial<NewReservation> = { ...input }
-    // @ts-expect-error remove from update payload
-    delete updateData.tenantId
-    // @ts-expect-error remove from update payload
-    delete updateData.reservationId
+    const cleanUpdate = { ...input } as Record<string, unknown>
+    delete cleanUpdate.tenantId
+    delete cleanUpdate.reservationId
 
-    if (updateData.customerName) {
-      updateData.customerName = updateData.customerName.trim()
-      if (!updateData.customerName) throw new ValidationError('customerName', 'El nombre no puede estar vacío.')
+    if (typeof cleanUpdate.customerName === 'string') {
+      cleanUpdate.customerName = cleanUpdate.customerName.trim()
+      if (!cleanUpdate.customerName) throw new ValidationError('customerName', 'El nombre no puede estar vacío.')
     }
-    if (updateData.customerPhone) {
-      updateData.customerPhone = updateData.customerPhone.trim()
+    if (typeof cleanUpdate.customerPhone === 'string') {
+      cleanUpdate.customerPhone = cleanUpdate.customerPhone.trim()
     }
-    if (updateData.note !== undefined && updateData.note !== null) {
-      updateData.note = updateData.note.trim() || null
+    if (cleanUpdate.note !== undefined && cleanUpdate.note !== null) {
+      cleanUpdate.note = String(cleanUpdate.note).trim() || null
     }
 
-    await this.reservationRepository.update(input.tenantId, input.reservationId, updateData)
+    await this.repository.update(input.tenantId, input.reservationId, cleanUpdate as unknown as Partial<NewReservation>)
   }
 }

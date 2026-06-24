@@ -2,6 +2,7 @@
 export { useCreateReservation } from './hooks/useCreateReservation'
 export { useReservationsByDate } from './hooks/useReservationsByDate'
 export { useUpdateReservationStatus } from './hooks/useUpdateReservationStatus'
+export { useEditReservation } from './hooks/useEditReservation'
 export { usePendingReservations } from './hooks/usePendingReservations'
 
 // ── Components ────────────────────────────────────────────────────────────────

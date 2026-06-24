@@ -6,7 +6,6 @@ interface StampGridProps {
   readonly textColor: 'light' | 'dark'
 }
 
-const EMPTY_STAMP = '⭕'
 const DEFAULT_FILLED_STAMP = '✅'
 
 export function StampGrid({ stamps, stampsForReward, stampLabel, textColor }: StampGridProps) {

@@ -20,7 +20,6 @@ import {
   Package,
   MonitorSmartphone,
   Wallet,
-  Truck,
 } from 'lucide-react'
 import { cn }               from '@shared/utils/cn'
 import { ROUTES }           from '@shared/constants/routes'

@@ -230,7 +230,6 @@ function LoyaltyConfigSection({ tenantId, config }: { tenantId: string; config: 
                 totalStamps: Math.floor(stampsForReward / 2),
                 redeemedRewards: 0,
                 createdAt: new Date(),
-                updatedAt: new Date(),
                 lastActivityAt: new Date(),
               }}
               config={{
