@@ -9,6 +9,7 @@ import {
   useAddStamp,
   useRedeemReward,
   useCreateLoyaltyCard,
+  useLoyaltyStats,
   useLoyaltyCards,
   LoyaltyCardView,
   LoyaltyScanner,
