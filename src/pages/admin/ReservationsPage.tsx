@@ -221,8 +221,10 @@ function ReservationsPageContent() {
   const [modalDefaultTable, setModalDefaultTable] = useState<string | null>(null)
   const [editingReservation, setEditingReservation] = useState<Reservation | null>(null)
 
-  const { data: reservations = [], isLoading } = useReservationsByDate(tenantId, date)
-  const { data: tables = [] } = useTables(tenantId)
+  const { data: reservations = [], isLoading: loadingReservations } = useReservationsByDate(tenantId, date)
+  const { data: tables = [], isLoading: loadingTables } = useTables(tenantId)
+  
+  const isLoading = loadingReservations || loadingTables
   const updateStatus = useUpdateReservationStatus()
   const createReservation = useCreateReservation()
   const editReservation = useEditReservation()
