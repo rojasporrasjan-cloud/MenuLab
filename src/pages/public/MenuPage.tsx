@@ -465,6 +465,19 @@ function MenuPageContent() {
   const resolvedTableId = tableMenu?.table?.id ?? tableId ?? null
   const resolvedTableLabel = tableMenu?.table?.label ?? tableMenu?.table?.number ?? null
 
+  // ── Analytics Inicial (Visita y QR) ─────────────────────────────────────────
+  useEffect(() => {
+    if (!tenantId || isPreview) return
+    
+    // Si la URL trae una mesa específica, asumimos que viene de un código QR físico
+    if (resolvedTableId && resolvedTableId !== 'walk-in') {
+      track({ type: 'qr_scan', tableId: resolvedTableId })
+    }
+    track({ type: 'menu_view', tableId: resolvedTableId })
+    
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantId, isPreview]) // Solo queremos dispararlo on-mount (o cuando cambia de tenant)
+
   function handleAddToCart(selection: DishCartSelection): void {
     cart.add({
       dishId: selection.dishId,

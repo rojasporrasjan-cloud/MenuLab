@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Lock, Eye, EyeOff, AlertCircle } from 'lucide-react'
 import { useTenantContext } from '@app/providers/TenantProvider'
-import { sha256 } from '@shared/utils/sha256'
+import { verifyPin } from '@shared/utils/crypto'
 import { Button } from '../Button'
 
 interface PinLockScreenProps {
@@ -32,9 +32,9 @@ export function PinLockScreen({ onUnlock, onCancel, onForgotPin }: PinLockScreen
     }
 
     setIsLoading(true)
-    const hash = await sha256(pin)
+    const isValid = await verifyPin(pin, tenant.employeePinHash)
     
-    if (hash === tenant.employeePinHash) {
+    if (isValid) {
       onUnlock()
     } else {
       setError('PIN incorrecto. Intenta de nuevo.')

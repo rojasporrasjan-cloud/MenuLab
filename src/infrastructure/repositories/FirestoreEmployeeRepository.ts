@@ -56,15 +56,19 @@ export class FirestoreEmployeeRepository implements IEmployeeRepository {
     await updateDoc(doc(db, firestorePaths.employee(tenantId, employeeId)), payload)
   }
 
-  async findActiveByPinHash(tenantId: string, pinHash: string): Promise<Employee | null> {
+  async findActiveByPin(tenantId: string, pin: string): Promise<Employee | null> {
     const q = query(
       collection(db, firestorePaths.employees(tenantId)),
-      where('pin', '==', pinHash),
       where('isActive', '==', true),
-      limit(1),
     )
     const snap = await getDocs(q)
-    const first = snap.docs[0]
-    return first ? EmployeeMapper.toDomain(first, tenantId) : null
+    const { verifyPin } = await import('@shared/utils/crypto')
+    for (const docSnap of snap.docs) {
+      const data = docSnap.data()
+      if (await verifyPin(pin, data.pin)) {
+        return EmployeeMapper.toDomain(docSnap, tenantId)
+      }
+    }
+    return null
   }
 }

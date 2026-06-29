@@ -1,5 +1,5 @@
 import type { Tenant } from '@core/domain/entities/Tenant'
-import { sha256 } from '@shared/utils/sha256'
+import { verifyPin, hashPin } from '@shared/utils/crypto'
 
 import { EmployeeService } from '@features/employees'
 
@@ -7,6 +7,8 @@ export interface POSAuthResult {
   readonly ok: boolean
   readonly employeeName: string
   readonly employeeId: string | null
+  readonly role?: string
+  readonly permissions?: readonly string[]
 }
 
 const OWNER_FALLBACK_NAME = 'Dueño'
@@ -24,7 +26,13 @@ export const POSAuthService = {
     try {
       const employees = await EmployeeService.listEmployees.execute(tenantId)
       const active = employees.filter((e) => e.isActive)
-      const cacheData = active.map((e) => ({ id: e.id, name: e.name, pin: e.pin }))
+      const cacheData = active.map((e) => ({ 
+        id: e.id, 
+        name: e.name, 
+        pin: e.pin,
+        role: e.role,
+        permissions: e.permissions
+      }))
       localStorage.setItem(`${POS_AUTH_CACHE_KEY_PREFIX}${tenantId}`, JSON.stringify(cacheData))
     } catch {
       // Falla silenciosa si no hay internet (mantiene la caché anterior)
@@ -32,21 +40,33 @@ export const POSAuthService = {
   },
 
   async validatePin(tenant: Tenant, pin: string): Promise<POSAuthResult> {
-    const pinHash = await sha256(pin)
-
     // 1) Fallback al PIN del tenant (owner). Sincrónico e inmediato.
-    if (tenant.employeePinHash && tenant.employeePinHash === pinHash) {
-      return { ok: true, employeeName: OWNER_FALLBACK_NAME, employeeId: null }
+    if (tenant.employeePinHash && await verifyPin(pin, tenant.employeePinHash)) {
+      // Owner fallback bypass
+      return { 
+        ok: true, 
+        employeeName: OWNER_FALLBACK_NAME, 
+        employeeId: null,
+        role: 'owner',
+        permissions: ['access_pos', 'manage_orders', 'view_orders', 'view_analytics', 'manage_menu', 'manage_inventory', 'manage_employees', 'view_reports', 'manage_reservations', 'view_reservations']
+      }
     }
 
     // 2) Caché local (Offline-first)
     try {
       const rawCache = localStorage.getItem(`${POS_AUTH_CACHE_KEY_PREFIX}${tenant.id}`)
       if (rawCache) {
-        const cached = JSON.parse(rawCache) as Array<{ id: string; name: string; pin: string }>
-        const match = cached.find((e) => e.pin === pinHash)
-        if (match) {
-          return { ok: true, employeeName: match.name, employeeId: match.id }
+        const cached = JSON.parse(rawCache) as Array<{ id: string; name: string; pin: string; role?: string; permissions?: readonly string[] }>
+        for (const e of cached) {
+          if (await verifyPin(pin, e.pin)) {
+            return { 
+              ok: true, 
+              employeeName: e.name, 
+              employeeId: e.id,
+              role: e.role,
+              permissions: e.permissions
+            }
+          }
         }
       }
     } catch {
@@ -55,9 +75,15 @@ export const POSAuthService = {
 
     // 3) Base de datos viva (por si es un empleado recién creado)
     try {
-      const employee = await EmployeeService.validatePin.execute(tenant.id, pinHash)
+      const employee = await EmployeeService.validatePin.execute(tenant.id, pin)
       if (employee) {
-        return { ok: true, employeeName: employee.name, employeeId: employee.id }
+        return { 
+          ok: true, 
+          employeeName: employee.name, 
+          employeeId: employee.id,
+          role: employee.role,
+          permissions: employee.permissions
+        }
       }
     } catch {
       // Ignorar errores de red si estaba offline

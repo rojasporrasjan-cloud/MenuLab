@@ -14,5 +14,5 @@ export interface IEmployeeRepository {
   create(employee: NewEmployee): Promise<Employee>
   update(tenantId: string, employeeId: string, changes: EmployeeUpdate): Promise<void>
   /** Empleado activo cuyo hash de PIN coincide, o null. */
-  findActiveByPinHash(tenantId: string, pinHash: string): Promise<Employee | null>
+  findActiveByPin(tenantId: string, pin: string): Promise<Employee | null>
 }

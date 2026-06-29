@@ -4,7 +4,7 @@ import { PageHeader } from '@shared/ui/components/PageHeader'
 import { useTenantContext } from '@app/providers/TenantProvider'
 import { cn } from '@shared/utils/cn'
 import { ROUTES } from '@shared/constants/routes'
-import { sha256 } from '@shared/utils/sha256'
+import { hashPin } from '@shared/utils/crypto'
 import {
   ProfileForm,
   PlanInfo,
@@ -94,7 +94,7 @@ function EmployeePinSection({
     }
 
     try {
-      const hash = await sha256(pin)
+      const hash = await hashPin(pin)
       await updatePin(hash)
       setPin('')
       setConfirm('')
@@ -363,13 +363,13 @@ function StaffAccountSection({ tenantId }: { tenantId: string }) {
             <p className="text-[13.5px] text-neutral-500 mt-1">Acceso independiente para tus meseros al comandero y menú digital desde sus teléfonos.</p>
          </div>
       </div>
-
       <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-5">
         <div className="rounded-2xl bg-blue-50/50 border border-blue-100/50 p-4">
-           <div className="flex flex-col gap-2">
-             <p className="text-[13.5px] font-medium text-blue-900/80 leading-relaxed">
-               Pide a tu equipo que ingrese a:
-             </p>
+           <h3 className="text-[15px] font-bold text-black">PIN de Panel de Meseros</h3>
+           <p className="text-[13px] text-black/50 mt-1 max-w-[90%] leading-relaxed">
+             Este PIN de 6 a 8 dígitos permite que tu equipo entre al panel operativo desde sus celulares (`/staff`). Si el PIN ya existe, se actualizará al nuevo.
+           </p>
+           <div className="flex flex-col gap-2 mt-4">
              <code className="inline-block w-fit rounded-xl bg-blue-100 px-3 py-2 text-[14px] font-black text-blue-800 select-all border border-blue-200/60 shadow-sm">
                {staffUrl}
              </code>
@@ -443,7 +443,7 @@ function StaffAccountSection({ tenantId }: { tenantId: string }) {
           className="w-full sm:w-auto rounded-2xl bg-blue-600 px-8 py-3.5 text-[14px] font-black text-white shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-xl active:scale-95 disabled:pointer-events-none disabled:opacity-40 flex items-center justify-center gap-2"
         >
           {isLoading ? <Spinner size="sm" /> : null}
-          Configurar PIN Móvil
+          Configurar / Cambiar PIN Móvil
         </button>
       </form>
     </div>

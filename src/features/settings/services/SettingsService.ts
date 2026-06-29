@@ -6,6 +6,18 @@ import type { TenantAnnouncement, TenantSocials, TenantInfoFooter, TenantOrderBu
 
 import type { CommerceFormValues } from '../components/CommerceForm/CommerceForm'
 
+function flattenObject(obj: Record<string, any>, prefix = ''): Record<string, any> {
+  return Object.keys(obj).reduce((acc: Record<string, any>, k: string) => {
+    const pre = prefix.length ? prefix + '.' : ''
+    if (typeof obj[k] === 'object' && obj[k] !== null && !Array.isArray(obj[k])) {
+      Object.assign(acc, flattenObject(obj[k], pre + k))
+    } else {
+      acc[pre + k] = obj[k]
+    }
+    return acc
+  }, {})
+}
+
 export const SettingsService = {
   async updateProfile(tenantId: string, values: ProfileFormValues): Promise<void> {
     await updateDoc(doc(db, firestorePaths.tenant(tenantId)), {
@@ -99,14 +111,14 @@ export const SettingsService = {
       'branding.detailsCardStyle': branding.detailsCardStyle,
       'branding.detailsCardOptionStyle': branding.detailsCardOptionStyle,
       'branding.detailsCardShowImage': branding.detailsCardShowImage,
-      'branding.announcement': branding.announcement,
-      'branding.socials': branding.socials,
-      'branding.infoFooter': branding.infoFooter,
-      'branding.orderButton': branding.orderButton,
       'features.orderingEnabled': branding.orderingEnabled,
-      'branding.reservation': branding.reservation,
-      'branding.promo': branding.promo,
-      'branding.featuredSection': branding.featuredSection,
+      ...flattenObject(branding.announcement, 'branding.announcement'),
+      ...flattenObject(branding.socials, 'branding.socials'),
+      ...flattenObject(branding.infoFooter, 'branding.infoFooter'),
+      ...flattenObject(branding.orderButton, 'branding.orderButton'),
+      ...flattenObject(branding.reservation, 'branding.reservation'),
+      ...flattenObject(branding.promo, 'branding.promo'),
+      ...flattenObject(branding.featuredSection, 'branding.featuredSection'),
       updatedAt: serverTimestamp(),
     })
   },

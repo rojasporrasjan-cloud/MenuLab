@@ -12,8 +12,8 @@ export class ValidateEmployeePinUseCase {
     this.employeeRepository = employeeRepository
   }
 
-  async execute(tenantId: string, pinHash: string): Promise<Employee | null> {
-    if (!tenantId || !pinHash) return null
-    return this.employeeRepository.findActiveByPinHash(tenantId, pinHash)
+  async execute(tenantId: string, pin: string): Promise<Employee | null> {
+    if (!tenantId || !pin) return null
+    return this.employeeRepository.findActiveByPin(tenantId, pin)
   }
 }
