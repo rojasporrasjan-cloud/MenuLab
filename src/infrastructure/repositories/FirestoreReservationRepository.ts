@@ -40,11 +40,12 @@ export class FirestoreReservationRepository implements IReservationRepository {
   async listByDate(tenantId: string, date: string): Promise<Reservation[]> {
     const q = query(
       collection(db, firestorePaths.reservations(tenantId)),
-      where('date', '==', date),
-      orderBy('time', 'asc'),
+      where('date', '==', date)
     )
     const snap = await getDocs(q)
-    return snap.docs.map((d) => ReservationMapper.toDomain(d, tenantId))
+    const mapped = snap.docs.map((d) => ReservationMapper.toDomain(d, tenantId))
+    mapped.sort((a, b) => a.time.localeCompare(b.time))
+    return mapped
   }
 
   async updateStatus(

@@ -19,12 +19,15 @@ export function useReservationsByDate(tenantId: string, date: string) {
 
     const q = query(
       collection(db, firestorePaths.reservations(tenantId)),
-      where('date', '==', date),
-      orderBy('time', 'asc')
+      where('date', '==', date)
     )
 
     const unsubscribe = onSnapshot(q, (snap) => {
-      setData(snap.docs.map((doc) => ReservationMapper.toDomain(doc, tenantId)))
+      const mapped = snap.docs.map((doc) => ReservationMapper.toDomain(doc, tenantId))
+      // Sort in memory to avoid requiring a composite index in Firestore
+      mapped.sort((a, b) => a.time.localeCompare(b.time))
+      console.log('Realtime reservations update:', mapped)
+      setData(mapped)
       setIsLoading(false)
     }, (error) => {
       console.error('Error listening to reservations:', error)
